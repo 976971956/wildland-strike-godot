@@ -17,6 +17,14 @@ const ENEMY_DEFINITIONS := {
 	"boss": preload("res://data/enemies/boss.tres"),
 }
 
+enum BehaviorPhase {
+	NEUTRAL,
+	TELEGRAPH,
+	BURST,
+	EVADE,
+	RECOVER,
+}
+
 var game: Node
 var player: Node
 var enemy_type := "grunt"
@@ -51,6 +59,12 @@ var throw_impact_profile: Resource = null
 var throw_collision_targets := {}
 var wall_collision_done := false
 var last_hit_was_counter := false
+var behavior_phase := BehaviorPhase.NEUTRAL
+var behavior_timer := 0.0
+var behavior_cooldown_timer := 0.0
+var behavior_direction := Vector2.ZERO
+var last_behavior_event: StringName = &"neutral"
+var behavior_event_history: Array[StringName] = []
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
 var attack_hitbox
@@ -154,34 +168,184 @@ func _physics_process(delta: float) -> void:
 	_sync_fighter_state()
 	queue_redraw()
 
-func _think(_delta: float) -> void:
+func _think(delta: float) -> void:
 	var player_offset: Vector2 = player.position - position
-	var offset: Vector2 = player.position + Vector2(0.0, approach_lane_offset) - position
 	facing = 1 if player_offset.x > 0 else -1
-	var y_dist := absf(player_offset.y)
-	var lane_y_dist := absf(offset.y)
-	var x_dist := absf(player_offset.x)
+	behavior_cooldown_timer = maxf(0.0, behavior_cooldown_timer - delta)
 	if attack_timer > 0.0:
 		velocity = Vector2.ZERO
 		return
-	if x_dist < 62.0 and y_dist < 36.0:
-		attack_timer = current_attack.duration
-		attack_hit_done = false
-		state_machine.transition(FighterStateMachineScript.State.ATTACK)
-		attack_hitbox.configure_circle(current_attack.circle_radius, facing)
-		velocity = Vector2.ZERO
-		game.play_sfx(current_attack.sound_event)
+	if behavior_phase != BehaviorPhase.NEUTRAL:
+		_advance_behavior_phase(delta, player_offset)
 		return
+	match definition.behavior_kind:
+		EnemyDefinitionScript.BehaviorKind.CHARGER:
+			_think_charger(player_offset)
+		EnemyDefinitionScript.BehaviorKind.POUNCER:
+			_think_pouncer(player_offset)
+		EnemyDefinitionScript.BehaviorKind.PRESSURE:
+			_think_pressure(player_offset)
+		_:
+			_think_flanker(player_offset)
+
+
+func _think_flanker(player_offset: Vector2) -> void:
+	if _try_start_contact_attack(player_offset):
+		return
+	_approach_player(player_offset, true)
+
+
+func _think_charger(player_offset: Vector2) -> void:
+	if _try_start_contact_attack(player_offset):
+		return
+	var x_dist := absf(player_offset.x)
+	if (
+		behavior_cooldown_timer <= 0.0
+		and x_dist >= definition.burst_min_distance
+		and x_dist <= definition.burst_max_distance
+		and absf(player_offset.y) <= definition.lane_tolerance
+	):
+		_begin_telegraph(Vector2(signf(player_offset.x), 0.0), &"charge_telegraph")
+		return
+	_approach_player(player_offset, true)
+
+
+func _think_pouncer(player_offset: Vector2) -> void:
+	var distance := player_offset.length()
+	if behavior_cooldown_timer <= 0.0 and distance < definition.retreat_distance:
+		_begin_evade(player_offset)
+		return
+	if _try_start_contact_attack(player_offset):
+		return
+	if (
+		behavior_cooldown_timer <= 0.0
+		and distance >= definition.burst_min_distance
+		and distance <= definition.burst_max_distance
+		and absf(player_offset.y) <= definition.lane_tolerance * 1.45
+	):
+		_begin_telegraph(player_offset.normalized(), &"pounce_telegraph")
+		return
+	_approach_player(player_offset, false)
+
+
+func _think_pressure(player_offset: Vector2) -> void:
+	if _try_start_contact_attack(player_offset):
+		return
+	_approach_player(player_offset, false)
+
+
+func _try_start_contact_attack(player_offset: Vector2) -> bool:
+	if absf(player_offset.x) >= definition.attack_distance or absf(player_offset.y) >= definition.lane_tolerance:
+		return false
+	_start_attack()
+	return true
+
+
+func _start_attack() -> void:
+	attack_timer = current_attack.duration
+	attack_hit_done = false
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
+	attack_hitbox.configure_circle(current_attack.circle_radius, facing)
+	velocity = Vector2.ZERO
+	game.play_sfx(current_attack.sound_event)
+	_record_behavior_event(&"attack")
+
+
+func _approach_player(player_offset: Vector2, use_lane_offset: bool) -> void:
+	var offset := player_offset
+	if use_lane_offset:
+		offset.y += approach_lane_offset
 	var target := Vector2.ZERO
-	if x_dist > 48.0:
+	if absf(player_offset.x) > definition.attack_distance * 0.78:
 		target.x = signf(offset.x)
-	if lane_y_dist > 18.0:
-		target.y = signf(offset.y) * 0.72
+	if absf(offset.y) > definition.lane_tolerance * 0.5:
+		target.y = signf(offset.y) * definition.vertical_approach_scale
 	var desired_velocity := target.normalized() * speed
 	var separation := _enemy_separation()
 	if separation != Vector2.ZERO:
 		desired_velocity += separation * speed * 0.92
 	velocity = desired_velocity.limit_length(speed)
+
+
+func _begin_telegraph(direction: Vector2, event: StringName) -> void:
+	behavior_phase = BehaviorPhase.TELEGRAPH
+	behavior_timer = definition.telegraph_duration
+	behavior_direction = direction if direction != Vector2.ZERO else Vector2(facing, 0.0)
+	facing = 1 if behavior_direction.x >= 0.0 else -1
+	velocity = Vector2.ZERO
+	_record_behavior_event(event)
+	queue_redraw()
+
+
+func _begin_burst() -> void:
+	behavior_phase = BehaviorPhase.BURST
+	behavior_timer = definition.burst_duration
+	velocity = behavior_direction * speed * definition.burst_speed_scale
+	_record_behavior_event(
+		&"charge_burst"
+		if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER
+		else &"pounce_burst"
+	)
+	queue_redraw()
+
+
+func _begin_evade(player_offset: Vector2) -> void:
+	behavior_phase = BehaviorPhase.EVADE
+	behavior_timer = definition.retreat_duration
+	var vertical_side := -1.0 if approach_lane_offset <= 0.0 else 1.0
+	behavior_direction = Vector2(-signf(player_offset.x), vertical_side * 0.7).normalized()
+	velocity = behavior_direction * speed * 1.18
+	_record_behavior_event(&"retreat")
+	queue_redraw()
+
+
+func _begin_recovery() -> void:
+	behavior_phase = BehaviorPhase.RECOVER
+	behavior_timer = definition.recovery_duration
+	velocity = Vector2.ZERO
+	_record_behavior_event(&"recovery")
+	queue_redraw()
+
+
+func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
+	behavior_timer = maxf(0.0, behavior_timer - delta)
+	match behavior_phase:
+		BehaviorPhase.TELEGRAPH:
+			velocity = Vector2.ZERO
+			if behavior_timer <= 0.0:
+				_begin_burst()
+		BehaviorPhase.BURST:
+			facing = 1 if behavior_direction.x >= 0.0 else -1
+			velocity = behavior_direction * speed * definition.burst_speed_scale
+			if _try_start_contact_attack(player_offset):
+				_begin_recovery()
+			elif behavior_timer <= 0.0:
+				_begin_recovery()
+		BehaviorPhase.EVADE:
+			velocity = behavior_direction * speed * 1.18
+			if behavior_timer <= 0.0:
+				_begin_recovery()
+		BehaviorPhase.RECOVER:
+			velocity = Vector2.ZERO
+			if behavior_timer <= 0.0:
+				behavior_phase = BehaviorPhase.NEUTRAL
+				behavior_cooldown_timer = definition.behavior_cooldown
+				_record_behavior_event(&"ready")
+				queue_redraw()
+
+
+func _cancel_behavior() -> void:
+	behavior_phase = BehaviorPhase.NEUTRAL
+	behavior_timer = 0.0
+	behavior_direction = Vector2.ZERO
+	velocity = Vector2.ZERO
+
+
+func _record_behavior_event(event: StringName) -> void:
+	last_behavior_event = event
+	behavior_event_history.append(event)
+	if behavior_event_history.size() > 16:
+		behavior_event_history.pop_front()
 
 func _enemy_separation() -> Vector2:
 	var separation := Vector2.ZERO
@@ -238,6 +402,7 @@ func take_hit(
 ) -> void:
 	if is_defeated or invulnerable > 0.0 or hard_knockdown_lockout:
 		return
+	_cancel_behavior()
 	_register_chain_hit()
 	if chain_hit_count >= MAX_CHAIN_HITS:
 		launch = true
@@ -270,6 +435,7 @@ func take_hit(
 	queue_redraw()
 
 func _die(knockback: Vector2) -> void:
+	_cancel_behavior()
 	is_defeated = true
 	attack_hitbox.deactivate()
 	throw_collision_active = false
@@ -292,6 +458,7 @@ func can_be_grabbed() -> bool:
 	)
 
 func grabbed_by(owner: Node) -> void:
+	_cancel_behavior()
 	grabbed = true
 	grabbed_owner = owner
 	velocity = Vector2.ZERO
@@ -340,6 +507,7 @@ func thrown(damage: int, force: Vector2, collision_damage: int, impact_profile: 
 
 
 func lose_priority_clash() -> void:
+	_cancel_behavior()
 	attack_timer = 0.0
 	attack_hit_done = true
 	attack_hitbox.deactivate()
@@ -443,6 +611,7 @@ func _sync_fighter_state() -> void:
 	state_machine.transition(next_state)
 
 func _draw() -> void:
+	_draw_behavior_cue()
 	if definition.visual_kind == EnemyDefinitionScript.VisualKind.RAPTOR:
 		_draw_raptor()
 		return
@@ -480,6 +649,18 @@ func _draw() -> void:
 	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
+
+
+func _draw_behavior_cue() -> void:
+	if behavior_phase != BehaviorPhase.TELEGRAPH:
+		return
+	var pulse := 0.72 + sin(Time.get_ticks_msec() * 0.028) * 0.18
+	var cue_color := Color(1.0, 0.47, 0.16, pulse)
+	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.POUNCER:
+		cue_color = Color(0.62, 0.95, 0.28, pulse)
+	draw_arc(Vector2(0.0, -12.0), 37.0, 0.0, TAU, 28, cue_color, 4.0)
+	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER:
+		draw_line(Vector2(facing * 22.0, -12.0), Vector2(facing * 92.0, -12.0), cue_color, 5.0)
 
 func _draw_raptor() -> void:
 	_draw_oval(

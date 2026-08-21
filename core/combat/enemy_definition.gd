@@ -6,6 +6,13 @@ enum VisualKind {
 	RAPTOR,
 }
 
+enum BehaviorKind {
+	FLANKER,
+	CHARGER,
+	POUNCER,
+	PRESSURE,
+}
+
 @export_group("Identity")
 @export var enemy_id: StringName
 @export var is_boss := false
@@ -16,6 +23,21 @@ enum VisualKind {
 @export var attack: AttackFrameData
 @export var can_be_grabbed := true
 @export var defeat_score := 0
+
+@export_group("Behavior")
+@export var behavior_kind := BehaviorKind.FLANKER
+@export_range(20.0, 120.0, 1.0) var attack_distance := 62.0
+@export_range(12.0, 100.0, 1.0) var lane_tolerance := 36.0
+@export_range(0.1, 1.5, 0.05) var vertical_approach_scale := 0.72
+@export_range(0.0, 1.5, 0.01) var telegraph_duration := 0.0
+@export_range(0.0, 1.5, 0.01) var burst_duration := 0.0
+@export_range(1.0, 4.0, 0.05) var burst_speed_scale := 1.0
+@export_range(0.0, 1.5, 0.01) var recovery_duration := 0.0
+@export_range(0.0, 2.0, 0.01) var behavior_cooldown := 0.0
+@export_range(0.0, 600.0, 1.0) var burst_min_distance := 0.0
+@export_range(0.0, 800.0, 1.0) var burst_max_distance := 0.0
+@export_range(0.0, 240.0, 1.0) var retreat_distance := 0.0
+@export_range(0.0, 1.0, 0.01) var retreat_duration := 0.0
 
 @export_group("Presentation")
 @export var sprite_sheet: Texture2D
@@ -34,7 +56,7 @@ enum VisualKind {
 
 
 func is_valid_definition() -> bool:
-	return (
+	var core_valid := (
 		not enemy_id.is_empty()
 		and max_health > 0
 		and speed > 0.0
@@ -46,3 +68,22 @@ func is_valid_definition() -> bool:
 		and target_size.x > 0.0
 		and target_size.y > 0.0
 	)
+	if not core_valid:
+		return false
+	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.PRESSURE:
+		return false
+	if attack_distance <= 0.0 or lane_tolerance <= 0.0 or vertical_approach_scale <= 0.0:
+		return false
+	if behavior_kind in [BehaviorKind.CHARGER, BehaviorKind.POUNCER]:
+		if (
+			telegraph_duration <= 0.0
+			or burst_duration <= 0.0
+			or burst_speed_scale <= 1.0
+			or recovery_duration <= 0.0
+			or burst_min_distance < attack_distance
+			or burst_max_distance <= burst_min_distance
+		):
+			return false
+	if behavior_kind == BehaviorKind.POUNCER:
+		return retreat_distance > attack_distance and retreat_duration > 0.0
+	return true

@@ -23,6 +23,11 @@ var victory_time_bonus := 0
 var victory_life_bonus := 0
 var victory_clear_bonus := 0
 var victory_final_score := 0
+var stage_area := 1
+var stage_area_total := 1
+var stage_hostiles := 0
+var arena_locked := false
+var force_touch_layout := false
 var font: Font
 
 func _ready() -> void:
@@ -36,6 +41,8 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if dialogue_time > 0.0:
 		dialogue_time -= delta
+		queue_redraw()
+	if float(health) / maxf(max_health, 1) < 0.3 or (mode == "playing" and stage_time_remaining <= 30.0):
 		queue_redraw()
 
 func set_player_health(current: int, maximum: int) -> void:
@@ -91,6 +98,32 @@ func set_weapon(display_name: String, ammo: int) -> void:
 	queue_redraw()
 
 
+func set_stage_progress(area: int, total: int, hostiles: int, locked: bool) -> void:
+	var next_area := clampi(area, 1, maxi(total, 1))
+	var next_total := maxi(total, 1)
+	var next_hostiles := maxi(hostiles, 0)
+	if (
+		next_area == stage_area
+		and next_total == stage_area_total
+		and next_hostiles == stage_hostiles
+		and locked == arena_locked
+	):
+		return
+	stage_area = next_area
+	stage_area_total = next_total
+	stage_hostiles = next_hostiles
+	arena_locked = locked
+	queue_redraw()
+
+
+static func dialogue_panel_rect(touch_layout: bool) -> Rect2:
+	return Rect2(260, 398, 680, 96) if touch_layout else Rect2(270, 540, 740, 92)
+
+
+func _touch_layout_active() -> bool:
+	return force_touch_layout or DisplayServer.is_touchscreen_available() or "--touch-preview" in OS.get_cmdline_user_args()
+
+
 func set_victory_summary(time_bonus: int, life_bonus: int, clear_bonus: int, final_score: int) -> void:
 	victory_time_bonus = maxi(time_bonus, 0)
 	victory_life_bonus = maxi(life_bonus, 0)
@@ -112,7 +145,9 @@ func _draw() -> void:
 	draw_string(font, Vector2(315,48), "%08d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 	draw_rect(Rect2(39,61,360,23), Color("#271b25"))
 	var ratio := clampf(float(health)/maxf(max_health,1),0.0,1.0)
-	draw_rect(Rect2(43,65,352*ratio,15), Color("#e84d45") if ratio < 0.3 else Color("#e8b844"))
+	var danger_pulse := 0.72 + sin(Time.get_ticks_msec() * 0.012) * 0.28
+	var health_color := Color(1.0, 0.18 + danger_pulse * 0.12, 0.12, 1.0) if ratio < 0.3 else Color("#e8b844")
+	draw_rect(Rect2(43,65,352*ratio,15), health_color)
 	for x in range(43,396,22):
 		draw_line(Vector2(x,65),Vector2(x,80),Color(0,0,0,0.18),2)
 	draw_string(font,Vector2(406,82),"×%d"%lives,HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#b7e8df"))
@@ -129,9 +164,19 @@ func _draw() -> void:
 			draw_rect(Rect2(474, 20, 92, 4), Color("#74c9aa"))
 			draw_string(font, Vector2(478, 42), weapon_name, HORIZONTAL_ALIGNMENT_CENTER, 84, 13, Color("#d8efe7"))
 			draw_string(font, Vector2(478, 61), "×%02d" % weapon_ammo, HORIZONTAL_ALIGNMENT_CENTER, 84, 16, Color.WHITE)
+		if boss_max <= 0 or boss_health <= 0:
+			var status_color := Color("#ef6a56") if arena_locked else Color("#70d0ad")
+			draw_rect(Rect2(882, 20, 362, 64), Color(0.035, 0.045, 0.07, 0.9))
+			draw_rect(Rect2(882, 20, 362, 4), status_color)
+			draw_string(font, Vector2(900, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 150, 19, Color("#f4dc83"))
+			var objective := "HOSTILES  %02d" % stage_hostiles if arena_locked else "ADVANCE  →"
+			draw_string(font, Vector2(1045, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, 180, 19, status_color)
+			draw_string(font, Vector2(900, 72), "COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN", HORIZONTAL_ALIGNMENT_LEFT, 325, 13, Color("#b8c8c3"))
+		if ratio < 0.3:
+			draw_string(font, Vector2(350, 99), "DANGER", HORIZONTAL_ALIGNMENT_RIGHT, 48, 13, Color(1.0, 0.32, 0.24, danger_pulse))
 
 	# Keyboard hints are hidden on touch devices where virtual controls replace them.
-	if not DisplayServer.is_touchscreen_available() and "--touch-preview" not in OS.get_cmdline_user_args():
+	if not _touch_layout_active():
 		draw_rect(Rect2(22,674,715,30),Color(0.02,0.03,0.045,0.72))
 		draw_string(font,Vector2(35,696),"MOVE WASD/ARROWS   ATTACK J/Z   JUMP K/X   COMMAND DOWN>FORWARD+ATTACK   SPECIAL ATTACK+JUMP",HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("#dbe4df"))
 
@@ -148,10 +193,12 @@ func _draw() -> void:
 		draw_string(font,Vector2(350,344),banner_sub,HORIZONTAL_ALIGNMENT_CENTER,580,18,Color("#d5e0db"))
 
 	if dialogue_time > 0.0 and mode == "playing":
-		draw_rect(Rect2(270, 540, 740, 92), Color(0.025, 0.018, 0.025, 0.94))
-		draw_rect(Rect2(270, 540, 7, 92), Color("#d84a35"))
-		draw_string(font, Vector2(294, 570), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, 690, 18, Color("#f0b65b"))
-		draw_string(font, Vector2(294, 607), dialogue_line, HORIZONTAL_ALIGNMENT_LEFT, 690, 24, Color.WHITE)
+		var dialogue_rect := dialogue_panel_rect(_touch_layout_active())
+		draw_rect(dialogue_rect, Color(0.025, 0.018, 0.025, 0.94))
+		draw_rect(Rect2(dialogue_rect.position, Vector2(7, dialogue_rect.size.y)), Color("#d84a35"))
+		var dialogue_text_width := dialogue_rect.size.x - 48.0
+		draw_string(font, dialogue_rect.position + Vector2(24, 30), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, 18, Color("#f0b65b"))
+		draw_string(font, dialogue_rect.position + Vector2(24, 67), dialogue_line, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, 24, Color.WHITE)
 
 	if mode == "title":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.035,0.58))

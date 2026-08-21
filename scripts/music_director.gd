@@ -9,19 +9,47 @@ enum Cue {
 }
 
 const SAMPLE_RATE := 22050
+const BASE_VOLUME_DB := -12.0
 
 var current_cue := Cue.SILENT
 var cue_history: Array[int] = []
 var stream_cache := {}
 var player: AudioStreamPlayer
+var duck_time_remaining := 0.0
+var duck_volume_db := 0.0
+var last_duck_db := 0.0
+var last_duck_duration := 0.0
 
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	player = AudioStreamPlayer.new()
-	player.volume_db = -10.0
+	player.volume_db = BASE_VOLUME_DB
 	add_child(player)
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(player):
+		return
+	duck_time_remaining = maxf(0.0, duck_time_remaining - delta)
+	if duck_time_remaining > 0.0:
+		player.volume_db = minf(player.volume_db, BASE_VOLUME_DB + duck_volume_db)
+	else:
+		duck_volume_db = move_toward(duck_volume_db, 0.0, delta * 24.0)
+		player.volume_db = move_toward(player.volume_db, BASE_VOLUME_DB + duck_volume_db, delta * 30.0)
+
+
+func duck(amount_db: float, duration: float) -> void:
+	if amount_db >= 0.0 or duration <= 0.0:
+		return
+	last_duck_db = amount_db
+	last_duck_duration = duration
+	duck_volume_db = minf(duck_volume_db, amount_db)
+	duck_time_remaining = maxf(duck_time_remaining, duration)
+	if is_instance_valid(player):
+		player.volume_db = minf(player.volume_db, BASE_VOLUME_DB + duck_volume_db)
 
 
 func play_cue(cue: int) -> void:

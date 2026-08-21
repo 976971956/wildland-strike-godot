@@ -27,6 +27,7 @@ const SUITES := [
 	{"name": "presentation_flow", "path": "res://tests/suites/presentation_flow_test.gd"},
 	{"name": "animation_presentation", "path": "res://tests/suites/animation_presentation_test.gd"},
 	{"name": "enemy_animation_presentation", "path": "res://tests/suites/enemy_animation_presentation_test.gd"},
+	{"name": "audio_hud_polish", "path": "res://tests/suites/audio_hud_polish_test.gd"},
 ]
 
 

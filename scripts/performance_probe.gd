@@ -15,7 +15,13 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "roster_preview=1" in query_string:
+		if "hud_preview=2" in query_string:
+			scenario = "touch_hud_preview"
+			call_deferred("_start_hud_preview", true)
+		elif "hud_preview=1" in query_string:
+			scenario = "desktop_hud_preview"
+			call_deferred("_start_hud_preview", false)
+		elif "roster_preview=1" in query_string:
 			scenario = "enemy_roster_preview"
 			call_deferred("_start_roster_preview")
 		elif "baseline_benchmark=1" in query_string:
@@ -66,6 +72,37 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_hud_preview(touch_layout: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game"):
+		scenario = "hud_preview_setup_failed"
+		return
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.position = Vector2(1720.0, 570.0)
+	game.player.set_physics_process(false)
+	game.camera.position.x = 1950.0
+	game.encounter_director._update_scene(1950.0)
+	game.player.health = 28
+	game.hud.set_player_health(28, game.player.MAX_HEALTH)
+	game.score = 12840
+	game.hud.set_score(game.score)
+	game.stage_time_remaining = 27.4
+	game.hud.set_stage_time(game.stage_time_remaining)
+	game.hud.set_weapon("PISTOL", 6)
+	game.hud.set_stage_progress(2, 4, 3, true)
+	game.hud.force_touch_layout = touch_layout
+	game.hud.show_dialogue("WARDEN ROURKE", "Seal the courtyard. Do not let the Ranger through.", 99.0)
+	game.hud.banner_time = 0.0
+	if touch_layout:
+		var touch_controls = game.get_node("HUD/TouchControls")
+		touch_controls.enabled_for_device = true
+		touch_controls.visible = true
+		touch_controls.set_process(true)
+		touch_controls.queue_redraw()
+	game.set_process(false)
 
 
 func _start_roster_preview() -> void:

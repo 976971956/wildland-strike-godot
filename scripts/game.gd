@@ -8,6 +8,7 @@ const StageObjectScript = preload("res://scripts/stage_object.gd")
 const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
+const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 
 @onready var actors: Node2D = $Actors
@@ -38,6 +39,10 @@ var shake_strength := 0.0
 var hit_stop_serial := 0
 var sfx_players: Array[AudioStreamPlayer] = []
 var sfx_index := 0
+var sfx_stream_cache := {}
+var sfx_voice_priorities: Array[int] = []
+var sfx_voice_serials: Array[int] = []
+var sfx_voice_serial := 0
 var sfx_event_history: Array[StringName] = []
 var last_impact_profile_id: StringName
 var last_hit_stop_duration := 0.0
@@ -64,14 +69,17 @@ func _ready() -> void:
 	world_art.configure(STAGE_1_DEFINITION)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
-		for i in range(4):
+		for i in range(8):
 			var audio := AudioStreamPlayer.new()
 			add_child(audio)
 			sfx_players.append(audio)
+			sfx_voice_priorities.append(0)
+			sfx_voice_serials.append(0)
 	_create_player()
 	_create_stage_objects()
 	stage_time_remaining = STAGE_1_DEFINITION.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
+	_sync_hud_stage_progress()
 	hud.set_mode("title")
 	set_process(true)
 
@@ -116,6 +124,7 @@ func _process(delta: float) -> void:
 		camera.offset = camera.offset.move_toward(Vector2.ZERO,delta*80.0)
 		shake_strength = move_toward(shake_strength, 0.0, delta * 90.0)
 	encounter_director.tick(delta, player.position.x)
+	_sync_hud_stage_progress()
 
 func _start_game() -> void:
 	state = "playing"
@@ -130,6 +139,7 @@ func spawn_enemy(pos: Vector2, type: String) -> void:
 	actors.add_child(enemy)
 	enemy.position = pos
 	enemy.setup(self,player,type)
+	_sync_hud_stage_progress()
 
 
 func spawn_pickup(pos: Vector2, item_id: StringName) -> void:
@@ -167,9 +177,11 @@ func enemy_removed(enemy: Node) -> void:
 func _on_encounter_started(encounter: Resource, _encounter_index: int) -> void:
 	hud.show_banner(encounter.banner_title, encounter.banner_subtitle, 1.45)
 	play_sfx("alert")
+	_sync_hud_stage_progress()
 
 
 func _on_encounter_cleared(encounter: Resource, _encounter_index: int) -> void:
+	_sync_hud_stage_progress()
 	if not encounter.reward_id.is_empty():
 		hud.show_banner("AREA CLEAR", "KEEP MOVING RIGHT  →", 1.8)
 		_spawn_reward(encounter.reward_id)
@@ -227,10 +239,23 @@ func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
 	):
 		return
 	encounter_director.register_dynamic_enemies(phase.reinforcement_count)
+	_sync_hud_stage_progress()
 	for index in range(phase.reinforcement_count):
 		var side := -1.0 if index % 2 == 0 else 1.0
 		var spawn_position: Vector2 = boss.position + Vector2(side * (180.0 + index * 45.0), -55.0 + index * 110.0)
 		spawn_enemy(spawn_position, String(phase.reinforcement_enemy_id))
+
+
+func _sync_hud_stage_progress() -> void:
+	if not is_instance_valid(hud) or not is_instance_valid(encounter_director):
+		return
+	var encounter_count: int = encounter_director.get_encounter_count()
+	hud.set_stage_progress(
+		mini(stage_index + 1, encounter_count),
+		encounter_count,
+		remaining_enemies,
+		wave_active
+	)
 
 func _on_player_health(current: int, maximum: int) -> void:
 	hud.set_player_health(current,maximum)
@@ -343,46 +368,41 @@ func play_sfx(kind: StringName) -> void:
 	sfx_event_history.append(kind)
 	if sfx_event_history.size() > 32:
 		sfx_event_history.pop_front()
+	var cfg := SfxLibraryScript.profile(kind)
+	if is_instance_valid(music_director) and cfg.duck_db < 0.0:
+		music_director.duck(cfg.duck_db, cfg.duck_duration)
 	if sfx_players.is_empty():
 		return
-	var settings := {
-		"start":[520.0,0.22],"alert":[230.0,0.18],"jump":[420.0,0.09],
-		"swing":[180.0,0.045],"enemy_swing":[130.0,0.05],"hit":[110.0,0.055],
-		"heavy":[72.0,0.10],"hurt":[95.0,0.09],"special":[650.0,0.18],
-		"impact_crack":[185.0,0.075],"impact_snap":[310.0,0.035],
-		"impact_clash":[420.0,0.055],"body_slam":[58.0,0.12],
-		"special_burst":[760.0,0.12],"enemy_down":[62.0,0.16],
-		"boss_warning":[145.0,0.28],"boss_phase":[52.0,0.34],
-		"gunshot":[920.0,0.065],"throw":[260.0,0.055],"explosion":[54.0,0.16],
-		"pickup":[880.0,0.11],"victory":[740.0,0.35],"bonus_tally":[1040.0,0.22]
-	}
-	var cfg: Array = settings.get(kind,[220.0,0.05])
-	var stream := _make_tone(float(cfg[0]),float(cfg[1]),kind in ["hit","heavy","impact_crack","hurt","enemy_down"])
-	var audio := sfx_players[sfx_index % sfx_players.size()]
+	if not sfx_stream_cache.has(cfg.event):
+		sfx_stream_cache[cfg.event] = SfxLibraryScript.build_stream(cfg.event)
+	var voice_index := _select_sfx_voice(cfg.priority)
+	if voice_index < 0:
+		return
+	var audio := sfx_players[voice_index]
 	sfx_index += 1
-	audio.stream = stream
-	audio.volume_db = -4.5 if kind in ["hit", "heavy", "impact_crack"] else -9.0
+	sfx_voice_serial += 1
+	sfx_voice_priorities[voice_index] = cfg.priority
+	sfx_voice_serials[voice_index] = sfx_voice_serial
+	audio.stream = sfx_stream_cache[cfg.event]
+	audio.volume_db = cfg.volume_db
 	audio.play()
 
-func _make_tone(freq: float, duration: float, noisy: bool) -> AudioStreamWAV:
-	var rate := 22050
-	var count := int(rate*duration)
-	var bytes := PackedByteArray()
-	bytes.resize(count*2)
-	for i in range(count):
-		var progress := float(i) / count
-		var env := pow(1.0 - progress, 2.15)
-		var pitch_drop := 1.0 - progress * 0.48
-		var wave := sin(TAU * freq * pitch_drop * i / rate)
-		if noisy:
-			var transient := maxf(1.0 - progress * 4.8, 0.0)
-			wave = wave * 0.62 + sin(TAU * freq * 2.35 * i / rate) * 0.17 + randf_range(-0.72, 0.72) * transient
-		var sample := int(clampf(wave*env,-1.0,1.0)*28000.0)
-		bytes[i*2] = sample & 0xff
-		bytes[i*2+1] = (sample >> 8) & 0xff
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = rate
-	wav.stereo = false
-	wav.data = bytes
-	return wav
+
+func _select_sfx_voice(priority: int) -> int:
+	for index in range(sfx_players.size()):
+		if not sfx_players[index].playing:
+			return index
+	var candidate := -1
+	for index in range(sfx_players.size()):
+		if sfx_voice_priorities[index] > priority:
+			continue
+		if (
+			candidate < 0
+			or sfx_voice_priorities[index] < sfx_voice_priorities[candidate]
+			or (
+				sfx_voice_priorities[index] == sfx_voice_priorities[candidate]
+				and sfx_voice_serials[index] < sfx_voice_serials[candidate]
+			)
+		):
+			candidate = index
+	return candidate

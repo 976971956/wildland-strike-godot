@@ -140,7 +140,7 @@ Exit gate: one hero and current enemies run entirely through reusable combat/dat
 Status: **in progress**
 
 - [x] M2-01: Eight-direction double-tap run and turning behavior.
-- [ ] M2-02: Four-hit combo and character-specific finisher windows.
+- [x] M2-02: Four-hit combo and character-specific finisher windows.
 - [ ] M2-03: Running, jump, and apex/dive attacks with counter-hit rules.
 - [ ] M2-04: Offensive command move and attack+jump defensive special.
 - [ ] M2-05: Full grab strikes, directional throws, combo throws, knockdown, and wake-up.
@@ -149,7 +149,7 @@ Status: **in progress**
 
 Exit gate: a graybox arena supports the complete combat grammar against three behaviorally distinct enemies at stable 60 FPS.
 
-Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ten deterministic suites pass 259/259 assertions.
+Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ranger now uses a typed four-hit chain: combo three is a non-launch bridge, while a deliberate input during its 0.20–0.04 second remaining-time window buffers the heavy launching finisher; early and missed inputs do not automate the chain. The finisher has distinct frame data, weapon geometry, damage, knockback, and animation selection. Target acquisition also skips enemies still in hit invulnerability so they cannot intercept a valid follow-up. Eleven deterministic suites pass 299/299 assertions.
 
 ### M3 — Polished Stage 1 vertical slice
 
@@ -235,9 +235,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M2-02 — Four-hit combo:** expand the current three-hit chain with character-specific finisher windows.
-2. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
-3. **M2-04 — Command moves:** add the offensive command move and attack+jump defensive special.
+1. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
+2. **M2-04 — Command moves:** add the offensive command move and attack+jump defensive special.
+3. **M2-05 — Grapple grammar:** add grab strikes, directional and combo throws, knockdown, and wake-up.
 
 ## Definition of done for every task
 

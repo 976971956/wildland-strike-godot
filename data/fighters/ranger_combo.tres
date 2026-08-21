@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ComboDefinition" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/combat/combo_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/player_combo_1.tres" id="2"]
+[ext_resource type="Resource" path="res://data/attacks/player_combo_2.tres" id="3"]
+[ext_resource type="Resource" path="res://data/attacks/player_combo_3.tres" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/player_combo_4.tres" id="5"]
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="6"]
+
+[resource]
+script = ExtResource("1")
+fighter_id = &"ranger"
+attacks = Array[ExtResource("6")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+finisher_from_step = 3
+finisher_step = 4
+finisher_input_open_remaining = 0.2
+finisher_input_close_remaining = 0.04
+input_buffer_duration = 0.24

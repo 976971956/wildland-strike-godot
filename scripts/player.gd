@@ -13,11 +13,7 @@ const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const AttackFrameDataScript = preload("res://core/combat/attack_frame_data.gd")
 const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
-const COMBO_ATTACKS := [
-	preload("res://data/attacks/player_combo_1.tres"),
-	preload("res://data/attacks/player_combo_2.tres"),
-	preload("res://data/attacks/player_combo_3.tres"),
-]
+const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
 const AIR_ATTACK = preload("res://data/attacks/player_air.tres")
 const THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
@@ -32,6 +28,7 @@ var attack_buffer := 0.0
 var attack_lunge := 0.0
 var combo_step := 0
 var combo_window := 0.0
+var finisher_armed := false
 var hurt_timer := 0.0
 var invulnerable := 0.0
 var special_timer := 0.0
@@ -93,6 +90,7 @@ func _physics_process(delta: float) -> void:
 	special_timer = maxf(special_timer - delta, 0.0)
 	if combo_window <= 0.0 and attack_timer <= 0.0:
 		combo_step = 0
+		finisher_armed = false
 
 	if z_height > 0.0 or z_velocity != 0.0:
 		z_velocity -= 980.0 * delta
@@ -135,10 +133,7 @@ func _apply_intent(intent) -> void:
 		z_height = 2.0
 		game.play_sfx("jump")
 	if intent.attack_pressed:
-		if attack_timer > 0.105:
-			attack_buffer = 0.24
-		else:
-			_start_attack()
+		_handle_attack_intent()
 	if intent.special_pressed and z_height <= 5.0 and health > 12 and special_timer <= 0.0:
 		_start_special()
 
@@ -146,11 +141,27 @@ func _apply_intent(intent) -> void:
 func set_intent_source(source) -> void:
 	input_source = source
 
+
+func _handle_attack_intent() -> void:
+	if combo_step == COMBO_DEFINITION.finisher_from_step and combo_window > 0.0:
+		if attack_timer <= 0.0:
+			_reset_combo()
+			_start_attack()
+		elif COMBO_DEFINITION.is_finisher_input_open(combo_step, attack_timer):
+			finisher_armed = true
+			attack_buffer = COMBO_DEFINITION.input_buffer_duration
+		return
+	if attack_timer > 0.105:
+		attack_buffer = COMBO_DEFINITION.input_buffer_duration
+	else:
+		_start_attack()
+
 func _start_attack() -> void:
 	if attack_timer > 0.11:
 		return
 	run_controller.cancel()
 	if is_instance_valid(grabbed_enemy):
+		_reset_combo()
 		state_machine.transition(FighterStateMachineScript.State.ATTACK)
 		current_attack = THROW_ATTACK
 		attack_hit_done = true
@@ -166,8 +177,14 @@ func _start_attack() -> void:
 		combo_step = 4
 		current_attack = AIR_ATTACK
 	else:
-		combo_step = combo_step % 3 + 1 if combo_window > 0.0 else 1
-		current_attack = COMBO_ATTACKS[combo_step - 1]
+		if combo_step == COMBO_DEFINITION.finisher_from_step and combo_window > 0.0:
+			combo_step = COMBO_DEFINITION.finisher_step if finisher_armed else 1
+		elif combo_window > 0.0:
+			combo_step = combo_step % COMBO_DEFINITION.attacks.size() + 1
+		else:
+			combo_step = 1
+		current_attack = COMBO_DEFINITION.attack_for_step(combo_step)
+		finisher_armed = false
 	attack_timer = current_attack.duration
 	# Air attacks keep any still-running ground combo window, matching the
 	# original controller behavior. Ground combo resources refresh it.
@@ -179,6 +196,7 @@ func _start_attack() -> void:
 
 func _start_special() -> void:
 	run_controller.cancel()
+	_reset_combo()
 	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
 	current_attack = SPECIAL_ATTACK
 	attack_hitbox.deactivate()
@@ -212,7 +230,7 @@ func _check_attack_hit() -> void:
 	var best: Node = null
 	var best_dist := 9999.0
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(enemy) or enemy.is_defeated:
+		if not is_instance_valid(enemy) or enemy.is_defeated or enemy.invulnerable > 0.0:
 			continue
 		var dx: float = (enemy.position.x - position.x) * facing
 		var dy: float = absf(enemy.position.y - position.y)
@@ -261,6 +279,7 @@ func take_hit(damage: int, knockback: Vector2) -> void:
 	if invulnerable > 0.0 or is_defeated:
 		return
 	run_controller.cancel()
+	_reset_combo()
 	if is_instance_valid(grabbed_enemy):
 		grabbed_enemy.release_grab()
 		grabbed_enemy = null
@@ -282,6 +301,7 @@ func take_hit(damage: int, knockback: Vector2) -> void:
 
 func revive(respawn_position: Vector2) -> void:
 	run_controller.cancel()
+	_reset_combo()
 	health = MAX_HEALTH
 	is_defeated = false
 	invulnerable = 2.2
@@ -298,6 +318,13 @@ func heal(amount: int) -> void:
 func give_weapon() -> void:
 	weapon_hits = 12
 	game.play_sfx("pickup")
+
+
+func _reset_combo() -> void:
+	combo_step = 0
+	combo_window = 0.0
+	attack_buffer = 0.0
+	finisher_armed = false
 
 
 func _sync_fighter_state() -> void:
@@ -353,6 +380,8 @@ func _visual_frame() -> Vector2i:
 			return Vector2i(1 if attack_timer < 0.18 else 0, 1)
 		if combo_step == 2:
 			return Vector2i(2, 1)
+		if combo_step == 4:
+			return Vector2i(4, 1)
 		return Vector2i(3, 1)
 	if velocity.length() > 20.0:
 		return Vector2i(2 + int(walk_phase) % 3, 0)

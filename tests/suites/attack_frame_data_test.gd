@@ -5,6 +5,7 @@ const ATTACKS := [
 	preload("res://data/attacks/player_combo_1.tres"),
 	preload("res://data/attacks/player_combo_2.tres"),
 	preload("res://data/attacks/player_combo_3.tres"),
+	preload("res://data/attacks/player_combo_4.tres"),
 	preload("res://data/attacks/player_air.tres"),
 	preload("res://data/attacks/player_throw.tres"),
 	preload("res://data/attacks/player_special.tres"),
@@ -25,14 +26,16 @@ func run(test) -> void:
 
 	var combo_one = ATTACKS[0]
 	var combo_three = ATTACKS[2]
-	var air_attack = ATTACKS[3]
-	var throw_attack = ATTACKS[4]
-	var special_attack = ATTACKS[5]
-	var grunt_attack = ATTACKS[6]
-	var boss_attack = ATTACKS[9]
+	var combo_four = ATTACKS[3]
+	var air_attack = ATTACKS[4]
+	var throw_attack = ATTACKS[5]
+	var special_attack = ATTACKS[6]
+	var grunt_attack = ATTACKS[7]
+	var boss_attack = ATTACKS[10]
 	test.check(combo_one.duration == 0.26 and combo_one.hit_trigger_remaining == 0.18, "combo-one timing drifted")
 	test.check(combo_one.damage == 12 and combo_one.knockback == Vector2(118, -35), "combo-one outcome drifted")
-	test.check(combo_three.duration == 0.43 and combo_three.launch, "combo finisher data drifted")
+	test.check(combo_three.duration == 0.32 and not combo_three.launch, "combo bridge data drifted")
+	test.check(combo_four.duration == 0.48 and combo_four.launch, "combo finisher data drifted")
 	test.check(air_attack.box_half_extents == Vector2(31, 28), "air-attack reach drifted")
 	test.check(throw_attack.knockback == Vector2(560, -80), "throw force drifted")
 	test.check(special_attack.self_damage == 7 and special_attack.effect_radius == 115.0, "special cost or radius drifted")

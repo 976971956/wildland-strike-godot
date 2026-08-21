@@ -29,6 +29,10 @@ var game: Node
 func setup(p_game: Node) -> void:
 	game = p_game
 	add_to_group("player")
+	# Player and enemies block each other, while enemies use a separate layer so
+	# they can steer apart without forming a rigid moving clump.
+	collision_layer = 1
+	collision_mask = 2
 	var shape := CollisionShape2D.new()
 	var capsule := CapsuleShape2D.new()
 	capsule.radius = 18.0

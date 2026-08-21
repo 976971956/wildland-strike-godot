@@ -26,6 +26,7 @@ var grabbed_owner: Node = null
 var fall_velocity := Vector2.ZERO
 var death_timer := 0.0
 var walk_phase := 0.0
+var approach_lane_offset := 0.0
 var tint := Color("#a84a55")
 
 func setup(p_game: Node, p_player: Node, p_type: String) -> void:
@@ -33,6 +34,12 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	player = p_player
 	enemy_type = p_type
 	add_to_group("enemies")
+	# Enemies collide with the player (layer 1), but not with one another.
+	# Soft separation below keeps their spacing natural instead of making them
+	# push each other around as one joined body.
+	collision_layer = 2
+	collision_mask = 1
+	approach_lane_offset = float(posmod(int(get_instance_id()), 5) - 2) * 9.0
 	if p_type == "brute":
 		max_health = 78
 		health = 78
@@ -103,10 +110,12 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _think(_delta: float) -> void:
-	var offset: Vector2 = player.position - position
-	facing = 1 if offset.x > 0 else -1
-	var y_dist := absf(offset.y)
-	var x_dist := absf(offset.x)
+	var player_offset: Vector2 = player.position - position
+	var offset: Vector2 = player.position + Vector2(0.0, approach_lane_offset) - position
+	facing = 1 if player_offset.x > 0 else -1
+	var y_dist := absf(player_offset.y)
+	var lane_y_dist := absf(offset.y)
+	var x_dist := absf(player_offset.x)
 	if attack_timer > 0.0:
 		velocity = Vector2.ZERO
 		return
@@ -119,9 +128,33 @@ func _think(_delta: float) -> void:
 	var target := Vector2.ZERO
 	if x_dist > 48.0:
 		target.x = signf(offset.x)
-	if y_dist > 18.0:
+	if lane_y_dist > 18.0:
 		target.y = signf(offset.y) * 0.72
-	velocity = target.normalized() * speed
+	var desired_velocity := target.normalized() * speed
+	var separation := _enemy_separation()
+	if separation != Vector2.ZERO:
+		desired_velocity += separation * speed * 0.92
+	velocity = desired_velocity.limit_length(speed)
+
+func _enemy_separation() -> Vector2:
+	var separation := Vector2.ZERO
+	const COMFORT_DISTANCE := 58.0
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if other == self or not is_instance_valid(other) or other.is_defeated or other.grabbed:
+			continue
+		var away: Vector2 = position - other.position
+		var distance := away.length()
+		if distance >= COMFORT_DISTANCE:
+			continue
+		if distance < 0.01:
+			var side := -1.0 if get_instance_id() < other.get_instance_id() else 1.0
+			away = Vector2(0.35, side)
+			distance = 1.0
+		# Favor vertical spreading so enemies still approach from both sides
+		# without stacking their sprites on the same depth lane.
+		away = Vector2(away.x * 0.48, away.y * 1.35).normalized()
+		separation += away * (1.0 - distance / COMFORT_DISTANCE)
+	return separation.limit_length(1.0)
 
 func _check_attack() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or not is_instance_valid(player):

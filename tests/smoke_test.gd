@@ -24,8 +24,20 @@ func _run() -> void:
 	game.player.position.x = 500.0
 	await process_frame
 	check(game.wave_active and game.remaining_enemies == 3, "first wave did not spawn")
+	check(game.player.collision_layer == 1 and game.player.collision_mask == 2, "player collision layers are incorrect")
+	var spawned_enemies := get_nodes_in_group("enemies")
+	check(spawned_enemies.size() == 3, "expected three spawned enemies")
+	if spawned_enemies.size() >= 2:
+		var first_enemy = spawned_enemies[0]
+		var second_enemy = spawned_enemies[1]
+		check(first_enemy.collision_layer == 2 and first_enemy.collision_mask == 1, "enemy collision layers are incorrect")
+		first_enemy.position = Vector2(720.0, 540.0)
+		second_enemy.position = Vector2(722.0, 540.0)
+		var crowded_distance: float = first_enemy.position.distance_to(second_enemy.position)
+		await create_timer(0.28).timeout
+		check(first_enemy.position.distance_to(second_enemy.position) > crowded_distance + 5.0, "nearby enemies failed to separate")
 	# Let actors run briefly so visual smoke captures contain live combat poses.
-	await create_timer(0.5).timeout
+	await create_timer(0.22).timeout
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.take_hit(999, Vector2(300,0), true)
 	await create_timer(0.9).timeout

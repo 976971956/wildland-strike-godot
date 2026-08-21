@@ -10,6 +10,7 @@ var banner := ""
 var banner_sub := ""
 var banner_time := 0.0
 var mode := "title"
+var stage_time_remaining := 0.0
 var font: Font
 
 func _ready() -> void:
@@ -50,6 +51,11 @@ func set_mode(value: String) -> void:
 	mode = value
 	queue_redraw()
 
+
+func set_stage_time(seconds: float) -> void:
+	stage_time_remaining = maxf(0.0, seconds)
+	queue_redraw()
+
 func _draw() -> void:
 	# Arcade HUD panel.
 	draw_rect(Rect2(22,20,430,82), Color(0.035,0.045,0.07,0.88))
@@ -62,6 +68,14 @@ func _draw() -> void:
 	for x in range(43,396,22):
 		draw_line(Vector2(x,65),Vector2(x,80),Color(0,0,0,0.18),2)
 	draw_string(font,Vector2(406,82),"×%d"%lives,HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#b7e8df"))
+	if mode == "playing":
+		var total_seconds := ceili(stage_time_remaining)
+		var minutes := int(total_seconds / 60)
+		var seconds := total_seconds % 60
+		var timer_color := Color("#ef5b50") if total_seconds <= 30 else Color("#f4dc83")
+		draw_rect(Rect2(578, 20, 124, 48), Color(0.035, 0.045, 0.07, 0.88))
+		draw_rect(Rect2(578, 20, 124, 4), timer_color)
+		draw_string(font, Vector2(578, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, 124, 24, timer_color)
 
 	# Keyboard hints are hidden on touch devices where virtual controls replace them.
 	if not DisplayServer.is_touchscreen_available() and "--touch-preview" not in OS.get_cmdline_user_args():

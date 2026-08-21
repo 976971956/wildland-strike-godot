@@ -9,6 +9,7 @@ var phase := 0.0
 func setup(p_game, p_kind: String) -> void:
 	game = p_game
 	kind = p_kind
+	add_to_group("pickups")
 	z_index = int(position.y) + 1
 
 func _process(delta: float) -> void:

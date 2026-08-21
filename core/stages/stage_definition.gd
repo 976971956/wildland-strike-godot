@@ -13,6 +13,7 @@ func is_valid_stage() -> bool:
 		return false
 	var scene_ids := {}
 	var previous_end := -1.0
+	var encounter_ids := {}
 	for scene in scenes:
 		if scene == null or not scene.has_method("is_valid_scene") or not scene.is_valid_scene():
 			return false
@@ -20,6 +21,12 @@ func is_valid_stage() -> bool:
 			return false
 		scene_ids[scene.scene_id] = true
 		previous_end = scene.end_x
+		for encounter in scene.encounters:
+			if encounter_ids.has(encounter.encounter_id):
+				return false
+			if encounter.unlock_right > end_x():
+				return false
+			encounter_ids[encounter.encounter_id] = true
 	return true
 
 

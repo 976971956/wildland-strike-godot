@@ -156,7 +156,7 @@ Evidence (2026-08-22): a reusable run controller quantizes all eight directions,
 Status: **in progress**
 
 - [x] Data-driven stage/scene and encounter director.
-- [ ] Three distinct scenes with transitions, lock zones, breakables, drops, hazards, and stage timer.
+- [x] Three distinct scenes with transitions, lock zones, breakables, drops, hazards, and stage timer.
 - [ ] Basic brawler, charging heavy, ranged hunter, and neutral raptor behaviors.
 - [ ] Three weapon families: melee/throwable, explosive, and firearm with ammo.
 - [ ] One unique two-phase boss with dialogue and reinforcement logic.
@@ -164,7 +164,7 @@ Status: **in progress**
 
 Exit gate: Stage 1 alone is release-quality and demonstrates the final art, combat, content, test, and performance standards.
 
-Evidence (2026-08-22): Stage 1 content now loads through typed stage, scene, encounter, wave, and enemy-spawn resources instead of a hard-coded `game.gd` wave table. The independent encounter director owns trigger progression, arena bounds, sequential reinforcement delays, live-enemy accounting, clear signals, final stage completion, and benchmark force-starts while the game remains responsible for entities, rewards, HUD, and scoring. The original four encounters and fourteen enemies migrated without score or baseline-flow drift; the courtyard now demonstrates a tested two-group reinforcement sequence. Eighteen deterministic suites pass 635/635 assertions. The final exported four-enemy Web benchmark averages 121.56 FPS over 300 frames with zero frames above 20 ms and no console errors; Web export, iOS project export, and unsigned arm64 Xcode build pass.
+Evidence (2026-08-22): Stage 1 content now loads through typed stage, scene, encounter, wave, enemy-spawn, and environment-object resources instead of a hard-coded `game.gd` wave table. The independent encounter director owns trigger progression, scene-entry transitions, arena bounds, sequential reinforcement delays, live-enemy accounting, clear signals, final stage completion, and benchmark force-starts while the game remains responsible for entities, rewards, HUD, scoring, and the stage clock. The original four encounters and fourteen enemies migrated without score or baseline-flow drift; the courtyard demonstrates a tested two-group reinforcement sequence. Ruined Avenue, Flooded Courtyard, and Processing Plant now form contiguous data-driven segments with separate color treatments, foreground landmarks, entry cards, and environment identities. Three breakable crates accept the player's ordinary attack hitboxes, award configured score, and produce deterministic food/weapon drops. A bounded rolling drum damages and knocks down either faction with contact cooldown. A visible 240-second timer enters a tested timeout state. Nineteen deterministic suites pass 683/683 assertions. The final exported four-enemy Web benchmark averages 122.69 FPS over 300 frames with zero frames above 20 ms and no console errors; visual inspection shows the three scene treatments and environment actors correctly. Web export, iOS project export, and unsigned arm64 Xcode build pass.
 
 ### M4 — Four heroes and local cooperation
 
@@ -237,9 +237,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M3 — Stage 1 encounters:** build three distinct scene segments, transitions, lock zones, hazards, breakables, drops, and a stage timer.
-2. **M3 — Stage 1 roster:** add a ranged hunter, neutral raptor targeting, and the first three weapon families.
-3. **M3 — Stage 1 boss:** replace the placeholder boss with a unique two-phase fight, dialogue, and reinforcement logic.
+1. **M3 — Stage 1 roster:** add a ranged hunter, neutral raptor targeting, and the first three weapon families.
+2. **M3 — Stage 1 boss:** replace the placeholder boss with a unique two-phase fight, dialogue, and reinforcement logic.
+3. **M3 — Stage 1 presentation:** replace remaining placeholder animation/audio/UI coverage with vertical-slice quality assets and flow.
 
 ## Definition of done for every task
 
@@ -266,6 +266,6 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Player and enemies switch between very few frames; many combat states share art.
 - The enemy roster still lacks ranged specialists, explosive users, neutral dinosaur targeting, elites, and unique boss state machines.
 - Four enemies converging on one player can still overlap visibly even though their collision bodies no longer move as a rigid clump.
-- The stage is one background repeated four times, not a true multi-scene campaign.
+- Stage 1 now has three visually treated data segments, but they still derive from one base background asset and are not yet final-quality independent scene art.
 - No music, character selection, multiplayer, firearm/ammo system, breakables, stage timer, vehicle, continue countdown, or high-score persistence exists yet.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

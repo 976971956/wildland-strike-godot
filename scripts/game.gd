@@ -4,12 +4,14 @@ const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
 const PickupScript = preload("res://scripts/pickup.gd")
 const ImpactScript = preload("res://scripts/impact_fx.gd")
+const StageObjectScript = preload("res://scripts/stage_object.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 
 @onready var actors: Node2D = $Actors
 @onready var camera: Camera2D = $Camera2D
 @onready var hud: Control = $HUD/UI
+@onready var world_art: Node2D = $WorldArt
 
 var player
 var stage_limit := 1080.0
@@ -23,6 +25,8 @@ var wave_active: bool:
 var remaining_enemies: int:
 	get:
 		return encounter_director.remaining_enemies if is_instance_valid(encounter_director) else 0
+var stage_time_remaining := 0.0
+var stage_timed_out := false
 var score := 0
 var lives := 2
 var state := "title"
@@ -43,7 +47,9 @@ func _ready() -> void:
 	encounter_director.configure(self, STAGE_1_DEFINITION)
 	encounter_director.encounter_started.connect(_on_encounter_started)
 	encounter_director.encounter_cleared.connect(_on_encounter_cleared)
+	encounter_director.scene_entered.connect(_on_scene_entered)
 	encounter_director.stage_completed.connect(_victory)
+	world_art.configure(STAGE_1_DEFINITION)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
 		for i in range(4):
@@ -51,6 +57,9 @@ func _ready() -> void:
 			add_child(audio)
 			sfx_players.append(audio)
 	_create_player()
+	_create_stage_objects()
+	stage_time_remaining = STAGE_1_DEFINITION.time_limit_seconds
+	hud.set_stage_time(stage_time_remaining)
 	hud.set_mode("title")
 	set_process(true)
 
@@ -74,6 +83,11 @@ func _process(delta: float) -> void:
 			get_tree().reload_current_scene()
 		return
 	if not is_instance_valid(player):
+		return
+	stage_time_remaining = maxf(0.0, stage_time_remaining - delta)
+	hud.set_stage_time(stage_time_remaining)
+	if stage_time_remaining <= 0.0:
+		_stage_timeout()
 		return
 	var half_view_width := get_viewport_rect().size.x * 0.5
 	var target_x: float = clampf(player.position.x + 280.0, half_view_width, 4200.0 - half_view_width)
@@ -99,6 +113,21 @@ func spawn_enemy(pos: Vector2, type: String) -> void:
 	enemy.position = pos
 	enemy.setup(self,player,type)
 
+
+func spawn_pickup(pos: Vector2, item_id: StringName) -> void:
+	var item := PickupScript.new()
+	actors.add_child(item)
+	item.position = pos
+	item.setup(self, String(item_id))
+
+
+func _create_stage_objects() -> void:
+	for scene in STAGE_1_DEFINITION.scenes:
+		for object_definition in scene.environment_objects:
+			var stage_object := StageObjectScript.new()
+			actors.add_child(stage_object)
+			stage_object.setup(self, object_definition)
+
 func enemy_removed(enemy: Node) -> void:
 	encounter_director.enemy_removed(enemy)
 
@@ -114,11 +143,21 @@ func _on_encounter_cleared(encounter: Resource, _encounter_index: int) -> void:
 		_spawn_reward(encounter.reward_id)
 
 
+func _on_scene_entered(scene: Resource, _scene_index: int) -> void:
+	hud.show_banner(scene.display_name, scene.transition_subtitle, 1.6)
+
+
 func _spawn_reward(item_id: StringName) -> void:
-	var item := PickupScript.new()
-	actors.add_child(item)
-	item.position = player.position + Vector2(105,randf_range(-35,35))
-	item.setup(self, String(item_id))
+	spawn_pickup(player.position + Vector2(105,randf_range(-35,35)), item_id)
+
+
+func _stage_timeout() -> void:
+	if stage_timed_out or state != "playing":
+		return
+	stage_timed_out = true
+	state = "gameover"
+	player.set_physics_process(false)
+	hud.set_mode("gameover")
 
 func add_score(amount: int) -> void:
 	score += amount
@@ -143,6 +182,8 @@ func _on_player_defeated() -> void:
 		hud.set_mode("gameover")
 
 func _victory() -> void:
+	if state != "playing":
+		return
 	state = "victory"
 	player.set_physics_process(false)
 	hud.set_mode("victory")

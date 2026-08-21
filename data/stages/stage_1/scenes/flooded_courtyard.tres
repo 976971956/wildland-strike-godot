@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/encounters/courtyard_reinforcement.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/encounters/factory_pressure.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/objects/courtyard_drum.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/objects/courtyard_crate.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"flooded_courtyard"
+display_name = "FLOODED COURTYARD"
+transition_subtitle = "WATCH THE ROLLING DRUM"
+start_x = 1100.0
+end_x = 2600.0
+environment_id = &"flooded_industrial_yard"
+visual_theme = 1
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

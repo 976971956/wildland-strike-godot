@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"courtyard_drum"
+kind = 1
+position = Vector2(1750, 535)
+size = Vector2(58, 58)
+contact_damage = 12
+move_speed = 135.0
+move_min_x = 1450.0
+move_max_x = 2450.0
+initial_direction = 1

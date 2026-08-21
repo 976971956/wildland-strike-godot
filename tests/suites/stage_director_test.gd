@@ -10,11 +10,18 @@ func run(test) -> void:
 	test.check(STAGE_1.stage_id == &"stage_1" and STAGE_1.stage_number == 1, "Stage 1 identity drifted")
 	test.check(STAGE_1.display_name == "THE RUINED DISTRICT", "Stage 1 display name drifted")
 	test.check(STAGE_1.time_limit_seconds == 240.0, "Stage 1 time limit drifted")
-	test.check(STAGE_1.scenes.size() == 1, "Stage 1 foundation should contain one prototype scene")
-	var scene: Resource = STAGE_1.scenes[0]
-	test.check(scene.is_valid_scene(), "prototype scene definition is invalid")
-	test.check(scene.environment_id == &"overgrown_city_sunset", "prototype environment id drifted")
-	test.check(scene.start_x == 0.0 and scene.end_x == 4200.0, "prototype scene bounds drifted")
+	test.check(STAGE_1.scenes.size() == 3, "Stage 1 should contain three scene segments")
+	var expected_scene_ids := [&"ruined_avenue", &"flooded_courtyard", &"processing_plant"]
+	var expected_environment_ids := [&"overgrown_city_sunset", &"flooded_industrial_yard", &"red_alert_plant"]
+	var previous_scene_end := 0.0
+	for index in range(STAGE_1.scenes.size()):
+		var scene: Resource = STAGE_1.scenes[index]
+		test.check(scene.is_valid_scene(), "%s scene definition is invalid" % scene.scene_id)
+		test.check(scene.scene_id == expected_scene_ids[index], "scene order or identity drifted")
+		test.check(scene.environment_id == expected_environment_ids[index], "scene environment identity drifted")
+		test.check(scene.start_x == previous_scene_end, "scene segments are not contiguous")
+		previous_scene_end = scene.end_x
+	test.check(previous_scene_end == 4200.0, "scene segments do not cover the full stage")
 	var encounters: Array[Resource] = STAGE_1.all_encounters()
 	test.check(encounters.size() == 4, "Stage 1 encounter count drifted")
 	var encounter_ids := {}

@@ -3,12 +3,15 @@ extends Node
 
 signal encounter_started(encounter: Resource, encounter_index: int)
 signal encounter_cleared(encounter: Resource, encounter_index: int)
+signal scene_entered(scene: Resource, scene_index: int)
 signal stage_completed
 
 var game: Node
 var stage_definition: Resource
 var encounters: Array[Resource] = []
+var scenes: Array[Resource] = []
 var current_encounter_index := 0
+var current_scene_index := -1
 var current_wave_index := -1
 var active := false
 var remaining_enemies := 0
@@ -20,7 +23,9 @@ func configure(p_game: Node, p_stage_definition: Resource) -> void:
 	game = p_game
 	stage_definition = p_stage_definition
 	encounters.clear()
+	scenes.clear()
 	current_encounter_index = 0
+	current_scene_index = -1
 	current_wave_index = -1
 	active = false
 	remaining_enemies = 0
@@ -33,6 +38,7 @@ func configure(p_game: Node, p_stage_definition: Resource) -> void:
 		and stage_definition.is_valid_stage()
 	):
 		encounters = stage_definition.all_encounters()
+		scenes = stage_definition.scenes
 	if is_instance_valid(game) and not encounters.is_empty():
 		game.stage_limit = encounters[0].arena_right
 
@@ -40,6 +46,7 @@ func configure(p_game: Node, p_stage_definition: Resource) -> void:
 func tick(delta: float, player_x: float) -> void:
 	if completed:
 		return
+	_update_scene(player_x)
 	if active:
 		if remaining_enemies == 0 and reinforcement_timer > 0.0:
 			reinforcement_timer = maxf(0.0, reinforcement_timer - delta)
@@ -81,6 +88,17 @@ func get_encounter_count() -> int:
 
 func get_encounter(index: int) -> Resource:
 	return encounters[index] if index >= 0 and index < encounters.size() else null
+
+
+func _update_scene(player_x: float) -> void:
+	for index in range(scenes.size()):
+		var scene: Resource = scenes[index]
+		if player_x < scene.start_x or player_x >= scene.end_x:
+			continue
+		if current_scene_index != index:
+			current_scene_index = index
+			scene_entered.emit(scene, index)
+		return
 
 
 func _start_current_encounter() -> void:

@@ -327,7 +327,36 @@ func _check_attack_hit() -> void:
 			if dist < best_dist:
 				best = enemy
 				best_dist = dist
+	if best == null:
+		for stage_object in get_tree().get_nodes_in_group("breakables"):
+			if not is_instance_valid(stage_object) or stage_object.is_defeated:
+				continue
+			var dx: float = (stage_object.position.x - position.x) * facing
+			var dy: float = absf(stage_object.position.y - position.y)
+			if dx < -18.0 or not attack_hitbox.overlaps(stage_object.hurtbox):
+				continue
+			var dist: float = absf(dx) + dy
+			if dist < best_dist:
+				best = stage_object
+				best_dist = dist
 	if best:
+		if best.is_in_group("breakables"):
+			var used_weapon := weapon_hits > 0
+			var damage: int = current_attack.damage
+			if used_weapon:
+				damage += current_attack.weapon_bonus_damage
+				weapon_hits -= 1
+			var impact_position: Vector2 = best.position - Vector2(0.0, best.definition.size.y * 0.45)
+			if best.take_stage_hit(damage, facing):
+				var impact_strength: int = (
+					current_attack.weapon_impact_strength
+					if used_weapon and current_attack.weapon_impact_strength > 0
+					else current_attack.impact_strength
+				)
+				game.hit_confirm(impact_position, impact_strength, facing, true, current_attack.impact_profile)
+				_apply_attacker_recoil(current_attack.impact_profile)
+			_finish_attack_pulse()
+			return
 		var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, best)
 		if not AttackPriorityRulesScript.allows_hit(priority_outcome):
 			game.hit_confirm((position + best.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)

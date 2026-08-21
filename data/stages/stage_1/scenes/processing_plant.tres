@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/encounters/plant_boss.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/objects/plant_crate.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"processing_plant"
+display_name = "PROCESSING PLANT"
+transition_subtitle = "THE BLOCKADE IS AHEAD"
+start_x = 2600.0
+end_x = 4200.0
+environment_id = &"red_alert_plant"
+visual_theme = 2
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3")])

@@ -66,7 +66,7 @@ func _draw() -> void:
 	# Keyboard hints are hidden on touch devices where virtual controls replace them.
 	if not DisplayServer.is_touchscreen_available() and "--touch-preview" not in OS.get_cmdline_user_args():
 		draw_rect(Rect2(22,674,715,30),Color(0.02,0.03,0.045,0.72))
-		draw_string(font,Vector2(35,696),"MOVE WASD/ARROWS   ATTACK J/Z   JUMP K/X   SPECIAL L/C",HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("#dbe4df"))
+		draw_string(font,Vector2(35,696),"MOVE WASD/ARROWS   ATTACK J/Z   JUMP K/X   COMMAND DOWN>FORWARD+ATTACK   SPECIAL ATTACK+JUMP",HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("#dbe4df"))
 
 	if boss_max > 0 and boss_health > 0 and mode == "playing":
 		draw_rect(Rect2(778,34,466,49),Color(0.04,0.025,0.04,0.9))

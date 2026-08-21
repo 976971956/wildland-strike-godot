@@ -16,6 +16,7 @@ const ATTACKS := [
 	preload("res://data/attacks/enemy_brute.tres"),
 	preload("res://data/attacks/enemy_raptor.tres"),
 	preload("res://data/attacks/enemy_boss.tres"),
+	preload("res://data/attacks/player_command.tres"),
 ]
 
 
@@ -38,6 +39,7 @@ func run(test) -> void:
 	var special_attack = ATTACKS[9]
 	var grunt_attack = ATTACKS[10]
 	var boss_attack = ATTACKS[13]
+	var command_attack = ATTACKS[14]
 	test.check(combo_one.duration == 0.26 and combo_one.hit_trigger_remaining == 0.18, "combo-one timing drifted")
 	test.check(combo_one.damage == 12 and combo_one.knockback == Vector2(118, -35), "combo-one outcome drifted")
 	test.check(combo_three.duration == 0.32 and not combo_three.launch, "combo bridge data drifted")
@@ -50,6 +52,7 @@ func run(test) -> void:
 	test.check(special_attack.self_damage == 7 and special_attack.effect_radius == 115.0, "special cost or radius drifted")
 	test.check(grunt_attack.damage == 8 and grunt_attack.circle_radius == 47.0, "grunt attack data drifted")
 	test.check(boss_attack.damage == 18 and boss_attack.duration == 0.52, "boss attack data drifted")
+	test.check(command_attack.damage == 24 and command_attack.knockback == Vector2(560, -70), "command-attack data drifted")
 	var weapon_geometry: Array[Vector2] = combo_one.box_geometry(true)
 	test.check(weapon_geometry == [Vector2(40, 0), Vector2(34, 28)], "weapon reach data drifted")
 	var invalid_attack = AttackFrameDataScript.new()

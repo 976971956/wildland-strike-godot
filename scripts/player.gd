@@ -14,11 +14,13 @@ const AttackFrameDataScript = preload("res://core/combat/attack_frame_data.gd")
 const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
 const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
+const CommandMoveControllerScript = preload("res://actors/fighters/command_move_controller.gd")
 const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
 const RUN_ATTACK = preload("res://data/attacks/player_run.tres")
 const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
 const APEX_ATTACK = preload("res://data/attacks/player_apex.tres")
 const DIVE_ATTACK = preload("res://data/attacks/player_dive.tres")
+const COMMAND_ATTACK = preload("res://data/attacks/player_command.tres")
 const THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
 const RUN_SPEED_MULTIPLIER := 1.65
@@ -36,6 +38,7 @@ var finisher_armed := false
 var hurt_timer := 0.0
 var invulnerable := 0.0
 var special_timer := 0.0
+var special_connected := false
 var last_hit_was_counter := false
 var grabbed_enemy: Node = null
 var weapon_hits := 0
@@ -48,6 +51,7 @@ var attack_hitbox
 var current_attack
 var input_source
 var run_controller = RunControllerScript.new()
+var command_controller = CommandMoveControllerScript.new()
 var is_running: bool:
 	get:
 		return run_controller.running
@@ -87,6 +91,7 @@ func _physics_process(delta: float) -> void:
 	z_index = int(position.y)
 	attack_timer = maxf(attack_timer - delta, 0.0)
 	run_controller.tick(delta)
+	command_controller.tick(delta)
 	attack_buffer = maxf(attack_buffer - delta, 0.0)
 	attack_lunge = move_toward(attack_lunge, 0.0, 760.0 * delta)
 	combo_window = maxf(combo_window - delta, 0.0)
@@ -128,19 +133,31 @@ func _apply_intent(intent) -> void:
 		return
 	var input_vec: Vector2 = intent.move
 	run_controller.update(input_vec)
+	command_controller.update(input_vec, facing)
 	var movement_speed := SPEED * (RUN_SPEED_MULTIPLIER if is_running else 1.0)
 	var move_scale := 0.42 if attack_timer > 0.0 else 1.0
 	velocity = input_vec * movement_speed * move_scale + Vector2(facing * attack_lunge, 0.0)
 	if absf(input_vec.x) > 0.15:
 		facing = 1 if input_vec.x > 0.0 else -1
+	var defensive_chord: bool = intent.attack_pressed and intent.jump_pressed
+	if defensive_chord:
+		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
+			_start_special()
+		return
+	if intent.special_pressed:
+		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
+			_start_special()
+		return
 	if intent.jump_pressed and z_height <= 0.0 and attack_timer <= 0.0:
+		command_controller.cancel()
 		z_velocity = 510.0
 		z_height = 2.0
 		game.play_sfx("jump")
 	if intent.attack_pressed:
-		_handle_attack_intent()
-	if intent.special_pressed and z_height <= 5.0 and health > 12 and special_timer <= 0.0:
-		_start_special()
+		if z_height <= 0.0 and attack_timer <= 0.105 and command_controller.consume_attack():
+			_start_command_attack()
+		else:
+			_handle_attack_intent()
 
 
 func set_intent_source(source) -> void:
@@ -166,6 +183,7 @@ func _start_attack() -> void:
 		return
 	var was_running := is_running
 	run_controller.cancel()
+	command_controller.cancel()
 	if is_instance_valid(grabbed_enemy):
 		_reset_combo()
 		state_machine.transition(FighterStateMachineScript.State.ATTACK)
@@ -216,21 +234,37 @@ func _aerial_attack_for_velocity():
 		z_velocity = selected_attack.vertical_velocity_override
 	return selected_attack
 
+
+func _start_command_attack() -> void:
+	if attack_timer > 0.105 or z_height > 0.0:
+		return
+	run_controller.cancel()
+	command_controller.cancel()
+	_reset_combo()
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
+	current_attack = COMMAND_ATTACK
+	attack_hit_done = false
+	attack_timer = current_attack.duration
+	attack_lunge = current_attack.lunge_speed
+	_configure_attack_hitbox()
+	game.play_sfx(current_attack.sound_event)
+
 func _start_special() -> void:
 	run_controller.cancel()
+	command_controller.cancel()
 	_reset_combo()
 	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
 	current_attack = SPECIAL_ATTACK
 	attack_hitbox.deactivate()
-	health -= current_attack.self_damage
-	health_changed.emit(health, MAX_HEALTH)
+	special_connected = false
 	special_timer = current_attack.duration
 	attack_timer = current_attack.duration
 	attack_hit_done = true
 	invulnerable = current_attack.invulnerable_duration
 	game.play_sfx(current_attack.sound_event)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if is_instance_valid(enemy) and position.distance_to(enemy.position) < current_attack.effect_radius:
+		if is_instance_valid(enemy) and not enemy.is_defeated and position.distance_to(enemy.position) < current_attack.effect_radius:
+			var enemy_health_before: int = enemy.health
 			enemy.take_hit(
 				current_attack.damage,
 				Vector2(
@@ -239,9 +273,14 @@ func _start_special() -> void:
 				),
 				current_attack.launch
 			)
-			var hit_direction := 1 if enemy.position.x >= position.x else -1
-			game.hit_confirm(enemy.position - Vector2(0, 50), current_attack.impact_strength, hit_direction, false)
-	game._hit_stop(current_attack.hit_stop_duration)
+			if enemy.health < enemy_health_before:
+				special_connected = true
+				var hit_direction := 1 if enemy.position.x >= position.x else -1
+				game.hit_confirm(enemy.position - Vector2(0, 50), current_attack.impact_strength, hit_direction, false)
+	if special_connected:
+		health = maxi(health - current_attack.self_damage, 1)
+		health_changed.emit(health, MAX_HEALTH)
+		game._hit_stop(current_attack.hit_stop_duration)
 
 func _check_attack_hit() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or special_timer > 0.0 or current_attack == null:
@@ -305,6 +344,7 @@ func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stu
 	if invulnerable > 0.0 or is_defeated:
 		return
 	run_controller.cancel()
+	command_controller.cancel()
 	_reset_combo()
 	last_hit_was_counter = counter_hit
 	if counter_hit:
@@ -332,6 +372,7 @@ func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stu
 
 func revive(respawn_position: Vector2) -> void:
 	run_controller.cancel()
+	command_controller.cancel()
 	_reset_combo()
 	health = MAX_HEALTH
 	is_defeated = false
@@ -415,6 +456,8 @@ func _visual_frame() -> Vector2i:
 	if attack_timer > 0.0:
 		if current_attack != null and current_attack.attack_id == &"player_run_attack":
 			return Vector2i(4, 1)
+		if current_attack != null and current_attack.attack_id == &"player_command_attack":
+			return Vector2i(3, 1)
 		if combo_step == 1:
 			return Vector2i(1 if attack_timer < 0.18 else 0, 1)
 		if combo_step == 2:

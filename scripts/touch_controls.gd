@@ -126,7 +126,7 @@ func _draw() -> void:
 	var centers := _button_centers()
 	_draw_action_button(centers.attack, "A", Color("#df5548"), Input.is_action_pressed("attack"))
 	_draw_action_button(centers.jump, "B", Color("#d8a63d"), Input.is_action_pressed("jump"))
-	_draw_action_button(centers.special, "SP", Color("#347f75"), Input.is_action_pressed("special"), 17)
+	_draw_action_button(centers.special, "A+B", Color("#347f75"), Input.is_action_pressed("special"), 15)
 
 func _draw_action_button(center: Vector2, label: String, color: Color, pressed: bool, font_size: int = 25) -> void:
 	var radius := BUTTON_RADIUS * (0.91 if pressed else 1.0)

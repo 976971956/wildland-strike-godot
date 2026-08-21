@@ -77,5 +77,6 @@ func run(test) -> void:
 	stub.next_intent = FighterIntentScript.new(Vector2.ZERO, false, false, true)
 	game.player._apply_intent(stub.sample_intent())
 	test.check(game.player.current_attack.attack_id == &"player_special", "player did not consume injected special intent")
-	test.check(game.player.health < health_before_special, "injected special intent did not apply its health cost")
+	test.check(game.player.health == health_before_special, "missed injected special incorrectly applied its health cost")
+	test.check(not game.player.special_connected, "missed injected special was marked as connected")
 	await test.dispose(game)

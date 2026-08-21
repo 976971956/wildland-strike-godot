@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="AttackFrameData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/medium.tres" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -20,4 +21,5 @@ weapon_bonus_damage = 7
 knockback = Vector2(155, -35)
 impact_strength = 2
 weapon_impact_strength = 2
+impact_profile = ExtResource("2")
 priority = 1

@@ -27,6 +27,7 @@ const FORWARD_THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
 const BACK_THROW_ATTACK = preload("res://data/attacks/player_back_throw.tres")
 const COMBO_THROW_ATTACK = preload("res://data/attacks/player_combo_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
+const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
 const RUN_SPEED_MULTIPLIER := 1.65
 const MAX_GRAB_STRIKES := 3
 const GRAB_HOLD_DURATION := 2.0
@@ -296,11 +297,18 @@ func _start_special() -> void:
 			if enemy.health < enemy_health_before:
 				special_connected = true
 				var hit_direction := 1 if enemy.position.x >= position.x else -1
-				game.hit_confirm(enemy.position - Vector2(0, 50), current_attack.impact_strength, hit_direction, false)
+				game.hit_confirm(
+					enemy.position - Vector2(0, 50),
+					current_attack.impact_strength,
+					hit_direction,
+					false,
+					current_attack.impact_profile
+				)
 	if special_connected:
 		health = maxi(health - current_attack.self_damage, 1)
 		health_changed.emit(health, MAX_HEALTH)
-		game._hit_stop(current_attack.hit_stop_duration)
+		_apply_attacker_recoil(current_attack.impact_profile)
+		game._hit_stop(current_attack.impact_profile.hit_stop_duration)
 
 func _check_attack_hit() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or special_timer > 0.0 or current_attack == null:
@@ -322,7 +330,7 @@ func _check_attack_hit() -> void:
 	if best:
 		var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, best)
 		if not AttackPriorityRulesScript.allows_hit(priority_outcome):
-			game.hit_confirm((position + best.position) * 0.5 - Vector2(0, 45), 1, facing, false)
+			game.hit_confirm((position + best.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)
 			lose_priority_clash()
 			return
 		var will_grab: bool = (
@@ -346,6 +354,7 @@ func _check_attack_hit() -> void:
 		if current_attack.max_hits > 1 and not final_pulse:
 			launch = false
 			resolved_knockback *= 0.35
+		var best_health_before: int = best.health
 		best.take_hit(
 			damage,
 			resolved_knockback,
@@ -354,12 +363,16 @@ func _check_attack_hit() -> void:
 			CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
 			AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 		)
+		if best.health >= best_health_before:
+			_finish_attack_pulse()
+			return
 		var impact_strength: int = (
 			current_attack.weapon_impact_strength
 			if used_weapon and current_attack.weapon_impact_strength > 0
 			else current_attack.impact_strength
 		)
-		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing)
+		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing, true, current_attack.impact_profile)
+		_apply_attacker_recoil(current_attack.impact_profile)
 		if will_grab and is_instance_valid(best) and not best.is_defeated:
 			grabbed_enemy = best
 			best.grabbed_by(self)
@@ -396,7 +409,8 @@ func _perform_grab_strike() -> void:
 	var force := Vector2(facing * current_attack.knockback.x, current_attack.knockback.y)
 	var target_position: Vector2 = grabbed_enemy.position
 	grabbed_enemy.take_grab_strike(current_attack.damage, force)
-	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, facing)
+	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, facing, true, current_attack.impact_profile)
+	_apply_attacker_recoil(current_attack.impact_profile)
 	game.play_sfx(current_attack.sound_event)
 	if not is_instance_valid(grabbed_enemy) or grabbed_enemy.is_defeated:
 		grabbed_enemy = null
@@ -417,8 +431,14 @@ func _perform_throw(attack, throw_direction: int) -> void:
 	grab_strike_count = 0
 	grab_hold_timer = 0.0
 	var force := Vector2(throw_direction * current_attack.knockback.x, current_attack.knockback.y)
-	target.thrown(current_attack.damage, force, current_attack.throw_collision_damage)
-	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, throw_direction)
+	target.thrown(
+		current_attack.damage,
+		force,
+		current_attack.throw_collision_damage,
+		current_attack.impact_profile
+	)
+	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, throw_direction, true, current_attack.impact_profile)
+	_apply_attacker_recoil(current_attack.impact_profile)
 	game.play_sfx(current_attack.sound_event)
 
 
@@ -447,7 +467,8 @@ func take_hit(
 	knockback: Vector2,
 	counter_hit := false,
 	counter_stun_bonus := 0.0,
-	force_interrupt := false
+	force_interrupt := false,
+	impact_profile: Resource = null
 ) -> void:
 	if invulnerable > 0.0 or is_defeated:
 		return
@@ -466,7 +487,7 @@ func take_hit(
 	hurt_timer = 0.42 + counter_stun_bonus
 	invulnerable = 0.65
 	velocity = knockback
-	game.hit_confirm(position - Vector2(0, 55), 2, -signi(int(knockback.x)))
+	game.hit_confirm(position - Vector2(0, 55), 2, -signi(int(knockback.x)), true, impact_profile)
 	game.play_sfx("hurt")
 	if health <= 0:
 		is_defeated = true
@@ -532,6 +553,11 @@ func _finish_attack_pulse() -> void:
 		attack_hitbox.deactivate()
 		return
 	next_hit_remaining = maxf(0.0, attack_timer - current_attack.repeat_hit_interval)
+
+
+func _apply_attacker_recoil(impact_profile: Resource) -> void:
+	if impact_profile != null:
+		attack_lunge = -impact_profile.attacker_recoil_speed
 
 
 func _sync_fighter_state() -> void:

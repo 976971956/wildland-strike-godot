@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ImpactProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/impact_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"special"
+hit_stop_duration = 0.105
+camera_shake_duration = 0.19
+camera_shake_strength = 15.5
+attacker_recoil_speed = 24.0
+primary_sfx = &"heavy"
+layer_sfx = &"special_burst"
+haptic_duration_ms = 64
+haptic_strength = 1.0

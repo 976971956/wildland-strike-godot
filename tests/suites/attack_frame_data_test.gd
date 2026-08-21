@@ -28,6 +28,7 @@ func run(test) -> void:
 	for attack in ATTACKS:
 		test.check(attack != null, "attack frame-data resource failed to load")
 		test.check(attack.is_valid_frame_data(), "%s has invalid frame data" % attack.attack_id)
+		test.check(attack.impact_profile != null and attack.impact_profile.is_valid_profile(), "%s has invalid impact profile" % attack.attack_id)
 		test.check(not attack_ids.has(attack.attack_id), "%s is a duplicate attack id" % attack.attack_id)
 		attack_ids[attack.attack_id] = true
 

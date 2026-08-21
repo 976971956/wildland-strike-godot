@@ -9,6 +9,7 @@ const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rul
 const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
 const MAX_CHAIN_HITS := 6
 const CHAIN_RESET_DURATION := 0.85
+const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
 const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
 	"brute": preload("res://data/enemies/brute.tres"),
@@ -46,6 +47,7 @@ var chain_timer := 0.0
 var hard_knockdown_lockout := false
 var throw_collision_active := false
 var throw_collision_damage := 0
+var throw_impact_profile: Resource = null
 var throw_collision_targets := {}
 var wall_collision_done := false
 var last_hit_was_counter := false
@@ -209,7 +211,7 @@ func _check_attack() -> void:
 		if attack_hitbox.overlaps(player.hurtbox):
 			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, player)
 			if not AttackPriorityRulesScript.allows_hit(priority_outcome):
-				game.hit_confirm((position + player.position) * 0.5 - Vector2(0, 45), 1, facing, false)
+				game.hit_confirm((position + player.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)
 				lose_priority_clash()
 				return
 			var counter_hit: bool = (
@@ -221,7 +223,8 @@ func _check_attack() -> void:
 				CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit),
 				counter_hit,
 				CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
-				AttackPriorityRulesScript.interrupts_defender(priority_outcome)
+				AttackPriorityRulesScript.interrupts_defender(priority_outcome),
+				current_attack.impact_profile
 			)
 		attack_hitbox.deactivate()
 
@@ -325,11 +328,12 @@ func take_grab_strike(amount: int, force: Vector2) -> void:
 	queue_redraw()
 
 
-func thrown(damage: int, force: Vector2, collision_damage: int) -> void:
+func thrown(damage: int, force: Vector2, collision_damage: int, impact_profile: Resource = null) -> void:
 	release_grab()
 	invulnerable = 0.0
 	throw_collision_active = collision_damage > 0
 	throw_collision_damage = collision_damage
+	throw_impact_profile = impact_profile
 	throw_collision_targets.clear()
 	wall_collision_done = false
 	take_hit(damage, force, true)
@@ -368,7 +372,7 @@ func _resolve_throw_collisions() -> void:
 		stun_timer = maxf(stun_timer, hurt_timer)
 		_apply_environment_collision_damage(throw_collision_damage, Vector2(impact_direction * 180.0, -35.0))
 		if not is_defeated:
-			game.hit_confirm(position - Vector2(0, 46), 3, impact_direction)
+			game.hit_confirm(position - Vector2(0, 46), 3, impact_direction, true, throw_impact_profile)
 		return
 	for other in get_tree().get_nodes_in_group("enemies"):
 		if other == self or not is_instance_valid(other) or other.is_defeated or other.grabbed:
@@ -392,7 +396,13 @@ func _resolve_throw_collisions() -> void:
 		if other.health < health_before:
 			throw_collision_active = false
 			velocity.x *= 0.45
-			game.hit_confirm((position + other.position) * 0.5 - Vector2(0, 48), 3, impact_direction)
+			game.hit_confirm(
+				(position + other.position) * 0.5 - Vector2(0, 48),
+				3,
+				impact_direction,
+				true,
+				throw_impact_profile
+			)
 		return
 
 

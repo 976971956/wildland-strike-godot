@@ -16,6 +16,7 @@ const SUITES := [
 	{"name": "command_move", "path": "res://tests/suites/command_move_test.gd"},
 	{"name": "grapple_system", "path": "res://tests/suites/grapple_system_test.gd"},
 	{"name": "combat_resolution", "path": "res://tests/suites/combat_resolution_test.gd"},
+	{"name": "impact_feedback", "path": "res://tests/suites/impact_feedback_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

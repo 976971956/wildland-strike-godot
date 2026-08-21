@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ImpactProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/impact_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"throw"
+hit_stop_duration = 0.092
+camera_shake_duration = 0.17
+camera_shake_strength = 14.0
+attacker_recoil_speed = 82.0
+primary_sfx = &"heavy"
+layer_sfx = &"body_slam"
+haptic_duration_ms = 56
+haptic_strength = 0.95

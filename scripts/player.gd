@@ -11,6 +11,7 @@ const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_m
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const AttackFrameDataScript = preload("res://core/combat/attack_frame_data.gd")
+const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const COMBO_ATTACKS := [
 	preload("res://data/attacks/player_combo_1.tres"),
 	preload("res://data/attacks/player_combo_2.tres"),
@@ -41,6 +42,7 @@ var state_machine = FighterStateMachineScript.new()
 var hurtbox
 var attack_hitbox
 var current_attack
+var input_source
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -66,6 +68,8 @@ func setup(p_game: Node) -> void:
 	attack_hitbox = HitboxScript.new()
 	add_child(attack_hitbox)
 	attack_hitbox.setup(self)
+	input_source = ActionInputSourceScript.new()
+	add_child(input_source)
 
 func _physics_process(delta: float) -> void:
 	state_machine.tick(delta)
@@ -91,7 +95,7 @@ func _physics_process(delta: float) -> void:
 			z_velocity = 0.0
 
 	if hurt_timer <= 0.0 and special_timer <= 0.0:
-		_read_input()
+		_apply_intent(input_source.sample_intent())
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, 700.0 * delta)
 
@@ -106,23 +110,30 @@ func _physics_process(delta: float) -> void:
 	_sync_fighter_state()
 	queue_redraw()
 
-func _read_input() -> void:
-	var input_vec := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+func _apply_intent(intent) -> void:
+	if intent == null:
+		velocity = Vector2(facing * attack_lunge, 0.0)
+		return
+	var input_vec: Vector2 = intent.move
 	var move_scale := 0.42 if attack_timer > 0.0 else 1.0
 	velocity = input_vec * SPEED * move_scale + Vector2(facing * attack_lunge, 0.0)
 	if absf(input_vec.x) > 0.15:
 		facing = 1 if input_vec.x > 0.0 else -1
-	if Input.is_action_just_pressed("jump") and z_height <= 0.0 and attack_timer <= 0.0:
+	if intent.jump_pressed and z_height <= 0.0 and attack_timer <= 0.0:
 		z_velocity = 510.0
 		z_height = 2.0
 		game.play_sfx("jump")
-	if Input.is_action_just_pressed("attack"):
+	if intent.attack_pressed:
 		if attack_timer > 0.105:
 			attack_buffer = 0.24
 		else:
 			_start_attack()
-	if Input.is_action_just_pressed("special") and z_height <= 5.0 and health > 12 and special_timer <= 0.0:
+	if intent.special_pressed and z_height <= 5.0 and health > 12 and special_timer <= 0.0:
 		_start_special()
+
+
+func set_intent_source(source) -> void:
+	input_source = source
 
 func _start_attack() -> void:
 	if attack_timer > 0.11:

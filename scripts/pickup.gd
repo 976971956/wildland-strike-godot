@@ -19,7 +19,7 @@ func _process(delta: float) -> void:
 		if kind == "food":
 			game.player.heal(28)
 		else:
-			game.player.give_weapon()
+			game.player.give_weapon(kind)
 		game.add_score(400)
 		queue_free()
 		return
@@ -35,10 +35,17 @@ func _draw() -> void:
 		draw_circle(Vector2(-4,-18+bob), 6, Color("#f27a51"))
 		draw_line(Vector2(2,-27+bob),Vector2(8,-34+bob),Color("#45291f"),4)
 		draw_colored_polygon(PackedVector2Array([Vector2(7,-33+bob),Vector2(17,-35+bob),Vector2(10,-27+bob)]),Color("#55a34d"))
-	else:
+	elif kind in ["weapon", "weapon_melee"]:
 		draw_line(Vector2(-21,-5+bob),Vector2(20,-27+bob),Color("#d8e1dc"),8)
 		draw_line(Vector2(13,-28+bob),Vector2(26,-37+bob),Color("#7f3e2d"),6)
 		draw_circle(Vector2(-21,-5+bob),5,Color("#fff0a1"))
+	elif kind == "weapon_firearm":
+		draw_line(Vector2(-20,-16+bob),Vector2(21,-16+bob),Color("#c9d2d4"),11)
+		draw_line(Vector2(-5,-11+bob),Vector2(-10,1+bob),Color("#6d4636"),8)
+		draw_circle(Vector2(22,-16+bob),4,Color("#ffe68a"))
+	else:
+		draw_circle(Vector2(0,-16+bob),13,Color("#3f6540"))
+		draw_rect(Rect2(-4,-33+bob,8,8),Color("#d5b96d"))
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var pts := PackedVector2Array()

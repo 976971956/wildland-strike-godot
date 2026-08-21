@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/light.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"enemy_hunter"
+sound_event = &"enemy_swing"
+duration = 0.54
+hit_trigger_remaining = 0.27
+hitbox_shape = 2
+circle_radius = 42.0
+damage = 6
+knockback = Vector2(180, 0)
+impact_strength = 1
+impact_profile = ExtResource("2")
+priority = 2
+counter_hit_damage_bonus = 2
+counter_hit_knockback_scale = 1.08
+counter_hit_stun_bonus = 0.05

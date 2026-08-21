@@ -12,6 +12,7 @@ speed = 152.0
 attack = ExtResource("2")
 can_be_grabbed = false
 defeat_score = 650
+faction = 1
 behavior_kind = 2
 attack_distance = 72.0
 lane_tolerance = 55.0

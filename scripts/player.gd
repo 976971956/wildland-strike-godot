@@ -16,6 +16,7 @@ const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rul
 const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
 const CommandMoveControllerScript = preload("res://actors/fighters/command_move_controller.gd")
+const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
 const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
 const RUN_ATTACK = preload("res://data/attacks/player_run.tres")
 const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
@@ -28,6 +29,15 @@ const BACK_THROW_ATTACK = preload("res://data/attacks/player_back_throw.tres")
 const COMBO_THROW_ATTACK = preload("res://data/attacks/player_combo_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
 const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
+const MACHETE_WEAPON = preload("res://data/weapons/machete.tres")
+const GRENADE_WEAPON = preload("res://data/weapons/grenade.tres")
+const PISTOL_WEAPON = preload("res://data/weapons/pistol.tres")
+const WEAPON_PICKUPS := {
+	"weapon": MACHETE_WEAPON,
+	"weapon_melee": MACHETE_WEAPON,
+	"weapon_explosive": GRENADE_WEAPON,
+	"weapon_firearm": PISTOL_WEAPON,
+}
 const RUN_SPEED_MULTIPLIER := 1.65
 const MAX_GRAB_STRIKES := 3
 const GRAB_HOLD_DURATION := 2.0
@@ -52,7 +62,19 @@ var last_hit_was_counter := false
 var grabbed_enemy: Node = null
 var grab_strike_count := 0
 var grab_hold_timer := 0.0
-var weapon_hits := 0
+var equipped_weapon: Resource = null
+var weapon_ammo := 0
+var weapon_hits: int:
+	get:
+		return weapon_ammo
+	set(value):
+		weapon_ammo = maxi(value, 0)
+		if weapon_ammo > 0 and equipped_weapon == null:
+			equipped_weapon = MACHETE_WEAPON
+		elif weapon_ammo <= 0:
+			equipped_weapon = null
+		if game != null:
+			_sync_weapon_hud()
 var is_defeated := false
 var walk_phase := 0.0
 var game: Node
@@ -315,6 +337,9 @@ func _check_attack_hit() -> void:
 		return
 	if attack_timer > next_hit_remaining:
 		return
+	if _has_projectile_weapon():
+		_fire_equipped_weapon()
+		return
 	var best: Node = null
 	var best_dist := 9999.0
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -558,9 +583,44 @@ func heal(amount: int) -> void:
 	health_changed.emit(health, MAX_HEALTH)
 	game.play_sfx("pickup")
 
-func give_weapon() -> void:
-	weapon_hits = 12
+func give_weapon(pickup_id: String = "weapon_melee") -> void:
+	equipped_weapon = WEAPON_PICKUPS.get(pickup_id, MACHETE_WEAPON)
+	weapon_hits = equipped_weapon.capacity
 	game.play_sfx("pickup")
+	queue_redraw()
+
+
+func _has_projectile_weapon() -> bool:
+	return (
+		equipped_weapon != null
+		and weapon_ammo > 0
+		and equipped_weapon.kind != WeaponDefinitionScript.WeaponKind.MELEE
+	)
+
+
+func _fire_equipped_weapon() -> void:
+	if not _has_projectile_weapon():
+		return
+	game.spawn_weapon_projectile(
+		self,
+		equipped_weapon,
+		&"player",
+		position + Vector2(facing * 36.0, 0.0),
+		facing
+	)
+	game.play_sfx(equipped_weapon.fire_sfx)
+	weapon_hits -= 1
+	# A firearm/explosive consumes exactly one round per attack even when the
+	# underlying unarmed attack resource contains multiple contact pulses.
+	attack_hits_resolved = current_attack.max_hits
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	queue_redraw()
+
+
+func _sync_weapon_hud() -> void:
+	if game != null and game.has_method("weapon_changed"):
+		game.weapon_changed(equipped_weapon, weapon_ammo)
 
 
 func _reset_combo() -> void:
@@ -622,9 +682,14 @@ func _draw() -> void:
 	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
 	draw_texture_rect_region(SPRITE_SHEET, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if weapon_hits > 0:
+	if weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
 		draw_line(jump_offset + Vector2(22*facing,-62), jump_offset + Vector2(63*facing,-73), Color("#e8eee4"), 8)
 		draw_line(jump_offset + Vector2(56*facing,-71), jump_offset + Vector2(69*facing,-82), Color("#7c382c"), 6)
+	elif weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+		draw_line(jump_offset + Vector2(18*facing,-61), jump_offset + Vector2(47*facing,-61), Color("#c6d0d5"), 10)
+		draw_line(jump_offset + Vector2(24*facing,-58), jump_offset + Vector2(20*facing,-47), Color("#6b4637"), 7)
+	elif weapon_hits > 0 and equipped_weapon != null:
+		draw_circle(jump_offset + Vector2(26*facing,-57), 9.0, equipped_weapon.color)
 	if special_timer > 0.0:
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, Color("#ffe37a"), 7)
 

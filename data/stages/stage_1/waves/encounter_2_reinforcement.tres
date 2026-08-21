@@ -8,13 +8,13 @@ script = ExtResource("2")
 enemy_id = &"grunt"
 offset = Vector2(360, 597)
 
-[sub_resource type="Resource" id="SpawnGruntDeep"]
+[sub_resource type="Resource" id="SpawnHunterDeep"]
 script = ExtResource("2")
-enemy_id = &"grunt"
+enemy_id = &"hunter"
 offset = Vector2(-320, 658)
 
 [resource]
 script = ExtResource("1")
 wave_id = &"courtyard_reinforcement"
 reinforcement_delay = 0.45
-spawns = Array[Resource]([SubResource("SpawnGruntRear"), SubResource("SpawnGruntDeep")])
+spawns = Array[Resource]([SubResource("SpawnGruntRear"), SubResource("SpawnHunterDeep")])

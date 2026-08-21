@@ -11,6 +11,12 @@ enum BehaviorKind {
 	CHARGER,
 	POUNCER,
 	PRESSURE,
+	RANGED,
+}
+
+enum Faction {
+	HUMAN_ENEMY,
+	NEUTRAL_CREATURE,
 }
 
 @export_group("Identity")
@@ -23,6 +29,8 @@ enum BehaviorKind {
 @export var attack: AttackFrameData
 @export var can_be_grabbed := true
 @export var defeat_score := 0
+@export var faction := Faction.HUMAN_ENEMY
+@export_range(120.0, 900.0, 1.0) var opposing_faction_target_radius := 520.0
 
 @export_group("Behavior")
 @export var behavior_kind := BehaviorKind.FLANKER
@@ -38,6 +46,9 @@ enum BehaviorKind {
 @export_range(0.0, 800.0, 1.0) var burst_max_distance := 0.0
 @export_range(0.0, 240.0, 1.0) var retreat_distance := 0.0
 @export_range(0.0, 1.0, 0.01) var retreat_duration := 0.0
+@export_range(80.0, 600.0, 1.0) var preferred_range_min := 220.0
+@export_range(100.0, 900.0, 1.0) var preferred_range_max := 440.0
+@export var ranged_weapon: Resource
 
 @export_group("Presentation")
 @export var sprite_sheet: Texture2D
@@ -70,9 +81,15 @@ func is_valid_definition() -> bool:
 	)
 	if not core_valid:
 		return false
-	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.PRESSURE:
+	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.RANGED:
 		return false
 	if attack_distance <= 0.0 or lane_tolerance <= 0.0 or vertical_approach_scale <= 0.0:
+		return false
+	if faction < Faction.HUMAN_ENEMY or faction > Faction.NEUTRAL_CREATURE:
+		return false
+	if faction == Faction.NEUTRAL_CREATURE and can_be_grabbed:
+		return false
+	if opposing_faction_target_radius <= attack_distance:
 		return false
 	if behavior_kind in [BehaviorKind.CHARGER, BehaviorKind.POUNCER]:
 		if (
@@ -86,4 +103,15 @@ func is_valid_definition() -> bool:
 			return false
 	if behavior_kind == BehaviorKind.POUNCER:
 		return retreat_distance > attack_distance and retreat_duration > 0.0
+	if behavior_kind == BehaviorKind.RANGED:
+		return (
+			telegraph_duration > 0.0
+			and recovery_duration > 0.0
+			and behavior_cooldown > 0.0
+			and preferred_range_min > attack_distance
+			and preferred_range_max > preferred_range_min
+			and ranged_weapon != null
+			and ranged_weapon.has_method("is_valid_weapon")
+			and ranged_weapon.is_valid_weapon()
+		)
 	return true

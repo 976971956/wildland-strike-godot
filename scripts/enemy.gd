@@ -14,6 +14,7 @@ const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
 	"brute": preload("res://data/enemies/brute.tres"),
 	"raptor": preload("res://data/enemies/raptor.tres"),
+	"hunter": preload("res://data/enemies/hunter.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
 }
 
@@ -27,6 +28,7 @@ enum BehaviorPhase {
 
 var game: Node
 var player: Node
+var combat_target: Node
 var enemy_type := "grunt"
 var definition: Resource
 var max_health := 42
@@ -76,6 +78,7 @@ var fighter_state: int:
 func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	game = p_game
 	player = p_player
+	combat_target = p_player
 	definition = ENEMY_DEFINITIONS.get(p_type, ENEMY_DEFINITIONS["grunt"])
 	enemy_type = String(definition.enemy_id)
 	current_attack = definition.attack
@@ -155,9 +158,17 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 	elif stun_timer > 0.0:
 		velocity = Vector2.ZERO
-	elif is_instance_valid(player) and not player.is_defeated:
-		_think(delta)
 	else:
+		_update_combat_target()
+	if (
+		hurt_timer <= 0.0
+		and wake_up_timer <= 0.0
+		and stun_timer <= 0.0
+		and is_instance_valid(combat_target)
+		and not combat_target.is_defeated
+	):
+		_think(delta)
+	elif hurt_timer <= 0.0 and wake_up_timer <= 0.0 and stun_timer <= 0.0:
 		velocity = Vector2.ZERO
 	move_and_slide()
 	_resolve_throw_collisions()
@@ -169,7 +180,10 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _think(delta: float) -> void:
-	var player_offset: Vector2 = player.position - position
+	if not is_instance_valid(combat_target):
+		velocity = Vector2.ZERO
+		return
+	var player_offset: Vector2 = combat_target.position - position
 	facing = 1 if player_offset.x > 0 else -1
 	behavior_cooldown_timer = maxf(0.0, behavior_cooldown_timer - delta)
 	if attack_timer > 0.0:
@@ -185,6 +199,8 @@ func _think(delta: float) -> void:
 			_think_pouncer(player_offset)
 		EnemyDefinitionScript.BehaviorKind.PRESSURE:
 			_think_pressure(player_offset)
+		EnemyDefinitionScript.BehaviorKind.RANGED:
+			_think_ranged(player_offset)
 		_:
 			_think_flanker(player_offset)
 
@@ -232,6 +248,23 @@ func _think_pressure(player_offset: Vector2) -> void:
 	if _try_start_contact_attack(player_offset):
 		return
 	_approach_player(player_offset, false)
+
+
+func _think_ranged(player_offset: Vector2) -> void:
+	var x_distance := absf(player_offset.x)
+	var lane_distance := absf(player_offset.y)
+	if x_distance < definition.preferred_range_min:
+		var escape := Vector2(-signf(player_offset.x), signf(player_offset.y) * 0.35).normalized()
+		velocity = escape * speed
+		_record_behavior_event(&"range_retreat")
+		return
+	if x_distance > definition.preferred_range_max or lane_distance > definition.lane_tolerance:
+		_approach_player(player_offset, false)
+		return
+	if behavior_cooldown_timer <= 0.0:
+		_begin_telegraph(Vector2(signf(player_offset.x), 0.0), &"ranged_aim")
+		return
+	velocity = Vector2.ZERO
 
 
 func _try_start_contact_attack(player_offset: Vector2) -> bool:
@@ -313,7 +346,10 @@ func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
 		BehaviorPhase.TELEGRAPH:
 			velocity = Vector2.ZERO
 			if behavior_timer <= 0.0:
-				_begin_burst()
+				if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
+					_fire_ranged_weapon()
+				else:
+					_begin_burst()
 		BehaviorPhase.BURST:
 			facing = 1 if behavior_direction.x >= 0.0 else -1
 			velocity = behavior_direction * speed * definition.burst_speed_scale
@@ -334,6 +370,20 @@ func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
 				queue_redraw()
 
 
+func _fire_ranged_weapon() -> void:
+	game.spawn_weapon_projectile(
+		self,
+		definition.ranged_weapon,
+		&"enemy",
+		position + Vector2(facing * 34.0, 0.0),
+		facing,
+		combat_target
+	)
+	game.play_sfx(definition.ranged_weapon.fire_sfx)
+	_record_behavior_event(&"ranged_fire")
+	_begin_recovery()
+
+
 func _cancel_behavior() -> void:
 	behavior_phase = BehaviorPhase.NEUTRAL
 	behavior_timer = 0.0
@@ -346,6 +396,41 @@ func _record_behavior_event(event: StringName) -> void:
 	behavior_event_history.append(event)
 	if behavior_event_history.size() > 16:
 		behavior_event_history.pop_front()
+
+
+func _update_combat_target() -> void:
+	var candidates: Array[Node] = []
+	if is_instance_valid(player) and not player.is_defeated:
+		candidates.append(player)
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if (
+			other == self
+			or not is_instance_valid(other)
+			or other.is_defeated
+			or other.grabbed
+			or other.definition.faction == definition.faction
+			or position.distance_to(other.position) > definition.opposing_faction_target_radius
+		):
+			continue
+		candidates.append(other)
+	if candidates.is_empty():
+		combat_target = null
+		return
+	var best_target: Node = candidates[0]
+	var best_distance: float = position.distance_to(best_target.position)
+	for candidate in candidates:
+		var candidate_distance: float = position.distance_to(candidate.position)
+		if candidate_distance < best_distance:
+			best_target = candidate
+			best_distance = candidate_distance
+	if is_instance_valid(combat_target) and candidates.has(combat_target):
+		var current_distance: float = position.distance_to(combat_target.position)
+		if current_distance <= best_distance + 64.0:
+			return
+	if combat_target != best_target:
+		combat_target = best_target
+		_cancel_behavior()
+		_record_behavior_event(&"target_player" if best_target == player else &"target_enemy")
 
 func _enemy_separation() -> Vector2:
 	var separation := Vector2.ZERO
@@ -368,28 +453,51 @@ func _enemy_separation() -> Vector2:
 	return separation.limit_length(1.0)
 
 func _check_attack() -> void:
-	if attack_timer <= 0.0 or attack_hit_done or not is_instance_valid(player):
+	if attack_timer <= 0.0 or attack_hit_done or not is_instance_valid(combat_target):
 		return
 	if attack_timer < current_attack.hit_trigger_remaining:
 		attack_hit_done = true
-		if attack_hitbox.overlaps(player.hurtbox):
-			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, player)
+		if attack_hitbox.overlaps(combat_target.hurtbox):
+			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, combat_target)
 			if not AttackPriorityRulesScript.allows_hit(priority_outcome):
-				game.hit_confirm((position + player.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)
+				game.hit_confirm((position + combat_target.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)
 				lose_priority_clash()
 				return
 			var counter_hit: bool = (
 				priority_outcome == AttackPriorityRulesScript.Outcome.WIN
-				and CounterHitRulesScript.is_counterable(player)
+				and CounterHitRulesScript.is_counterable(combat_target)
 			)
-			player.take_hit(
-				CounterHitRulesScript.damage_for(current_attack, counter_hit),
-				CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit),
-				counter_hit,
-				CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
-				AttackPriorityRulesScript.interrupts_defender(priority_outcome),
-				current_attack.impact_profile
-			)
+			var resolved_damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
+			var resolved_knockback: Vector2 = CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
+			var stun_bonus: float = CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
+			var force_interrupt: bool = AttackPriorityRulesScript.interrupts_defender(priority_outcome)
+			if combat_target == player:
+				player.take_hit(
+					resolved_damage,
+					resolved_knockback,
+					counter_hit,
+					stun_bonus,
+					force_interrupt,
+					current_attack.impact_profile
+				)
+			else:
+				var target_health_before: int = combat_target.health
+				combat_target.take_hit(
+					resolved_damage,
+					resolved_knockback,
+					current_attack.launch,
+					counter_hit,
+					stun_bonus,
+					force_interrupt
+				)
+				if combat_target.health < target_health_before:
+					game.hit_confirm(
+						combat_target.position - Vector2(0.0, 48.0),
+						current_attack.impact_strength,
+						facing,
+						true,
+						current_attack.impact_profile
+					)
 		attack_hitbox.deactivate()
 
 func take_hit(
@@ -641,11 +749,14 @@ func _draw() -> void:
 		target_size.y
 	)
 	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else Color.WHITE)
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else definition.tint)
 	# Enemy source art faces left, opposite to the player sheet.
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED and not is_defeated:
+		draw_line(Vector2(facing * 15.0, -57.0), Vector2(facing * 44.0, -57.0), Color("#b9c6ca"), 9.0)
+		draw_line(Vector2(facing * 20.0, -53.0), Vector2(facing * 17.0, -44.0), Color("#624438"), 6.0)
 	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
@@ -658,9 +769,13 @@ func _draw_behavior_cue() -> void:
 	var cue_color := Color(1.0, 0.47, 0.16, pulse)
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.POUNCER:
 		cue_color = Color(0.62, 0.95, 0.28, pulse)
+	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
+		cue_color = Color(1.0, 0.82, 0.25, pulse)
 	draw_arc(Vector2(0.0, -12.0), 37.0, 0.0, TAU, 28, cue_color, 4.0)
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER:
 		draw_line(Vector2(facing * 22.0, -12.0), Vector2(facing * 92.0, -12.0), cue_color, 5.0)
+	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
+		draw_line(Vector2(facing * 18.0, -48.0), Vector2(facing * 150.0, -48.0), cue_color, 3.0)
 
 func _draw_raptor() -> void:
 	_draw_oval(
@@ -688,7 +803,7 @@ func _draw_raptor() -> void:
 		target_size.x,
 		target_size.y
 	)
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else Color.WHITE)
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else definition.tint)
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

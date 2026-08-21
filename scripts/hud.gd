@@ -11,6 +11,8 @@ var banner_sub := ""
 var banner_time := 0.0
 var mode := "title"
 var stage_time_remaining := 0.0
+var weapon_name := ""
+var weapon_ammo := 0
 var font: Font
 
 func _ready() -> void:
@@ -56,6 +58,12 @@ func set_stage_time(seconds: float) -> void:
 	stage_time_remaining = maxf(0.0, seconds)
 	queue_redraw()
 
+
+func set_weapon(display_name: String, ammo: int) -> void:
+	weapon_name = display_name
+	weapon_ammo = maxi(ammo, 0)
+	queue_redraw()
+
 func _draw() -> void:
 	# Arcade HUD panel.
 	draw_rect(Rect2(22,20,430,82), Color(0.035,0.045,0.07,0.88))
@@ -76,6 +84,11 @@ func _draw() -> void:
 		draw_rect(Rect2(578, 20, 124, 48), Color(0.035, 0.045, 0.07, 0.88))
 		draw_rect(Rect2(578, 20, 124, 4), timer_color)
 		draw_string(font, Vector2(578, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, 124, 24, timer_color)
+		if not weapon_name.is_empty() and weapon_ammo > 0:
+			draw_rect(Rect2(474, 20, 92, 48), Color(0.035, 0.045, 0.07, 0.88))
+			draw_rect(Rect2(474, 20, 92, 4), Color("#74c9aa"))
+			draw_string(font, Vector2(478, 42), weapon_name, HORIZONTAL_ALIGNMENT_CENTER, 84, 13, Color("#d8efe7"))
+			draw_string(font, Vector2(478, 61), "×%02d" % weapon_ammo, HORIZONTAL_ALIGNMENT_CENTER, 84, 16, Color.WHITE)
 
 	# Keyboard hints are hidden on touch devices where virtual controls replace them.
 	if not DisplayServer.is_touchscreen_available() and "--touch-preview" not in OS.get_cmdline_user_args():

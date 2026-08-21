@@ -8,5 +8,5 @@ object_id = &"courtyard_crate"
 position = Vector2(2300, 620)
 size = Vector2(62, 68)
 health = 38
-drop_id = &"weapon"
+drop_id = &"weapon_firearm"
 defeat_score = 250

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_hunter.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/enemy_sheet.png" id="3"]
+[ext_resource type="Resource" path="res://data/weapons/pistol.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"hunter"
+max_health = 50
+speed = 98.0
+attack = ExtResource("2")
+defeat_score = 450
+behavior_kind = 4
+attack_distance = 58.0
+lane_tolerance = 46.0
+vertical_approach_scale = 0.78
+telegraph_duration = 0.42
+recovery_duration = 0.58
+behavior_cooldown = 0.9
+preferred_range_min = 235.0
+preferred_range_max = 455.0
+ranged_weapon = ExtResource("4")
+sprite_sheet = ExtResource("3")
+sprite_row = 0
+tint = Color(0.23, 0.58, 0.59, 1)
+show_health_bar = true

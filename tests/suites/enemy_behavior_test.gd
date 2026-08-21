@@ -5,18 +5,21 @@ const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
 const GRUNT = preload("res://data/enemies/grunt.tres")
 const BRUTE = preload("res://data/enemies/brute.tres")
 const RAPTOR = preload("res://data/enemies/raptor.tres")
+const HUNTER = preload("res://data/enemies/hunter.tres")
 
 
 func run(test) -> void:
 	test.check(GRUNT.behavior_kind == EnemyDefinitionScript.BehaviorKind.FLANKER, "grunt lost flanker behavior")
 	test.check(BRUTE.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER, "brute lost charger behavior")
 	test.check(RAPTOR.behavior_kind == EnemyDefinitionScript.BehaviorKind.POUNCER, "raptor lost pouncer behavior")
+	test.check(HUNTER.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED, "hunter lost ranged behavior")
 	var behavior_kinds := {
 		GRUNT.behavior_kind: true,
 		BRUTE.behavior_kind: true,
 		RAPTOR.behavior_kind: true,
+		HUNTER.behavior_kind: true,
 	}
-	test.check(behavior_kinds.size() == 3, "first three enemy types do not have distinct behaviors")
+	test.check(behavior_kinds.size() == 4, "Stage 1 enemy types do not have distinct behaviors")
 	test.check(BRUTE.telegraph_duration > RAPTOR.telegraph_duration, "brute charge should telegraph longer than raptor pounce")
 	test.check(RAPTOR.burst_speed_scale > BRUTE.burst_speed_scale, "raptor pounce should be faster than brute charge")
 	test.check(RAPTOR.retreat_distance > RAPTOR.attack_distance, "raptor retreat band is invalid")
@@ -68,6 +71,35 @@ func run(test) -> void:
 	test.check(raptor.velocity.x > 0.0 and not is_zero_approx(raptor.velocity.y), "raptor retreat did not break away diagonally")
 	raptor._think(RAPTOR.retreat_duration + 0.01)
 	test.check(raptor.behavior_phase == StreetEnemyScript.BehaviorPhase.RECOVER, "raptor retreat did not enter recovery")
+
+	var hunter: Node = _spawn_frozen(game, Vector2(840.0, 540.0), "hunter")
+	hunter._think(1.0 / 60.0)
+	test.check(hunter.behavior_phase == StreetEnemyScript.BehaviorPhase.TELEGRAPH, "hunter did not enter ranged aim")
+	test.check(hunter.last_behavior_event == &"ranged_aim", "hunter ranged aim event was not observable")
+	test.check(hunter.velocity == Vector2.ZERO, "hunter moved during ranged aim")
+	hunter._think(HUNTER.telegraph_duration + 0.01)
+	var projectiles: Array[Node] = test.tree.get_nodes_in_group("weapon_projectiles")
+	test.check(projectiles.size() == 1, "hunter did not fire one configured projectile")
+	test.check(hunter.behavior_phase == StreetEnemyScript.BehaviorPhase.RECOVER, "hunter did not enter shot recovery")
+	test.check(hunter.behavior_event_history.has(&"ranged_fire"), "hunter ranged fire event was not observable")
+	if not projectiles.is_empty():
+		game.player.invulnerable = 0.0
+		var player_health: int = game.player.health
+		projectiles[0].position = game.player.position
+		test.check(projectiles[0]._resolve_direct_hit(), "hunter projectile did not hit the player")
+		test.check(game.player.health == player_health - HUNTER.ranged_weapon.damage, "hunter projectile ignored weapon damage")
+		projectiles[0].queue_free()
+		await test.tree.process_frame
+	hunter._think(HUNTER.recovery_duration + 0.01)
+	test.check(hunter.behavior_phase == StreetEnemyScript.BehaviorPhase.NEUTRAL, "hunter did not leave shot recovery")
+	test.check(hunter.behavior_cooldown_timer > 0.0, "hunter shot did not start cooldown")
+	hunter.behavior_cooldown_timer = 0.0
+	hunter.position = Vector2(650.0, 540.0)
+	hunter._think(1.0 / 60.0)
+	test.check(hunter.velocity.x > 0.0 and hunter.last_behavior_event == &"range_retreat", "cornered hunter did not retreat from player")
+	hunter.position = Vector2(1050.0, 540.0)
+	hunter._think(1.0 / 60.0)
+	test.check(hunter.velocity.x < 0.0, "distant hunter did not close to firing range")
 
 	var enemy_source := FileAccess.get_file_as_string("res://scripts/enemy.gd")
 	test.check(not enemy_source.contains("enemy_type =="), "enemy behavior branches on enemy id")

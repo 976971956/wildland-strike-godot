@@ -5,6 +5,7 @@ const EnemyScript = preload("res://scripts/enemy.gd")
 const PickupScript = preload("res://scripts/pickup.gd")
 const ImpactScript = preload("res://scripts/impact_fx.gd")
 const StageObjectScript = preload("res://scripts/stage_object.gd")
+const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 
@@ -121,6 +122,20 @@ func spawn_pickup(pos: Vector2, item_id: StringName) -> void:
 	item.setup(self, String(item_id))
 
 
+func spawn_weapon_projectile(
+	source_actor: Node,
+	weapon_definition: Resource,
+	team: StringName,
+	spawn_position: Vector2,
+	direction: int,
+	target_actor: Node = null
+) -> Node:
+	var projectile := WeaponProjectileScript.new()
+	actors.add_child(projectile)
+	projectile.setup(self, source_actor, weapon_definition, team, spawn_position, direction, target_actor)
+	return projectile
+
+
 func _create_stage_objects() -> void:
 	for scene in STAGE_1_DEFINITION.scenes:
 		for object_definition in scene.environment_objects:
@@ -162,6 +177,13 @@ func _stage_timeout() -> void:
 func add_score(amount: int) -> void:
 	score += amount
 	hud.set_score(score)
+
+
+func weapon_changed(weapon_definition: Resource, ammo: int) -> void:
+	if weapon_definition == null:
+		hud.set_weapon("", 0)
+		return
+	hud.set_weapon(weapon_definition.display_name, ammo)
 
 func boss_health_changed(current: int, maximum: int) -> void:
 	hud.set_boss_health(current,maximum)
@@ -257,6 +279,7 @@ func play_sfx(kind: StringName) -> void:
 		"impact_crack":[185.0,0.075],"impact_snap":[310.0,0.035],
 		"impact_clash":[420.0,0.055],"body_slam":[58.0,0.12],
 		"special_burst":[760.0,0.12],"enemy_down":[62.0,0.16],
+		"gunshot":[920.0,0.065],"throw":[260.0,0.055],"explosion":[54.0,0.16],
 		"pickup":[880.0,0.11],"victory":[740.0,0.35]
 	}
 	var cfg: Array = settings.get(kind,[220.0,0.05])

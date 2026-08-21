@@ -8,5 +8,5 @@ object_id = &"plant_crate"
 position = Vector2(3000, 600)
 size = Vector2(66, 72)
 health = 45
-drop_id = &"food"
+drop_id = &"weapon_explosive"
 defeat_score = 300

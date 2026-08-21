@@ -21,6 +21,8 @@ const SUITES := [
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 	{"name": "stage_director", "path": "res://tests/suites/stage_director_test.gd"},
 	{"name": "stage_environment", "path": "res://tests/suites/stage_environment_test.gd"},
+	{"name": "weapon_system", "path": "res://tests/suites/weapon_system_test.gd"},
+	{"name": "neutral_targeting", "path": "res://tests/suites/neutral_targeting_test.gd"},
 ]
 
 

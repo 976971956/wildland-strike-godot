@@ -4,10 +4,9 @@
 
 [resource]
 script = ExtResource("1")
-attack_id = &"player_forward_throw"
-sound_event = &"heavy"
-duration = 0.42
-damage = 22
-knockback = Vector2(560, -80)
-launch = true
-impact_strength = 3
+attack_id = &"player_grab_strike"
+sound_event = &"hit"
+duration = 0.24
+damage = 7
+knockback = Vector2(75, 0)
+impact_strength = 2

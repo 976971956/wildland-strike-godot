@@ -21,9 +21,14 @@ const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
 const APEX_ATTACK = preload("res://data/attacks/player_apex.tres")
 const DIVE_ATTACK = preload("res://data/attacks/player_dive.tres")
 const COMMAND_ATTACK = preload("res://data/attacks/player_command.tres")
-const THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
+const GRAB_STRIKE_ATTACK = preload("res://data/attacks/player_grab_strike.tres")
+const FORWARD_THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
+const BACK_THROW_ATTACK = preload("res://data/attacks/player_back_throw.tres")
+const COMBO_THROW_ATTACK = preload("res://data/attacks/player_combo_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
 const RUN_SPEED_MULTIPLIER := 1.65
+const MAX_GRAB_STRIKES := 3
+const GRAB_HOLD_DURATION := 2.0
 var health := MAX_HEALTH
 var facing := 1
 var z_height := 0.0
@@ -41,6 +46,8 @@ var special_timer := 0.0
 var special_connected := false
 var last_hit_was_counter := false
 var grabbed_enemy: Node = null
+var grab_strike_count := 0
+var grab_hold_timer := 0.0
 var weapon_hits := 0
 var is_defeated := false
 var walk_phase := 0.0
@@ -98,6 +105,10 @@ func _physics_process(delta: float) -> void:
 	hurt_timer = maxf(hurt_timer - delta, 0.0)
 	invulnerable = maxf(invulnerable - delta, 0.0)
 	special_timer = maxf(special_timer - delta, 0.0)
+	if is_instance_valid(grabbed_enemy):
+		grab_hold_timer = maxf(grab_hold_timer - delta, 0.0)
+		if grab_hold_timer <= 0.0:
+			_release_grabbed_enemy()
 	if combo_window <= 0.0 and attack_timer <= 0.0:
 		combo_step = 0
 		finisher_armed = false
@@ -137,7 +148,7 @@ func _apply_intent(intent) -> void:
 	var movement_speed := SPEED * (RUN_SPEED_MULTIPLIER if is_running else 1.0)
 	var move_scale := 0.42 if attack_timer > 0.0 else 1.0
 	velocity = input_vec * movement_speed * move_scale + Vector2(facing * attack_lunge, 0.0)
-	if absf(input_vec.x) > 0.15:
+	if absf(input_vec.x) > 0.15 and not is_instance_valid(grabbed_enemy):
 		facing = 1 if input_vec.x > 0.0 else -1
 	var defensive_chord: bool = intent.attack_pressed and intent.jump_pressed
 	if defensive_chord:
@@ -147,6 +158,11 @@ func _apply_intent(intent) -> void:
 	if intent.special_pressed:
 		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
 			_start_special()
+		return
+	if is_instance_valid(grabbed_enemy):
+		velocity = Vector2.ZERO
+		if intent.attack_pressed:
+			_handle_grab_action(input_vec)
 		return
 	if intent.jump_pressed and z_height <= 0.0 and attack_timer <= 0.0:
 		command_controller.cancel()
@@ -185,15 +201,7 @@ func _start_attack() -> void:
 	run_controller.cancel()
 	command_controller.cancel()
 	if is_instance_valid(grabbed_enemy):
-		_reset_combo()
-		state_machine.transition(FighterStateMachineScript.State.ATTACK)
-		current_attack = THROW_ATTACK
-		attack_hit_done = true
-		attack_hitbox.deactivate()
-		grabbed_enemy.thrown(Vector2(facing * current_attack.knockback.x, current_attack.knockback.y))
-		grabbed_enemy = null
-		attack_timer = current_attack.duration
-		game.play_sfx(current_attack.sound_event)
+		_handle_grab_action(Vector2.ZERO)
 		return
 	attack_hit_done = false
 	state_machine.transition(FighterStateMachineScript.State.ATTACK)
@@ -253,6 +261,7 @@ func _start_special() -> void:
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
+	_release_grabbed_enemy()
 	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
 	current_attack = SPECIAL_ATTACK
 	attack_hitbox.deactivate()
@@ -301,6 +310,12 @@ func _check_attack_hit() -> void:
 				best = enemy
 				best_dist = dist
 	if best:
+		var will_grab: bool = (
+			current_attack.can_grab
+			and z_height <= 0.0
+			and best.can_be_grabbed()
+			and best_dist < current_attack.grab_range
+		)
 		var counter_hit := CounterHitRulesScript.is_counterable(best)
 		var damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
 		var used_weapon := weapon_hits > 0
@@ -322,10 +337,74 @@ func _check_attack_hit() -> void:
 			else current_attack.impact_strength
 		)
 		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing)
-		if current_attack.can_grab and z_height <= 0.0 and best.can_be_grabbed() and best_dist < current_attack.grab_range:
+		if will_grab and is_instance_valid(best) and not best.is_defeated:
 			grabbed_enemy = best
 			best.grabbed_by(self)
+			grab_strike_count = 0
+			grab_hold_timer = GRAB_HOLD_DURATION
+			command_controller.cancel()
 	attack_hitbox.deactivate()
+
+
+func _handle_grab_action(input_vec: Vector2) -> void:
+	if not is_instance_valid(grabbed_enemy) or attack_timer > 0.105:
+		return
+	var relative_x := input_vec.x * facing
+	if relative_x > 0.45:
+		_perform_throw(FORWARD_THROW_ATTACK, facing)
+	elif relative_x < -0.45:
+		_perform_throw(BACK_THROW_ATTACK, -facing)
+	elif grab_strike_count >= MAX_GRAB_STRIKES:
+		_perform_throw(COMBO_THROW_ATTACK, facing)
+	else:
+		_perform_grab_strike()
+
+
+func _perform_grab_strike() -> void:
+	if not is_instance_valid(grabbed_enemy):
+		return
+	current_attack = GRAB_STRIKE_ATTACK
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
+	attack_timer = current_attack.duration
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	grab_strike_count += 1
+	grab_hold_timer = 0.9
+	var force := Vector2(facing * current_attack.knockback.x, current_attack.knockback.y)
+	var target_position: Vector2 = grabbed_enemy.position
+	grabbed_enemy.take_grab_strike(current_attack.damage, force)
+	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, facing)
+	game.play_sfx(current_attack.sound_event)
+	if not is_instance_valid(grabbed_enemy) or grabbed_enemy.is_defeated:
+		grabbed_enemy = null
+		grab_hold_timer = 0.0
+
+
+func _perform_throw(attack, throw_direction: int) -> void:
+	if not is_instance_valid(grabbed_enemy):
+		return
+	current_attack = attack
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
+	attack_timer = current_attack.duration
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	var target := grabbed_enemy
+	var target_position: Vector2 = target.position
+	grabbed_enemy = null
+	grab_strike_count = 0
+	grab_hold_timer = 0.0
+	var force := Vector2(throw_direction * current_attack.knockback.x, current_attack.knockback.y)
+	target.thrown(current_attack.damage, force)
+	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, throw_direction)
+	game.play_sfx(current_attack.sound_event)
+
+
+func _release_grabbed_enemy() -> void:
+	if is_instance_valid(grabbed_enemy):
+		grabbed_enemy.release_grab()
+	grabbed_enemy = null
+	grab_strike_count = 0
+	grab_hold_timer = 0.0
 
 
 func _configure_attack_hitbox() -> void:
@@ -352,8 +431,7 @@ func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stu
 		attack_hit_done = true
 		attack_hitbox.deactivate()
 	if is_instance_valid(grabbed_enemy):
-		grabbed_enemy.release_grab()
-		grabbed_enemy = null
+		_release_grabbed_enemy()
 	health = maxi(health - damage, 0)
 	health_changed.emit(health, MAX_HEALTH)
 	hurt_timer = 0.42 + counter_stun_bonus
@@ -373,6 +451,7 @@ func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stu
 func revive(respawn_position: Vector2) -> void:
 	run_controller.cancel()
 	command_controller.cancel()
+	_release_grabbed_enemy()
 	_reset_combo()
 	health = MAX_HEALTH
 	is_defeated = false

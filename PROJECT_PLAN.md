@@ -143,13 +143,13 @@ Status: **in progress**
 - [x] M2-02: Four-hit combo and character-specific finisher windows.
 - [x] M2-03: Running, jump, and apex/dive attacks with counter-hit rules.
 - [x] M2-04: Offensive command move and attack+jump defensive special.
-- [ ] M2-05: Full grab strikes, directional throws, combo throws, knockdown, and wake-up.
+- [x] M2-05: Full grab strikes, directional throws, combo throws, knockdown, and wake-up.
 - [ ] M2-06: Attack priority, multi-hit, wall/throw collision, and anti-infinite rules.
 - [ ] M2-07: Tune hit stop, recoil, SFX layers, camera response, and haptics using frame-data tests.
 
 Exit gate: a graybox arena supports the complete combat grammar against three behaviorally distinct enemies at stable 60 FPS.
 
-Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ranger now uses a typed four-hit chain: combo three is a non-launch bridge, while a deliberate input during its 0.20–0.04 second remaining-time window buffers the heavy launching finisher; early and missed inputs do not automate the chain. The finisher has distinct frame data, weapon geometry, damage, knockback, and animation selection. Target acquisition also skips enemies still in hit invulnerability so they cannot intercept a valid follow-up. Running, rising-jump, apex, and descending-dive attacks each have independent typed timing, motion, reach, damage, launch, and counter-hit values; dive velocity is data-driven. Counter hits are restricted to unresolved attack startup, work in both directions, add attack-specific damage/knockback/stun, and interrupt the countered startup. A facing-relative down→forward+attack recognizer now drives Ranger's typed offensive command move. The invulnerable defensive special prioritizes an attack+jump chord (with a mobile A+B shortcut), suppresses accidental jump/attack leakage, and charges its health cost exactly once only after at least one valid target takes damage. Thirteen deterministic suites pass 388/388 assertions.
+Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ranger now uses a typed four-hit chain: combo three is a non-launch bridge, while a deliberate input during its 0.20–0.04 second remaining-time window buffers the heavy launching finisher; early and missed inputs do not automate the chain. The finisher has distinct frame data, weapon geometry, damage, knockback, and animation selection. Target acquisition also skips enemies still in hit invulnerability so they cannot intercept a valid follow-up. Running, rising-jump, apex, and descending-dive attacks each have independent typed timing, motion, reach, damage, launch, and counter-hit values; dive velocity is data-driven. Counter hits are restricted to unresolved attack startup, work in both directions, add attack-specific damage/knockback/stun, and interrupt the countered startup. A facing-relative down→forward+attack recognizer now drives Ranger's typed offensive command move. The invulnerable defensive special prioritizes an attack+jump chord (with a mobile A+B shortcut), suppresses accidental jump/attack leakage, and charges its health cost exactly once only after at least one valid target takes damage. Contact combo-one hits can now enter a two-second grab hold. Neutral attack delivers up to three typed grab strikes and then a combo throw; facing-relative forward/back inputs select distinct directional throws without flipping the holder. Throws interrupt enemy offense, launch into knockdown, and transition through an explicit invulnerable get-up window before neutral recovery. Hold timeout, player hurt, defensive special, and revive release the target safely. Fourteen deterministic suites pass 441/441 assertions.
 
 ### M3 — Polished Stage 1 vertical slice
 
@@ -235,9 +235,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M2-05 — Grapple grammar:** add grab strikes, directional and combo throws, knockdown, and wake-up.
-2. **M2-06 — Combat resolution:** add priority, multi-hit, wall/throw collision, and anti-infinite rules.
-3. **M2-07 — Impact tuning:** tune hit stop, recoil, layered SFX, camera response, and haptics from frame data.
+1. **M2-06 — Combat resolution:** add priority, multi-hit, wall/throw collision, and anti-infinite rules.
+2. **M2-07 — Impact tuning:** tune hit stop, recoil, layered SFX, camera response, and haptics from frame data.
+3. **M3 — Stage foundation:** introduce typed stage/scene data and the encounter director.
 
 ## Definition of done for every task
 

@@ -37,6 +37,7 @@ var death_timer := 0.0
 var walk_phase := 0.0
 var approach_lane_offset := 0.0
 var knockdown_state := false
+var wake_up_timer := 0.0
 var last_hit_was_counter := false
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
@@ -103,15 +104,21 @@ func _physics_process(delta: float) -> void:
 			return
 	attack_timer = maxf(0.0, attack_timer - delta)
 	hurt_timer = maxf(0.0, hurt_timer - delta)
-	if hurt_timer <= 0.0:
-		knockdown_state = false
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
+	if knockdown_state and hurt_timer <= 0.0:
+		knockdown_state = false
+		wake_up_timer = 0.38
+		invulnerable = maxf(invulnerable, wake_up_timer)
+	elif wake_up_timer > 0.0:
+		wake_up_timer = maxf(0.0, wake_up_timer - delta)
 	flash_timer = maxf(0.0, flash_timer - delta)
 	recoil_offset = move_toward(recoil_offset, 0.0, 95.0 * delta)
 	impact_squash = move_toward(impact_squash, 0.0, 5.5 * delta)
 	if hurt_timer > 0.0:
 		velocity = velocity.move_toward(Vector2.ZERO, 420.0 * delta)
+	elif wake_up_timer > 0.0:
+		velocity = Vector2.ZERO
 	elif stun_timer > 0.0:
 		velocity = Vector2.ZERO
 	elif is_instance_valid(player) and not player.is_defeated:
@@ -195,7 +202,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool, counter_hit := fals
 		return
 	health -= amount
 	last_hit_was_counter = counter_hit
-	if counter_hit:
+	if counter_hit or launch:
 		attack_timer = 0.0
 		attack_hit_done = true
 		attack_hitbox.deactivate()
@@ -207,6 +214,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool, counter_hit := fals
 	recoil_offset = signf(knockback.x) * (8.0 if not launch else 15.0)
 	impact_squash = 0.16 if not launch else 0.28
 	knockdown_state = launch
+	wake_up_timer = 0.0
 	state_machine.transition(
 		FighterStateMachineScript.State.KNOCKDOWN if launch else FighterStateMachineScript.State.HURT
 	)
@@ -230,12 +238,16 @@ func _die(knockback: Vector2) -> void:
 	game.play_sfx("enemy_down")
 
 func can_be_grabbed() -> bool:
-	return definition.can_be_grabbed and not grabbed and hurt_timer <= 0.0
+	return definition.can_be_grabbed and not grabbed and hurt_timer <= 0.0 and wake_up_timer <= 0.0
 
 func grabbed_by(owner: Node) -> void:
 	grabbed = true
 	grabbed_owner = owner
 	velocity = Vector2.ZERO
+	hurt_timer = 0.0
+	invulnerable = 0.0
+	knockdown_state = false
+	wake_up_timer = 0.0
 	stun_timer = 2.0
 	state_machine.transition(FighterStateMachineScript.State.GRABBED)
 	attack_hitbox.deactivate()
@@ -246,9 +258,27 @@ func release_grab() -> void:
 	stun_timer = 0.25
 	state_machine.transition(FighterStateMachineScript.State.STUN)
 
-func thrown(force: Vector2) -> void:
+func take_grab_strike(amount: int, force: Vector2) -> void:
+	if not grabbed or is_defeated:
+		return
+	health -= amount
+	velocity = force
+	flash_timer = 0.09
+	recoil_offset = signf(force.x) * 8.0
+	impact_squash = 0.18
+	if definition.is_boss:
+		game.boss_health_changed(health, max_health)
+	if health <= 0:
+		_die(force)
+	else:
+		state_machine.transition(FighterStateMachineScript.State.GRABBED)
+	queue_redraw()
+
+
+func thrown(damage: int, force: Vector2) -> void:
 	release_grab()
-	take_hit(22, force, true)
+	invulnerable = 0.0
+	take_hit(damage, force, true)
 
 
 func _sync_fighter_state() -> void:
@@ -263,6 +293,8 @@ func _sync_fighter_state() -> void:
 			if knockdown_state
 			else FighterStateMachineScript.State.HURT
 		)
+	elif wake_up_timer > 0.0:
+		next_state = FighterStateMachineScript.State.GET_UP
 	elif stun_timer > 0.0:
 		next_state = FighterStateMachineScript.State.STUN
 	elif attack_timer > 0.0:

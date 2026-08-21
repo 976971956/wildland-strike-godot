@@ -15,6 +15,7 @@ enum State {
 	HURT,
 	STUN,
 	KNOCKDOWN,
+	GET_UP,
 	DEFEATED,
 }
 

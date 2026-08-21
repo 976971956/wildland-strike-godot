@@ -1,21 +1,21 @@
 class_name StreetEnemy
 extends CharacterBody2D
 
-const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/enemy_sheet.png")
-const RAPTOR_SHEET: Texture2D = preload("res://assets/sprites/raptor_sheet.png")
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
-const ENEMY_ATTACKS := {
-	"grunt": preload("res://data/attacks/enemy_grunt.tres"),
-	"brute": preload("res://data/attacks/enemy_brute.tres"),
-	"raptor": preload("res://data/attacks/enemy_raptor.tres"),
-	"boss": preload("res://data/attacks/enemy_boss.tres"),
+const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
+const ENEMY_DEFINITIONS := {
+	"grunt": preload("res://data/enemies/grunt.tres"),
+	"brute": preload("res://data/enemies/brute.tres"),
+	"raptor": preload("res://data/enemies/raptor.tres"),
+	"boss": preload("res://data/enemies/boss.tres"),
 }
 
 var game: Node
 var player: Node
 var enemy_type := "grunt"
+var definition: Resource
 var max_health := 42
 var health := 42
 var speed := 115.0
@@ -35,7 +35,6 @@ var fall_velocity := Vector2.ZERO
 var death_timer := 0.0
 var walk_phase := 0.0
 var approach_lane_offset := 0.0
-var tint := Color("#a84a55")
 var knockdown_state := false
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
@@ -48,8 +47,13 @@ var fighter_state: int:
 func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	game = p_game
 	player = p_player
-	enemy_type = p_type
-	current_attack = ENEMY_ATTACKS.get(p_type, ENEMY_ATTACKS["grunt"])
+	definition = ENEMY_DEFINITIONS.get(p_type, ENEMY_DEFINITIONS["grunt"])
+	enemy_type = String(definition.enemy_id)
+	current_attack = definition.attack
+	max_health = definition.max_health
+	health = max_health
+	speed = definition.speed
+	scale = definition.actor_scale
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("enemies")
 	# Enemies collide with the player (layer 1), but not with one another.
@@ -58,22 +62,6 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	collision_layer = 2
 	collision_mask = 1
 	approach_lane_offset = float(posmod(int(get_instance_id()), 5) - 2) * 9.0
-	if p_type == "brute":
-		max_health = 78
-		health = 78
-		speed = 82.0
-		tint = Color("#8359a3")
-	elif p_type == "boss":
-		max_health = 260
-		health = 260
-		speed = 105.0
-		tint = Color("#bc5337")
-		scale = Vector2(1.25, 1.25)
-	elif p_type == "raptor":
-		max_health = 58
-		health = 58
-		speed = 152.0
-		tint = Color("#6d9140")
 	var shape := CollisionShape2D.new()
 	var capsule := CapsuleShape2D.new()
 	capsule.radius = 17.0
@@ -214,7 +202,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 	)
 	if launch:
 		velocity = knockback
-	if enemy_type == "boss":
+	if definition.is_boss:
 		game.boss_health_changed(health, max_health)
 	if health <= 0:
 		_die(knockback)
@@ -228,12 +216,11 @@ func _die(knockback: Vector2) -> void:
 	remove_from_group("enemies")
 	death_timer = 0.75
 	fall_velocity = knockback * 0.72
-	var defeat_score := 2000 if enemy_type == "boss" else (650 if enemy_type == "raptor" else (500 if enemy_type == "brute" else 250))
-	game.add_score(defeat_score)
+	game.add_score(definition.defeat_score)
 	game.play_sfx("enemy_down")
 
 func can_be_grabbed() -> bool:
-	return enemy_type not in ["boss", "raptor"] and not grabbed and hurt_timer <= 0.0
+	return definition.can_be_grabbed and not grabbed and hurt_timer <= 0.0
 
 func grabbed_by(owner: Node) -> void:
 	grabbed = true
@@ -275,12 +262,16 @@ func _sync_fighter_state() -> void:
 	state_machine.transition(next_state)
 
 func _draw() -> void:
-	if enemy_type == "raptor":
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.RAPTOR:
 		_draw_raptor()
 		return
-	var body_scale := 1.12 if enemy_type == "brute" else 1.0
-	_draw_oval(Vector2(0,2), 34.0 * body_scale, 9.0, Color(0.02,0.03,0.04,0.42))
-	var row := 0 if enemy_type == "grunt" else (1 if enemy_type == "brute" else 2)
+	var body_scale: float = definition.body_scale
+	_draw_oval(
+		Vector2(0, 2),
+		definition.shadow_half_extents.x * body_scale,
+		definition.shadow_half_extents.y,
+		Color(0.02, 0.03, 0.04, 0.42)
+	)
 	var column := 0
 	if is_defeated or hurt_timer > 0.0:
 		column = 3
@@ -288,21 +279,34 @@ func _draw() -> void:
 		column = 2
 	elif velocity.length() > 10.0:
 		column = 1 if int(walk_phase) % 2 == 0 else 0
-	var cell := Vector2(SPRITE_SHEET.get_width() / 4.0, SPRITE_SHEET.get_height() / 3.0)
-	var target_size := Vector2(174.0, 174.0) * body_scale
-	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 14.0, target_size.x, target_size.y)
-	var source_rect := Rect2(column * cell.x, row * cell.y, cell.x, cell.y)
-	var tint_color := Color(1.0, 1.0, 1.0) if flash_timer > 0.0 else (Color(1.0, 0.68, 0.61) if hurt_timer > 0.0 else Color.WHITE)
+	var cell := Vector2(
+		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
+		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
+	)
+	var target_size: Vector2 = definition.target_size * body_scale
+	var target_rect := Rect2(
+		-target_size.x * 0.5,
+		-target_size.y + definition.target_bottom_offset,
+		target_size.x,
+		target_size.y
+	)
+	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else Color.WHITE)
 	# Enemy source art faces left, opposite to the player sheet.
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
-	draw_texture_rect_region(SPRITE_SHEET, target_rect, source_rect, tint_color)
+	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if enemy_type == "brute" and health > 0:
+	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
 
 func _draw_raptor() -> void:
-	_draw_oval(Vector2(0, 2), 49.0, 11.0, Color(0.02,0.03,0.04,0.44))
+	_draw_oval(
+		Vector2(0, 2),
+		definition.shadow_half_extents.x,
+		definition.shadow_half_extents.y,
+		Color(0.02, 0.03, 0.04, 0.44)
+	)
 	var column := 0
 	if is_defeated or hurt_timer > 0.0:
 		column = 3
@@ -310,13 +314,21 @@ func _draw_raptor() -> void:
 		column = 2
 	elif velocity.length() > 10.0:
 		column = 1 if int(walk_phase) % 2 == 0 else 0
-	var cell := Vector2(RAPTOR_SHEET.get_width() / 4.0, RAPTOR_SHEET.get_height())
-	var source_rect := Rect2(column * cell.x, 0.0, cell.x, cell.y)
-	var target_size := Vector2(222.0, 322.0)
-	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 32.0, target_size.x, target_size.y)
-	var tint_color := Color(1.0, 1.0, 1.0) if flash_timer > 0.0 else (Color(1.0, 0.62, 0.54) if hurt_timer > 0.0 else Color.WHITE)
+	var cell := Vector2(
+		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
+		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
+	)
+	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
+	var target_size: Vector2 = definition.target_size
+	var target_rect := Rect2(
+		-target_size.x * 0.5,
+		-target_size.y + definition.target_bottom_offset,
+		target_size.x,
+		target_size.y
+	)
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else Color.WHITE)
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
-	draw_texture_rect_region(RAPTOR_SHEET, target_rect, source_rect, tint_color)
+	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:

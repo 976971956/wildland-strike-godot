@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_raptor.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/raptor_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"raptor"
+max_health = 58
+speed = 152.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 650
+sprite_sheet = ExtResource("3")
+visual_kind = 1
+sprite_rows = 1
+target_size = Vector2(222, 322)
+target_bottom_offset = 32.0
+shadow_half_extents = Vector2(49, 11)
+tint = Color(0.427451, 0.568627, 0.25098, 1)
+hurt_tint = Color(1, 0.62, 0.54, 1)

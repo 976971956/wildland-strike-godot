@@ -8,6 +8,7 @@ const SUITES := [
 	{"name": "hitbox_hurtbox", "path": "res://tests/suites/hitbox_hurtbox_test.gd"},
 	{"name": "attack_frame_data", "path": "res://tests/suites/attack_frame_data_test.gd"},
 	{"name": "input_intent", "path": "res://tests/suites/input_intent_test.gd"},
+	{"name": "enemy_definition", "path": "res://tests/suites/enemy_definition_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

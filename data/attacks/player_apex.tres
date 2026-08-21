@@ -20,6 +20,7 @@ knockback = Vector2(430, -50)
 launch = true
 impact_strength = 3
 weapon_impact_strength = 3
+priority = 3
 counter_hit_damage_bonus = 5
 counter_hit_knockback_scale = 1.18
 counter_hit_launch = true

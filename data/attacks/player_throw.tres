@@ -11,3 +11,5 @@ damage = 22
 knockback = Vector2(560, -80)
 launch = true
 impact_strength = 3
+priority = 4
+throw_collision_damage = 8

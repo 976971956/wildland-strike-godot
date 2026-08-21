@@ -74,7 +74,13 @@ func run(test) -> void:
 	var command_target_health: int = command_target.health
 	game.player.attack_timer = COMMAND_ATTACK.hit_trigger_remaining - 0.01
 	game.player._check_attack_hit()
-	test.check(command_target.health == command_target_health - 24, "command-attack damage drifted")
+	test.check(command_target.health == command_target_health - 12, "command-attack first-hit damage drifted")
+	test.check(game.player.attack_hits_resolved == 1 and not game.player.attack_hit_done, "command attack did not retain its second hit")
+	command_target.invulnerable = 0.0
+	game.player.attack_timer = game.player.next_hit_remaining - 0.01
+	game.player._check_attack_hit()
+	test.check(command_target.health == command_target_health - 24, "command-attack total damage drifted")
+	test.check(game.player.attack_hits_resolved == 2 and game.player.attack_hit_done, "command attack did not finish after two hits")
 	test.check(command_target.knockdown_state and command_target.velocity == Vector2(560.0, -70.0), "command attack did not launch with configured force")
 
 	for enemy in enemies:

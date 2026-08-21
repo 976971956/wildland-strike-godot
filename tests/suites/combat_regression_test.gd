@@ -46,6 +46,9 @@ func run(test) -> void:
 
 	var target = enemies[1]
 	target.position = game.player.position + Vector2(69.0, 0.0)
+	target.attack_timer = 0.0
+	target.attack_hit_done = true
+	target.attack_hitbox.deactivate()
 	var target_health: int = target.health
 	game.player.hurt_timer = 0.0
 	game.player.invulnerable = 0.0

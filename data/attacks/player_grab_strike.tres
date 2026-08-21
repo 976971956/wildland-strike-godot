@@ -10,3 +10,4 @@ duration = 0.24
 damage = 7
 knockback = Vector2(75, 0)
 impact_strength = 2
+priority = 4

@@ -12,6 +12,7 @@ const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const AttackFrameDataScript = preload("res://core/combat/attack_frame_data.gd")
 const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
+const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rules.gd")
 const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
 const CommandMoveControllerScript = preload("res://actors/fighters/command_move_controller.gd")
@@ -35,6 +36,8 @@ var z_height := 0.0
 var z_velocity := 0.0
 var attack_timer := 0.0
 var attack_hit_done := false
+var attack_hits_resolved := 0
+var next_hit_remaining := 0.0
 var attack_buffer := 0.0
 var attack_lunge := 0.0
 var combo_step := 0
@@ -221,6 +224,7 @@ func _start_attack() -> void:
 		current_attack = COMBO_DEFINITION.attack_for_step(combo_step)
 		finisher_armed = false
 	attack_timer = current_attack.duration
+	_reset_attack_resolution()
 	# Air attacks keep any still-running ground combo window, matching the
 	# original controller behavior. Ground combo resources refresh it.
 	if current_attack.combo_window > 0.0:
@@ -253,6 +257,7 @@ func _start_command_attack() -> void:
 	current_attack = COMMAND_ATTACK
 	attack_hit_done = false
 	attack_timer = current_attack.duration
+	_reset_attack_resolution()
 	attack_lunge = current_attack.lunge_speed
 	_configure_attack_hitbox()
 	game.play_sfx(current_attack.sound_event)
@@ -273,6 +278,9 @@ func _start_special() -> void:
 	game.play_sfx(current_attack.sound_event)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if is_instance_valid(enemy) and not enemy.is_defeated and position.distance_to(enemy.position) < current_attack.effect_radius:
+			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, enemy)
+			if not AttackPriorityRulesScript.allows_hit(priority_outcome):
+				continue
 			var enemy_health_before: int = enemy.health
 			enemy.take_hit(
 				current_attack.damage,
@@ -280,7 +288,10 @@ func _start_special() -> void:
 					(enemy.position.x - position.x) * current_attack.radial_horizontal_scale,
 					current_attack.knockback.y
 				),
-				current_attack.launch
+				current_attack.launch,
+				false,
+				0.0,
+				AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 			)
 			if enemy.health < enemy_health_before:
 				special_connected = true
@@ -294,9 +305,8 @@ func _start_special() -> void:
 func _check_attack_hit() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or special_timer > 0.0 or current_attack == null:
 		return
-	if attack_timer > current_attack.hit_trigger_remaining:
+	if attack_timer > next_hit_remaining:
 		return
-	attack_hit_done = true
 	var best: Node = null
 	var best_dist := 9999.0
 	for enemy in get_tree().get_nodes_in_group("enemies"):
@@ -310,13 +320,21 @@ func _check_attack_hit() -> void:
 				best = enemy
 				best_dist = dist
 	if best:
+		var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, best)
+		if not AttackPriorityRulesScript.allows_hit(priority_outcome):
+			game.hit_confirm((position + best.position) * 0.5 - Vector2(0, 45), 1, facing, false)
+			lose_priority_clash()
+			return
 		var will_grab: bool = (
 			current_attack.can_grab
 			and z_height <= 0.0
 			and best.can_be_grabbed()
 			and best_dist < current_attack.grab_range
 		)
-		var counter_hit := CounterHitRulesScript.is_counterable(best)
+		var counter_hit: bool = (
+			priority_outcome == AttackPriorityRulesScript.Outcome.WIN
+			and CounterHitRulesScript.is_counterable(best)
+		)
 		var damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
 		var used_weapon := weapon_hits > 0
 		if used_weapon:
@@ -324,12 +342,17 @@ func _check_attack_hit() -> void:
 			weapon_hits -= 1
 		var launch: bool = CounterHitRulesScript.launch_for(current_attack, counter_hit)
 		var resolved_knockback := CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
+		var final_pulse: bool = attack_hits_resolved + 1 >= current_attack.max_hits
+		if current_attack.max_hits > 1 and not final_pulse:
+			launch = false
+			resolved_knockback *= 0.35
 		best.take_hit(
 			damage,
 			resolved_knockback,
 			launch,
 			counter_hit,
-			CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
+			CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
+			AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 		)
 		var impact_strength: int = (
 			current_attack.weapon_impact_strength
@@ -343,7 +366,7 @@ func _check_attack_hit() -> void:
 			grab_strike_count = 0
 			grab_hold_timer = GRAB_HOLD_DURATION
 			command_controller.cancel()
-	attack_hitbox.deactivate()
+	_finish_attack_pulse()
 
 
 func _handle_grab_action(input_vec: Vector2) -> void:
@@ -394,7 +417,7 @@ func _perform_throw(attack, throw_direction: int) -> void:
 	grab_strike_count = 0
 	grab_hold_timer = 0.0
 	var force := Vector2(throw_direction * current_attack.knockback.x, current_attack.knockback.y)
-	target.thrown(current_attack.damage, force)
+	target.thrown(current_attack.damage, force, current_attack.throw_collision_damage)
 	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, throw_direction)
 	game.play_sfx(current_attack.sound_event)
 
@@ -419,14 +442,20 @@ func _configure_attack_hitbox() -> void:
 	else:
 		attack_hitbox.deactivate()
 
-func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stun_bonus := 0.0) -> void:
+func take_hit(
+	damage: int,
+	knockback: Vector2,
+	counter_hit := false,
+	counter_stun_bonus := 0.0,
+	force_interrupt := false
+) -> void:
 	if invulnerable > 0.0 or is_defeated:
 		return
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
 	last_hit_was_counter = counter_hit
-	if counter_hit:
+	if counter_hit or force_interrupt:
 		attack_timer = 0.0
 		attack_hit_done = true
 		attack_hitbox.deactivate()
@@ -445,6 +474,19 @@ func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stu
 		defeated.emit()
 	else:
 		state_machine.transition(FighterStateMachineScript.State.HURT)
+	queue_redraw()
+
+
+func lose_priority_clash() -> void:
+	run_controller.cancel()
+	command_controller.cancel()
+	_reset_combo()
+	attack_timer = 0.0
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	hurt_timer = maxf(hurt_timer, 0.12)
+	velocity = Vector2(-facing * 65.0, 0.0)
+	state_machine.transition(FighterStateMachineScript.State.STUN)
 	queue_redraw()
 
 
@@ -476,6 +518,20 @@ func _reset_combo() -> void:
 	combo_window = 0.0
 	attack_buffer = 0.0
 	finisher_armed = false
+
+
+func _reset_attack_resolution() -> void:
+	attack_hits_resolved = 0
+	next_hit_remaining = current_attack.hit_trigger_remaining
+
+
+func _finish_attack_pulse() -> void:
+	attack_hits_resolved += 1
+	if attack_hits_resolved >= current_attack.max_hits:
+		attack_hit_done = true
+		attack_hitbox.deactivate()
+		return
+	next_hit_remaining = maxf(0.0, attack_timer - current_attack.repeat_hit_interval)
 
 
 func _sync_fighter_state() -> void:

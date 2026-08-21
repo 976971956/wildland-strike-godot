@@ -13,6 +13,7 @@ circle_radius = 58.0
 damage = 18
 knockback = Vector2(240, 0)
 impact_strength = 2
+priority = 4
 counter_hit_damage_bonus = 5
 counter_hit_knockback_scale = 1.18
 counter_hit_stun_bonus = 0.1

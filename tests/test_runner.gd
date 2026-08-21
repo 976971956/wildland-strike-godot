@@ -15,6 +15,7 @@ const SUITES := [
 	{"name": "aerial_combat", "path": "res://tests/suites/aerial_combat_test.gd"},
 	{"name": "command_move", "path": "res://tests/suites/command_move_test.gd"},
 	{"name": "grapple_system", "path": "res://tests/suites/grapple_system_test.gd"},
+	{"name": "combat_resolution", "path": "res://tests/suites/combat_resolution_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

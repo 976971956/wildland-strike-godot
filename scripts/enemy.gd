@@ -5,7 +5,10 @@ const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_m
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
+const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rules.gd")
 const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
+const MAX_CHAIN_HITS := 6
+const CHAIN_RESET_DURATION := 0.85
 const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
 	"brute": preload("res://data/enemies/brute.tres"),
@@ -38,6 +41,13 @@ var walk_phase := 0.0
 var approach_lane_offset := 0.0
 var knockdown_state := false
 var wake_up_timer := 0.0
+var chain_hit_count := 0
+var chain_timer := 0.0
+var hard_knockdown_lockout := false
+var throw_collision_active := false
+var throw_collision_damage := 0
+var throw_collision_targets := {}
+var wall_collision_done := false
 var last_hit_was_counter := false
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
@@ -106,12 +116,20 @@ func _physics_process(delta: float) -> void:
 	hurt_timer = maxf(0.0, hurt_timer - delta)
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
+	chain_timer = maxf(0.0, chain_timer - delta)
+	if chain_timer <= 0.0 and not hard_knockdown_lockout:
+		chain_hit_count = 0
 	if knockdown_state and hurt_timer <= 0.0:
 		knockdown_state = false
 		wake_up_timer = 0.38
 		invulnerable = maxf(invulnerable, wake_up_timer)
 	elif wake_up_timer > 0.0:
 		wake_up_timer = maxf(0.0, wake_up_timer - delta)
+		if wake_up_timer <= 0.0:
+			hard_knockdown_lockout = false
+			chain_hit_count = 0
+			chain_timer = 0.0
+			throw_collision_active = false
 	flash_timer = maxf(0.0, flash_timer - delta)
 	recoil_offset = move_toward(recoil_offset, 0.0, 95.0 * delta)
 	impact_squash = move_toward(impact_squash, 0.0, 5.5 * delta)
@@ -126,6 +144,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = Vector2.ZERO
 	move_and_slide()
+	_resolve_throw_collisions()
 	position.y = clampf(position.y, 455.0, 665.0)
 	position.x = clampf(position.x, 60.0, game.stage_limit + 80.0)
 	walk_phase += velocity.length() * delta * 0.025
@@ -188,21 +207,42 @@ func _check_attack() -> void:
 	if attack_timer < current_attack.hit_trigger_remaining:
 		attack_hit_done = true
 		if attack_hitbox.overlaps(player.hurtbox):
-			var counter_hit := CounterHitRulesScript.is_counterable(player)
+			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, player)
+			if not AttackPriorityRulesScript.allows_hit(priority_outcome):
+				game.hit_confirm((position + player.position) * 0.5 - Vector2(0, 45), 1, facing, false)
+				lose_priority_clash()
+				return
+			var counter_hit: bool = (
+				priority_outcome == AttackPriorityRulesScript.Outcome.WIN
+				and CounterHitRulesScript.is_counterable(player)
+			)
 			player.take_hit(
 				CounterHitRulesScript.damage_for(current_attack, counter_hit),
 				CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit),
 				counter_hit,
-				CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
+				CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
+				AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 			)
 		attack_hitbox.deactivate()
 
-func take_hit(amount: int, knockback: Vector2, launch: bool, counter_hit := false, counter_stun_bonus := 0.0) -> void:
-	if is_defeated or invulnerable > 0.0:
+func take_hit(
+	amount: int,
+	knockback: Vector2,
+	launch: bool,
+	counter_hit := false,
+	counter_stun_bonus := 0.0,
+	force_interrupt := false
+) -> void:
+	if is_defeated or invulnerable > 0.0 or hard_knockdown_lockout:
 		return
+	_register_chain_hit()
+	if chain_hit_count >= MAX_CHAIN_HITS:
+		launch = true
+		hard_knockdown_lockout = true
+		knockback.y = minf(knockback.y, -45.0)
 	health -= amount
 	last_hit_was_counter = counter_hit
-	if counter_hit or launch:
+	if counter_hit or launch or force_interrupt:
 		attack_timer = 0.0
 		attack_hit_done = true
 		attack_hitbox.deactivate()
@@ -229,6 +269,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool, counter_hit := fals
 func _die(knockback: Vector2) -> void:
 	is_defeated = true
 	attack_hitbox.deactivate()
+	throw_collision_active = false
 	state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 	grabbed = false
 	remove_from_group("enemies")
@@ -238,7 +279,14 @@ func _die(knockback: Vector2) -> void:
 	game.play_sfx("enemy_down")
 
 func can_be_grabbed() -> bool:
-	return definition.can_be_grabbed and not grabbed and hurt_timer <= 0.0 and wake_up_timer <= 0.0
+	return (
+		definition.can_be_grabbed
+		and not is_defeated
+		and not grabbed
+		and not hard_knockdown_lockout
+		and hurt_timer <= 0.0
+		and wake_up_timer <= 0.0
+	)
 
 func grabbed_by(owner: Node) -> void:
 	grabbed = true
@@ -248,6 +296,7 @@ func grabbed_by(owner: Node) -> void:
 	invulnerable = 0.0
 	knockdown_state = false
 	wake_up_timer = 0.0
+	throw_collision_active = false
 	stun_timer = 2.0
 	state_machine.transition(FighterStateMachineScript.State.GRABBED)
 	attack_hitbox.deactivate()
@@ -261,6 +310,7 @@ func release_grab() -> void:
 func take_grab_strike(amount: int, force: Vector2) -> void:
 	if not grabbed or is_defeated:
 		return
+	_register_chain_hit()
 	health -= amount
 	velocity = force
 	flash_timer = 0.09
@@ -275,10 +325,89 @@ func take_grab_strike(amount: int, force: Vector2) -> void:
 	queue_redraw()
 
 
-func thrown(damage: int, force: Vector2) -> void:
+func thrown(damage: int, force: Vector2, collision_damage: int) -> void:
 	release_grab()
 	invulnerable = 0.0
+	throw_collision_active = collision_damage > 0
+	throw_collision_damage = collision_damage
+	throw_collision_targets.clear()
+	wall_collision_done = false
 	take_hit(damage, force, true)
+
+
+func lose_priority_clash() -> void:
+	attack_timer = 0.0
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	stun_timer = maxf(stun_timer, 0.12)
+	velocity = Vector2(-facing * 65.0, 0.0)
+	state_machine.transition(FighterStateMachineScript.State.STUN)
+	queue_redraw()
+
+
+func _register_chain_hit() -> void:
+	chain_hit_count = chain_hit_count + 1 if chain_timer > 0.0 else 1
+	chain_timer = CHAIN_RESET_DURATION
+
+
+func _resolve_throw_collisions() -> void:
+	if not throw_collision_active or is_defeated:
+		return
+	if not knockdown_state or hurt_timer <= 0.0:
+		throw_collision_active = false
+		return
+	var minimum_x := 60.0
+	var maximum_x: float = game.stage_limit + 80.0
+	if not wall_collision_done and (position.x <= minimum_x or position.x >= maximum_x):
+		wall_collision_done = true
+		throw_collision_active = false
+		var impact_direction := 1 if velocity.x >= 0.0 else -1
+		position.x = clampf(position.x, minimum_x, maximum_x)
+		velocity.x *= -0.32
+		hurt_timer = maxf(hurt_timer, 0.28)
+		stun_timer = maxf(stun_timer, hurt_timer)
+		_apply_environment_collision_damage(throw_collision_damage, Vector2(impact_direction * 180.0, -35.0))
+		if not is_defeated:
+			game.hit_confirm(position - Vector2(0, 46), 3, impact_direction)
+		return
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if other == self or not is_instance_valid(other) or other.is_defeated or other.grabbed:
+			continue
+		var other_id: int = other.get_instance_id()
+		if throw_collision_targets.has(other_id):
+			continue
+		if absf(position.y - other.position.y) > 32.0 or position.distance_to(other.position) > 48.0:
+			continue
+		var impact_direction := 1 if velocity.x >= 0.0 else -1
+		var health_before: int = other.health
+		other.take_hit(
+			throw_collision_damage,
+			Vector2(impact_direction * 360.0, -45.0),
+			true,
+			false,
+			0.0,
+			true
+		)
+		throw_collision_targets[other_id] = true
+		if other.health < health_before:
+			throw_collision_active = false
+			velocity.x *= 0.45
+			game.hit_confirm((position + other.position) * 0.5 - Vector2(0, 48), 3, impact_direction)
+		return
+
+
+func _apply_environment_collision_damage(amount: int, force: Vector2) -> void:
+	if amount <= 0 or is_defeated:
+		return
+	health -= amount
+	flash_timer = 0.13
+	recoil_offset = signf(force.x) * 15.0
+	impact_squash = 0.28
+	if definition.is_boss:
+		game.boss_health_changed(health, max_health)
+	if health <= 0:
+		_die(force)
+	queue_redraw()
 
 
 func _sync_fighter_state() -> void:

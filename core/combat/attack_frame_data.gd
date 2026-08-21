@@ -35,8 +35,12 @@ enum HitboxShape {
 @export var launch := false
 @export_range(0, 3, 1) var impact_strength := 1
 @export_range(0, 3, 1) var weapon_impact_strength := 0
+@export_range(1, 4, 1) var priority := 1
+@export_range(1, 8, 1) var max_hits := 1
+@export_range(0.0, 1.0, 0.001) var repeat_hit_interval := 0.0
 @export var can_grab := false
 @export var grab_range := 0.0
+@export var throw_collision_damage := 0
 
 @export_group("Counter Hit")
 @export var counter_hit_damage_bonus := 0
@@ -58,6 +62,12 @@ func is_valid_frame_data() -> bool:
 	if hit_trigger_remaining < 0.0 or hit_trigger_remaining > duration:
 		return false
 	if counter_hit_damage_bonus < 0 or counter_hit_knockback_scale < 1.0 or counter_hit_stun_bonus < 0.0:
+		return false
+	if priority < 1 or priority > 4 or max_hits < 1:
+		return false
+	if max_hits > 1 and (repeat_hit_interval <= 0.0 or repeat_hit_interval >= duration):
+		return false
+	if throw_collision_damage < 0:
 		return false
 	if hitbox_shape == HitboxShape.BOX:
 		return box_half_extents.x > 0.0 and box_half_extents.y > 0.0

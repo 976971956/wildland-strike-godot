@@ -20,5 +20,6 @@ weapon_bonus_damage = 7
 knockback = Vector2(118, -35)
 impact_strength = 1
 weapon_impact_strength = 2
+priority = 1
 can_grab = true
 grab_range = 39.0

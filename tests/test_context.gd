@@ -33,6 +33,11 @@ func instantiate_main() -> Node:
 	var game := packed_scene.instantiate()
 	tree.root.add_child(game)
 	await tree.process_frame
+	check(is_instance_valid(game.player), "main scene player script failed to instantiate")
+	if not is_instance_valid(game.player):
+		game.queue_free()
+		await tree.process_frame
+		return null
 	return game
 
 

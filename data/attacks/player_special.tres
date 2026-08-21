@@ -11,6 +11,7 @@ damage = 18
 knockback = Vector2(0, -45)
 launch = true
 impact_strength = 3
+priority = 4
 effect_radius = 115.0
 radial_horizontal_scale = 4.0
 self_damage = 7

@@ -20,3 +20,4 @@ knockback = Vector2(520, -55)
 launch = true
 impact_strength = 3
 weapon_impact_strength = 3
+priority = 3

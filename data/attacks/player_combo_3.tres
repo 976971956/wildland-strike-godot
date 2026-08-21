@@ -20,3 +20,4 @@ weapon_bonus_damage = 7
 knockback = Vector2(210, -35)
 impact_strength = 2
 weapon_impact_strength = 2
+priority = 2

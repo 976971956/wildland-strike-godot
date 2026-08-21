@@ -7,6 +7,7 @@ const ImpactScript = preload("res://scripts/impact_fx.gd")
 const StageObjectScript = preload("res://scripts/stage_object.gd")
 const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
+const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 
 @onready var actors: Node2D = $Actors
@@ -17,6 +18,7 @@ const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 var player
 var stage_limit := 1080.0
 var encounter_director: Node
+var music_director: Node
 var stage_index: int:
 	get:
 		return encounter_director.current_encounter_index if is_instance_valid(encounter_director) else 0
@@ -42,6 +44,12 @@ var last_hit_stop_duration := 0.0
 var last_haptic_duration_ms := 0
 var last_haptic_strength := 0.0
 var boss_phase_history: Array[StringName] = []
+var victory_phase := &"none"
+var victory_timer := 0.0
+var victory_time_bonus := 0
+var victory_life_bonus := 0
+var victory_clear_bonus := 0
+var victory_bonus_applied := false
 
 func _ready() -> void:
 	encounter_director = EncounterDirectorScript.new()
@@ -51,6 +59,8 @@ func _ready() -> void:
 	encounter_director.encounter_cleared.connect(_on_encounter_cleared)
 	encounter_director.scene_entered.connect(_on_scene_entered)
 	encounter_director.stage_completed.connect(_victory)
+	music_director = MusicDirectorScript.new()
+	add_child(music_director)
 	world_art.configure(STAGE_1_DEFINITION)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
@@ -80,7 +90,12 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("start"):
 			_start_game()
 		return
-	if state == "gameover" or state == "victory":
+	if state == "victory":
+		_tick_victory(delta)
+		if victory_phase == &"complete" and Input.is_action_just_pressed("start"):
+			get_tree().reload_current_scene()
+		return
+	if state == "gameover":
 		if Input.is_action_just_pressed("start"):
 			get_tree().reload_current_scene()
 		return
@@ -107,6 +122,7 @@ func _start_game() -> void:
 	player.set_physics_process(true)
 	hud.set_mode("playing")
 	hud.show_banner("READY", "CLEAR EVERY ENEMY IN THE BLOCK", 2.1)
+	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
 	play_sfx("start")
 
 func spawn_enemy(pos: Vector2, type: String) -> void:
@@ -172,6 +188,7 @@ func _stage_timeout() -> void:
 		return
 	stage_timed_out = true
 	state = "gameover"
+	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
 	player.set_physics_process(false)
 	hud.set_mode("gameover")
 
@@ -195,6 +212,7 @@ func boss_spawned(boss: Node, phase: Resource) -> void:
 	hud.set_boss_identity(phase.dialogue_speaker, 1)
 	hud.set_boss_health(boss.health, boss.max_health)
 	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
+	music_director.play_cue(MusicDirectorScript.Cue.BOSS)
 	play_sfx("boss_warning")
 
 
@@ -226,6 +244,7 @@ func _on_player_defeated() -> void:
 		hud.show_banner("CONTINUE!", "TEMPORARY INVINCIBILITY", 1.2)
 	else:
 		state = "gameover"
+		music_director.play_cue(MusicDirectorScript.Cue.SILENT)
 		player.set_physics_process(false)
 		hud.set_mode("gameover")
 
@@ -233,9 +252,35 @@ func _victory() -> void:
 	if state != "playing":
 		return
 	state = "victory"
+	victory_phase = &"clear"
+	victory_timer = 1.6
+	victory_time_bonus = ceili(stage_time_remaining) * 10
+	victory_life_bonus = maxi(lives, 0) * 1000
+	victory_clear_bonus = 5000
+	victory_bonus_applied = false
 	player.set_physics_process(false)
-	hud.set_mode("victory")
+	hud.set_victory_summary(victory_time_bonus, victory_life_bonus, victory_clear_bonus, score)
+	hud.set_victory_phase(victory_phase)
+	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
 	play_sfx("victory")
+
+
+func _tick_victory(delta: float) -> void:
+	victory_timer = maxf(0.0, victory_timer - delta)
+	if victory_timer > 0.0:
+		return
+	if victory_phase == &"clear":
+		victory_phase = &"bonus"
+		victory_timer = 2.4
+		if not victory_bonus_applied:
+			victory_bonus_applied = true
+			add_score(victory_time_bonus + victory_life_bonus + victory_clear_bonus)
+			hud.set_victory_summary(victory_time_bonus, victory_life_bonus, victory_clear_bonus, score)
+		hud.set_victory_phase(victory_phase)
+		play_sfx("bonus_tally")
+	elif victory_phase == &"bonus":
+		victory_phase = &"complete"
+		hud.set_victory_phase(victory_phase)
 
 func hit_confirm(
 	pos: Vector2,
@@ -307,7 +352,7 @@ func play_sfx(kind: StringName) -> void:
 		"special_burst":[760.0,0.12],"enemy_down":[62.0,0.16],
 		"boss_warning":[145.0,0.28],"boss_phase":[52.0,0.34],
 		"gunshot":[920.0,0.065],"throw":[260.0,0.055],"explosion":[54.0,0.16],
-		"pickup":[880.0,0.11],"victory":[740.0,0.35]
+		"pickup":[880.0,0.11],"victory":[740.0,0.35],"bonus_tally":[1040.0,0.22]
 	}
 	var cfg: Array = settings.get(kind,[220.0,0.05])
 	var stream := _make_tone(float(cfg[0]),float(cfg[1]),kind in ["hit","heavy","impact_crack","hurt","enemy_down"])

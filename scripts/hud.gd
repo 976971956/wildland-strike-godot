@@ -18,6 +18,11 @@ var dialogue_line := ""
 var dialogue_time := 0.0
 var weapon_name := ""
 var weapon_ammo := 0
+var victory_phase := &"none"
+var victory_time_bonus := 0
+var victory_life_bonus := 0
+var victory_clear_bonus := 0
+var victory_final_score := 0
 var font: Font
 
 func _ready() -> void:
@@ -85,6 +90,20 @@ func set_weapon(display_name: String, ammo: int) -> void:
 	weapon_ammo = maxi(ammo, 0)
 	queue_redraw()
 
+
+func set_victory_summary(time_bonus: int, life_bonus: int, clear_bonus: int, final_score: int) -> void:
+	victory_time_bonus = maxi(time_bonus, 0)
+	victory_life_bonus = maxi(life_bonus, 0)
+	victory_clear_bonus = maxi(clear_bonus, 0)
+	victory_final_score = maxi(final_score, 0)
+	mode = "victory"
+	queue_redraw()
+
+
+func set_victory_phase(value: StringName) -> void:
+	victory_phase = value
+	queue_redraw()
+
 func _draw() -> void:
 	# Arcade HUD panel.
 	draw_rect(Rect2(22,20,430,82), Color(0.035,0.045,0.07,0.88))
@@ -142,10 +161,26 @@ func _draw() -> void:
 		draw_rect(Rect2(size.x/2-210,330,420,4),Color("#e55045"))
 		draw_string(font,Vector2(size.x/2-210,371),"TAP / ENTER TO START",HORIZONTAL_ALIGNMENT_CENTER,420,24,Color.WHITE)
 		draw_string(font,Vector2(0,445),"AN ORIGINAL ARCADE TRIBUTE",HORIZONTAL_ALIGNMENT_CENTER,size.x,18,Color("#b9c7c2"))
-	elif mode == "gameover" or mode == "victory":
+	elif mode == "victory":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
-		var title := "MISSION COMPLETE" if mode == "victory" else "GAME OVER"
-		var col := Color("#f2c756") if mode == "victory" else Color("#ed5a4c")
-		draw_string(font,Vector2(0,278),title,HORIZONTAL_ALIGNMENT_CENTER,size.x,54,col)
+		draw_rect(Rect2(318, 142, 644, 438), Color(0.025, 0.035, 0.05, 0.94))
+		draw_rect(Rect2(318, 142, 644, 6), Color("#f2c756"))
+		draw_string(font, Vector2(318, 222), "STAGE 1 CLEAR", HORIZONTAL_ALIGNMENT_CENTER, 644, 50, Color("#f2c756"))
+		draw_string(font, Vector2(318, 258), "THE PROCESSING PLANT IS SECURE", HORIZONTAL_ALIGNMENT_CENTER, 644, 18, Color("#d6dfdb"))
+		if victory_phase == &"bonus" or victory_phase == &"complete":
+			draw_string(font, Vector2(390, 326), "TIME BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(720, 326), "%07d" % victory_time_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
+			draw_string(font, Vector2(390, 366), "LIFE BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(720, 366), "%07d" % victory_life_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
+			draw_string(font, Vector2(390, 406), "CLEAR BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(720, 406), "%07d" % victory_clear_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
+			draw_line(Vector2(390, 430), Vector2(890, 430), Color("#f2c756"), 2.0)
+			draw_string(font, Vector2(390, 470), "FINAL SCORE", HORIZONTAL_ALIGNMENT_LEFT, 300, 24, Color("#f2c756"))
+			draw_string(font, Vector2(690, 470), "%08d" % victory_final_score, HORIZONTAL_ALIGNMENT_RIGHT, 200, 24, Color.WHITE)
+		if victory_phase == &"complete":
+			draw_string(font, Vector2(318, 538), "TAP / ENTER TO RESTART", HORIZONTAL_ALIGNMENT_CENTER, 644, 20, Color("#d6dfdb"))
+	elif mode == "gameover":
+		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
+		draw_string(font,Vector2(0,278),"GAME OVER",HORIZONTAL_ALIGNMENT_CENTER,size.x,54,Color("#ed5a4c"))
 		draw_string(font,Vector2(0,338),"FINAL SCORE  %08d"%score,HORIZONTAL_ALIGNMENT_CENTER,size.x,25,Color.WHITE)
 		draw_string(font,Vector2(0,402),"TAP / ENTER TO RESTART",HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))

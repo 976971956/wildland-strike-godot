@@ -18,6 +18,9 @@ func _ready() -> void:
 		if "baseline_benchmark=1" in query_string:
 			scenario = "four_enemy_wave"
 			call_deferred("_start_combat_benchmark")
+		elif "victory_preview=1" in query_string:
+			scenario = "victory_preview"
+			call_deferred("_start_victory_preview")
 		elif "boss_preview=2" in query_string:
 			scenario = "boss_overdrive_preview"
 			call_deferred("_start_boss_preview", true)
@@ -102,6 +105,23 @@ func _start_scene_preview(scene_index: int) -> void:
 	game.encounter_director._update_scene(game.player.position.x)
 	game.hud.banner_time = 0.0
 	game.player.set_physics_process(false)
+
+
+func _start_victory_preview() -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game") or not game.has_method("_victory"):
+		scenario = "victory_preview_setup_failed"
+		return
+	game._start_game()
+	game.player.position = Vector2(3500.0, 560.0)
+	game.camera.position.x = 3500.0
+	game.encounter_director._update_scene(3500.0)
+	game.score = 18650
+	game.hud.set_score(game.score)
+	game.stage_time_remaining = 87.4
+	game.lives = 2
+	game._victory()
+	game._tick_victory(1.6)
 
 
 static func summarize(samples_ms: PackedFloat64Array) -> Dictionary:

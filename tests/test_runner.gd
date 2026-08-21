@@ -24,6 +24,7 @@ const SUITES := [
 	{"name": "weapon_system", "path": "res://tests/suites/weapon_system_test.gd"},
 	{"name": "neutral_targeting", "path": "res://tests/suites/neutral_targeting_test.gd"},
 	{"name": "boss_encounter", "path": "res://tests/suites/boss_encounter_test.gd"},
+	{"name": "presentation_flow", "path": "res://tests/suites/presentation_flow_test.gd"},
 ]
 
 

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_brute.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/enemy_sheet.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/brute_sheet_v2.png" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -23,7 +23,9 @@ behavior_cooldown = 0.72
 burst_min_distance = 145.0
 burst_max_distance = 420.0
 sprite_sheet = ExtResource("3")
-sprite_row = 1
+sprite_columns = 8
+sprite_rows = 1
+sprite_row = 0
 body_scale = 1.12
 tint = Color(0.513726, 0.34902, 0.639216, 1)
 show_health_bar = true

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_hunter.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/enemy_sheet.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/raider_sheet_v2.png" id="3"]
 [ext_resource type="Resource" path="res://data/weapons/pistol.tres" id="4"]
 
 [resource]
@@ -23,6 +23,8 @@ preferred_range_min = 235.0
 preferred_range_max = 455.0
 ranged_weapon = ExtResource("4")
 sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
 sprite_row = 0
 tint = Color(0.23, 0.58, 0.59, 1)
 show_health_bar = true

@@ -50,6 +50,7 @@ var grabbed_owner: Node = null
 var fall_velocity := Vector2.ZERO
 var death_timer := 0.0
 var walk_phase := 0.0
+var visual_clock := 0.0
 var approach_lane_offset := 0.0
 var knockdown_state := false
 var wake_up_timer := 0.0
@@ -185,6 +186,7 @@ func _physics_process(delta: float) -> void:
 	position.y = clampf(position.y, 455.0, 665.0)
 	position.x = clampf(position.x, 60.0, game.stage_limit + 80.0)
 	walk_phase += velocity.length() * delta * 0.025
+	visual_clock += delta
 	_check_attack()
 	_sync_fighter_state()
 	queue_redraw()
@@ -836,13 +838,7 @@ func _draw() -> void:
 		definition.shadow_half_extents.y,
 		Color(0.02, 0.03, 0.04, 0.42)
 	)
-	var column := 0
-	if is_defeated or hurt_timer > 0.0:
-		column = 3
-	elif attack_timer > 0.0:
-		column = 2
-	elif velocity.length() > 10.0:
-		column = 1 if int(walk_phase) % 2 == 0 else 0
+	var column := _visual_column()
 	var cell := Vector2(
 		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
 		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
@@ -918,13 +914,7 @@ func _draw_raptor() -> void:
 		definition.shadow_half_extents.y,
 		Color(0.02, 0.03, 0.04, 0.44)
 	)
-	var column := 0
-	if is_defeated or hurt_timer > 0.0:
-		column = 3
-	elif attack_timer > 0.0:
-		column = 2
-	elif velocity.length() > 10.0:
-		column = 1 if int(walk_phase) % 2 == 0 else 0
+	var column := _visual_column()
 	var cell := Vector2(
 		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
 		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
@@ -941,6 +931,24 @@ func _draw_raptor() -> void:
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _visual_column() -> int:
+	if is_defeated or knockdown_state:
+		return 7
+	if hurt_timer > 0.0 or stun_timer > 0.0 or boss_transition_timer > 0.0 or grabbed:
+		return 6
+	if attack_timer > 0.0:
+		if current_attack != null and attack_timer > current_attack.hit_trigger_remaining:
+			return 4
+		return 5
+	if behavior_phase == BehaviorPhase.TELEGRAPH:
+		return 4
+	if behavior_phase == BehaviorPhase.BURST:
+		return 5
+	if velocity.length() > 10.0:
+		return 2 + int(walk_phase) % 2
+	return int(visual_clock * 2.0) % 2
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var pts := PackedVector2Array()

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_raptor.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/raptor_sheet.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/raptor_sheet_v2.png" id="3"]
 
 [resource]
 script = ExtResource("1")
@@ -27,6 +27,7 @@ burst_max_distance = 360.0
 retreat_distance = 105.0
 retreat_duration = 0.28
 sprite_sheet = ExtResource("3")
+sprite_columns = 8
 visual_kind = 1
 sprite_rows = 1
 target_size = Vector2(222, 322)

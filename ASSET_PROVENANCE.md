@@ -70,3 +70,22 @@ Preserve all 24 Ranger sprites pixel-for-pixel in their existing exact 6-column 
 ```
 
 Verification: the imported texture retains alpha, all 24 frame coordinates are covered by deterministic tests, no chroma spill or cell bleed is visible at 1280×720 Web gameplay scale, and the four-enemy benchmark includes the animated ambience layer.
+
+## 2026-08-22 — Stage 1 enemy eight-state animation sheets
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by deterministic chroma-key-to-alpha conversion and connected-component frame isolation.
+
+Reference role: only existing original-IP Wildland Strike enemy art and the project's established arcade rendering direction were used to define costume families, scale, palette, and silhouette. No external franchise screenshot, ROM asset, character, logo, or traced animation frame was supplied. A first multi-row humanoid attempt was rejected during Web QA because figures crossed nominal cell boundaries; only its valid raider row was retained, while brute and boss were regenerated as isolated strips.
+
+### Final files
+
+- `assets/sprites/raider_sheet_v2.png`: 2560×320 RGBA, 8×1; SHA-256 `85f5b844142e71acc5ee667c2b45b78d19ea307936f15013329b39581bd9ddfd`; intermediate source SHA-256 `8283a342956f637992f5b7eee418987dc54c7c7bccd50804210a30e2a3539d14`.
+- `assets/sprites/brute_sheet_v2.png`: 2560×320 RGBA, 8×1; SHA-256 `3e78029f915dcd9b7b593400290665b2503b4a035acc2960aa5bce4f5f255f50`; intermediate source SHA-256 `ab51718ef99bf3113f2872f85785ff52e63e2d02fbbb54993c4169b08aaf3f8d`.
+- `assets/sprites/raptor_sheet_v2.png`: 2560×320 RGBA, 8×1; SHA-256 `d36cb5c7b8ff79bf0402d4bd890d2271011717659cbd94ab47715a0ff51198af`; intermediate source SHA-256 `9ad9eb44b8f5f7d5caa81d90ffcf28004f51190c7f47f089809b429c1bf6e0b5`.
+- `assets/sprites/boss_sheet_v2.png`: 2560×320 RGBA, 8×1; SHA-256 `d0923c77bd51c848c2607aa454437d3ccf8ecac44b4d53c8cd7f826927c1af77`; intermediate source SHA-256 `727c02e3947ebd64b2befa73a55ca2f443e160c52baf43536390d99e877f115c`.
+
+Generation direction for every strip required one consistent original character, late-1980s/early-1990s hand-pixeled arcade rendering, crisp dark outlines, a flat pure-magenta isolation background, no scenery/text/logos, and eight readable side-view actions in order: two idle/breathing poses, two locomotion poses, attack telegraph, attack contact or burst, hurt recoil, and defeated/knockdown. The raider is an athletic green-vest fighter; the brute is a bald heavyweight in a mustard vest and armored gauntlets; the raptor is an original green/orange neutral creature with crouch, run, pounce, hurt, and down silhouettes; Warden Rourke is a white-haired armored commander with a long red coat and heavy strike poses.
+
+Post-processing isolated the eight largest connected actors from each generated strip, discarded pixels belonging to neighboring actors, preserved each pose's relative vertical placement, applied one uniform nearest-neighbor scale per character, and centered every result in an exact 320×320 transparent cell. This deterministic normalization was added after the first equal-width crop still exposed neighboring limbs in the actual Web renderer.
+
+Verification: all four imported textures retain alpha and divide exactly into eight cells; grunt, hunter, brute, raptor, and boss use state-driven idle, locomotion, telegraph/windup, contact/burst, hurt, and defeat indices. A no-damage `roster_preview=1` Web fixture displays all five archetypes simultaneously without cross-faction combat contaminating the visual test. The final 1280×720 roster and both boss phases were inspected for cell bleed, crop loss, scale, silhouettes, tint, and depth ordering. The roster sample averaged 119.96 FPS over 300 frames with zero frames above 20 ms or 33 ms.

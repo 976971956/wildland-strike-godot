@@ -15,7 +15,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "baseline_benchmark=1" in query_string:
+		if "roster_preview=1" in query_string:
+			scenario = "enemy_roster_preview"
+			call_deferred("_start_roster_preview")
+		elif "baseline_benchmark=1" in query_string:
 			scenario = "four_enemy_wave"
 			call_deferred("_start_combat_benchmark")
 		elif "victory_preview=1" in query_string:
@@ -63,6 +66,59 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_roster_preview() -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game") or not game.has_method("spawn_enemy"):
+		scenario = "roster_preview_setup_failed"
+		return
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.position = Vector2(1325.0, 610.0)
+	game.player.facing = 1
+	game.player.set_physics_process(false)
+	game.camera.position.x = 1950.0
+	game.encounter_director._update_scene(1950.0)
+	var preview_data := [
+		{"type": "grunt", "position": Vector2(1490.0, 535.0), "pose": "idle"},
+		{"type": "hunter", "position": Vector2(1705.0, 610.0), "pose": "contact"},
+		{"type": "brute", "position": Vector2(1940.0, 535.0), "pose": "idle"},
+		{"type": "raptor", "position": Vector2(2175.0, 610.0), "pose": "burst"},
+		{"type": "boss", "position": Vector2(2420.0, 535.0), "pose": "idle"},
+	]
+	var preview_columns := {}
+	for preview in preview_data:
+		game.spawn_enemy(preview["position"], preview["type"])
+		var enemy = game.actors.get_child(game.actors.get_child_count() - 1)
+		enemy.set_physics_process(false)
+		enemy.facing = -1
+		enemy.visual_clock = 0.58
+		enemy.invulnerable = 999.0
+		enemy.hurtbox.enabled = false
+		enemy.attack_hitbox.deactivate()
+		enemy.combat_target = game.player
+		enemy.is_defeated = false
+		enemy.knockdown_state = false
+		enemy.hurt_timer = 0.0
+		enemy.stun_timer = 0.0
+		enemy.boss_transition_timer = 0.0
+		match String(preview["pose"]):
+			"contact":
+				enemy.attack_timer = maxf(0.01, enemy.current_attack.hit_trigger_remaining - 0.01)
+			"windup":
+				enemy.attack_timer = enemy.current_attack.duration
+			"burst":
+				enemy.behavior_phase = enemy.BehaviorPhase.BURST
+				enemy.behavior_direction = Vector2.LEFT
+		enemy.queue_redraw()
+		preview_columns[preview["type"]] = enemy._visual_column()
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	var browser_window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+	browser_window.__wildlandRosterColumns = JSON.stringify(preview_columns)
+	print("WEB_ROSTER_PREVIEW " + JSON.stringify(preview_columns))
+	game.set_process(false)
 
 
 func _start_boss_preview(force_overdrive: bool) -> void:

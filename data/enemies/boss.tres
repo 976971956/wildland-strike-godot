@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_boss.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/enemy_sheet.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/boss_sheet_v2.png" id="3"]
 [ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_boss_slam.tres" id="5"]
 [ext_resource type="Resource" path="res://data/attacks/enemy_boss_overdrive.tres" id="6"]
@@ -60,6 +60,8 @@ lane_tolerance = 50.0
 vertical_approach_scale = 0.85
 boss_phases = Array[Resource]([SubResource("BossPhaseCommand"), SubResource("BossPhaseOverdrive")])
 sprite_sheet = ExtResource("3")
-sprite_row = 2
+sprite_columns = 8
+sprite_rows = 1
+sprite_row = 0
 actor_scale = Vector2(1.25, 1.25)
 tint = Color(0.737255, 0.32549, 0.215686, 1)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"player_special"
+sound_event = &"special"
+duration = 0.62
+damage = 18
+knockback = Vector2(0, -45)
+launch = true
+impact_strength = 3
+effect_radius = 115.0
+radial_horizontal_scale = 4.0
+self_damage = 7
+invulnerable_duration = 0.7
+hit_stop_duration = 0.105

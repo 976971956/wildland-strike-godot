@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"enemy_brute"
+sound_event = &"enemy_swing"
+duration = 0.72
+hit_trigger_remaining = 0.36
+hitbox_shape = 2
+circle_radius = 47.0
+damage = 13
+knockback = Vector2(240, 0)
+impact_strength = 2

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"player_combo_1"
+sound_event = &"swing"
+duration = 0.26
+hit_trigger_remaining = 0.18
+combo_window = 0.62
+lunge_speed = 105.0
+hitbox_shape = 1
+box_center = Vector2(29, 0)
+box_half_extents = Vector2(23, 28)
+weapon_box_center = Vector2(40, 0)
+weapon_box_half_extents = Vector2(34, 28)
+damage = 12
+weapon_bonus_damage = 7
+knockback = Vector2(118, -35)
+impact_strength = 1
+weapon_impact_strength = 2
+can_grab = true
+grab_range = 39.0

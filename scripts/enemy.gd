@@ -6,13 +6,18 @@ const RAPTOR_SHEET: Texture2D = preload("res://assets/sprites/raptor_sheet.png")
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
+const ENEMY_ATTACKS := {
+	"grunt": preload("res://data/attacks/enemy_grunt.tres"),
+	"brute": preload("res://data/attacks/enemy_brute.tres"),
+	"raptor": preload("res://data/attacks/enemy_raptor.tres"),
+	"boss": preload("res://data/attacks/enemy_boss.tres"),
+}
 
 var game: Node
 var player: Node
 var enemy_type := "grunt"
 var max_health := 42
 var health := 42
-var damage := 8
 var speed := 115.0
 var facing := -1
 var attack_timer := 0.0
@@ -35,6 +40,7 @@ var knockdown_state := false
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
 var attack_hitbox
+var current_attack
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -43,6 +49,7 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	game = p_game
 	player = p_player
 	enemy_type = p_type
+	current_attack = ENEMY_ATTACKS.get(p_type, ENEMY_ATTACKS["grunt"])
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("enemies")
 	# Enemies collide with the player (layer 1), but not with one another.
@@ -54,20 +61,17 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	if p_type == "brute":
 		max_health = 78
 		health = 78
-		damage = 13
 		speed = 82.0
 		tint = Color("#8359a3")
 	elif p_type == "boss":
 		max_health = 260
 		health = 260
-		damage = 18
 		speed = 105.0
 		tint = Color("#bc5337")
 		scale = Vector2(1.25, 1.25)
 	elif p_type == "raptor":
 		max_health = 58
 		health = 58
-		damage = 11
 		speed = 152.0
 		tint = Color("#6d9140")
 	var shape := CollisionShape2D.new()
@@ -143,12 +147,12 @@ func _think(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 	if x_dist < 62.0 and y_dist < 36.0:
-		attack_timer = 0.72 if enemy_type != "boss" else 0.52
+		attack_timer = current_attack.duration
 		attack_hit_done = false
 		state_machine.transition(FighterStateMachineScript.State.ATTACK)
-		attack_hitbox.configure_circle(58.0 if enemy_type == "boss" else 47.0, facing)
+		attack_hitbox.configure_circle(current_attack.circle_radius, facing)
 		velocity = Vector2.ZERO
-		game.play_sfx("enemy_swing")
+		game.play_sfx(current_attack.sound_event)
 		return
 	var target := Vector2.ZERO
 	if x_dist > 48.0:
@@ -184,11 +188,13 @@ func _enemy_separation() -> Vector2:
 func _check_attack() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or not is_instance_valid(player):
 		return
-	var hit_time := 0.36 if enemy_type != "boss" else 0.27
-	if attack_timer < hit_time:
+	if attack_timer < current_attack.hit_trigger_remaining:
 		attack_hit_done = true
 		if attack_hitbox.overlaps(player.hurtbox):
-			player.take_hit(damage, Vector2(facing * 240.0, 0))
+			player.take_hit(
+				current_attack.damage,
+				Vector2(facing * current_attack.knockback.x, current_attack.knockback.y)
+			)
 		attack_hitbox.deactivate()
 
 func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:

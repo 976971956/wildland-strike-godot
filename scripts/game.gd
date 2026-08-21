@@ -18,6 +18,8 @@ var score := 0
 var lives := 2
 var state := "title"
 var shake_time := 0.0
+var shake_strength := 0.0
+var hit_stop_serial := 0
 var sfx_players: Array[AudioStreamPlayer] = []
 var sfx_index := 0
 
@@ -65,9 +67,10 @@ func _process(delta: float) -> void:
 	camera.position.x = target_x
 	if shake_time > 0.0:
 		shake_time -= delta
-		camera.offset = Vector2(randf_range(-7,7),randf_range(-5,5))
+		camera.offset = Vector2(randf_range(-shake_strength, shake_strength), randf_range(-shake_strength * 0.68, shake_strength * 0.68))
 	else:
 		camera.offset = camera.offset.move_toward(Vector2.ZERO,delta*80.0)
+		shake_strength = move_toward(shake_strength, 0.0, delta * 90.0)
 	if not wave_active and stage_index < waves.size():
 		var wave: Dictionary = waves[stage_index]
 		if player.position.x >= float(wave["x"]) - 330.0:
@@ -150,13 +153,32 @@ func _victory() -> void:
 	hud.set_mode("victory")
 	play_sfx("victory")
 
-func hit_confirm(pos: Vector2, heavy: bool) -> void:
+func hit_confirm(pos: Vector2, strength: int = 1, direction: int = 1, freeze: bool = true) -> void:
+	strength = clampi(strength, 1, 3)
 	var fx := ImpactScript.new()
 	actors.add_child(fx)
 	fx.position = pos
-	fx.setup(Color("#ffcb58") if heavy else Color("#e8f7e8"))
-	shake_time = 0.13 if heavy else 0.055
-	play_sfx("heavy" if heavy else "hit")
+	fx.setup(strength, direction)
+	shake_time = maxf(shake_time, [0.055, 0.095, 0.15][strength - 1])
+	shake_strength = maxf(shake_strength, [4.5, 8.0, 13.0][strength - 1])
+	play_sfx("heavy" if strength >= 2 else "hit")
+	if strength >= 3:
+		play_sfx("impact_crack")
+	if DisplayServer.is_touchscreen_available():
+		Input.vibrate_handheld([18, 32, 52][strength - 1], [0.35, 0.62, 0.9][strength - 1])
+	if freeze and DisplayServer.get_name() != "headless":
+		_hit_stop([0.035, 0.055, 0.085][strength - 1])
+
+func _hit_stop(duration: float) -> void:
+	hit_stop_serial += 1
+	var serial := hit_stop_serial
+	Engine.time_scale = 0.06
+	await get_tree().create_timer(duration, true, false, true).timeout
+	if serial == hit_stop_serial:
+		Engine.time_scale = 1.0
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 func play_sfx(kind: String) -> void:
 	if sfx_players.is_empty():
@@ -165,14 +187,15 @@ func play_sfx(kind: String) -> void:
 		"start":[520.0,0.22],"alert":[230.0,0.18],"jump":[420.0,0.09],
 		"swing":[180.0,0.045],"enemy_swing":[130.0,0.05],"hit":[110.0,0.055],
 		"heavy":[72.0,0.10],"hurt":[95.0,0.09],"special":[650.0,0.18],
-		"enemy_down":[62.0,0.16],"pickup":[880.0,0.11],"victory":[740.0,0.35]
+		"impact_crack":[185.0,0.075],"enemy_down":[62.0,0.16],
+		"pickup":[880.0,0.11],"victory":[740.0,0.35]
 	}
 	var cfg: Array = settings.get(kind,[220.0,0.05])
-	var stream := _make_tone(float(cfg[0]),float(cfg[1]),kind in ["hit","heavy","hurt","enemy_down"])
+	var stream := _make_tone(float(cfg[0]),float(cfg[1]),kind in ["hit","heavy","impact_crack","hurt","enemy_down"])
 	var audio := sfx_players[sfx_index % sfx_players.size()]
 	sfx_index += 1
 	audio.stream = stream
-	audio.volume_db = -9.0
+	audio.volume_db = -4.5 if kind in ["hit", "heavy", "impact_crack"] else -9.0
 	audio.play()
 
 func _make_tone(freq: float, duration: float, noisy: bool) -> AudioStreamWAV:
@@ -181,10 +204,13 @@ func _make_tone(freq: float, duration: float, noisy: bool) -> AudioStreamWAV:
 	var bytes := PackedByteArray()
 	bytes.resize(count*2)
 	for i in range(count):
-		var env := 1.0-float(i)/count
-		var wave := sin(TAU*freq*i/rate)
+		var progress := float(i) / count
+		var env := pow(1.0 - progress, 2.15)
+		var pitch_drop := 1.0 - progress * 0.48
+		var wave := sin(TAU * freq * pitch_drop * i / rate)
 		if noisy:
-			wave = wave*0.45+randf_range(-0.65,0.65)
+			var transient := maxf(1.0 - progress * 4.8, 0.0)
+			wave = wave * 0.62 + sin(TAU * freq * 2.35 * i / rate) * 0.17 + randf_range(-0.72, 0.72) * transient
 		var sample := int(clampf(wave*env,-1.0,1.0)*28000.0)
 		bytes[i*2] = sample & 0xff
 		bytes[i*2+1] = (sample >> 8) & 0xff

@@ -13,6 +13,8 @@ var z_height := 0.0
 var z_velocity := 0.0
 var attack_timer := 0.0
 var attack_hit_done := false
+var attack_buffer := 0.0
+var attack_lunge := 0.0
 var combo_step := 0
 var combo_window := 0.0
 var hurt_timer := 0.0
@@ -40,6 +42,8 @@ func _physics_process(delta: float) -> void:
 		return
 	z_index = int(position.y)
 	attack_timer = maxf(attack_timer - delta, 0.0)
+	attack_buffer = maxf(attack_buffer - delta, 0.0)
+	attack_lunge = move_toward(attack_lunge, 0.0, 760.0 * delta)
 	combo_window = maxf(combo_window - delta, 0.0)
 	hurt_timer = maxf(hurt_timer - delta, 0.0)
 	invulnerable = maxf(invulnerable - delta, 0.0)
@@ -64,12 +68,15 @@ func _physics_process(delta: float) -> void:
 	position.y = clampf(position.y, 455.0, 665.0)
 	walk_phase += velocity.length() * delta * 0.025
 	_check_attack_hit()
+	if attack_buffer > 0.0 and attack_timer <= 0.105 and hurt_timer <= 0.0 and special_timer <= 0.0:
+		attack_buffer = 0.0
+		_start_attack()
 	queue_redraw()
 
 func _read_input() -> void:
 	var input_vec := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var move_scale := 0.42 if attack_timer > 0.0 else 1.0
-	velocity = input_vec * SPEED * move_scale
+	velocity = input_vec * SPEED * move_scale + Vector2(facing * attack_lunge, 0.0)
 	if absf(input_vec.x) > 0.15:
 		facing = 1 if input_vec.x > 0.0 else -1
 	if Input.is_action_just_pressed("jump") and z_height <= 0.0 and attack_timer <= 0.0:
@@ -77,7 +84,10 @@ func _read_input() -> void:
 		z_height = 2.0
 		game.play_sfx("jump")
 	if Input.is_action_just_pressed("attack"):
-		_start_attack()
+		if attack_timer > 0.105:
+			attack_buffer = 0.24
+		else:
+			_start_attack()
 	if Input.is_action_just_pressed("special") and z_height <= 5.0 and health > 12 and special_timer <= 0.0:
 		_start_special()
 
@@ -94,10 +104,12 @@ func _start_attack() -> void:
 	if z_height > 15.0:
 		combo_step = 4
 		attack_timer = 0.34
+		attack_lunge = 170.0
 	else:
 		combo_step = combo_step % 3 + 1 if combo_window > 0.0 else 1
-		attack_timer = 0.28 if combo_step < 3 else 0.46
-		combo_window = 0.55
+		attack_timer = 0.26 if combo_step < 3 else 0.43
+		combo_window = 0.62
+		attack_lunge = [105.0, 132.0, 185.0][combo_step - 1]
 	game.play_sfx("swing")
 
 func _start_special() -> void:
@@ -111,6 +123,9 @@ func _start_special() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if is_instance_valid(enemy) and position.distance_to(enemy.position) < 115.0:
 			enemy.take_hit(18, Vector2((enemy.position.x - position.x) * 4.0, -45.0), true)
+			var hit_direction := 1 if enemy.position.x >= position.x else -1
+			game.hit_confirm(enemy.position - Vector2(0, 50), 3, hit_direction, false)
+	game._hit_stop(0.105)
 
 func _check_attack_hit() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or special_timer > 0.0:
@@ -136,12 +151,15 @@ func _check_attack_hit() -> void:
 				best_dist = dist
 	if best:
 		var damage := 10 + combo_step * 2
+		var used_weapon := weapon_hits > 0
 		if weapon_hits > 0:
 			damage += 7
 			weapon_hits -= 1
 		var launch := combo_step >= 3 or combo_step == 4
-		best.take_hit(damage, Vector2(facing * (390.0 if launch else 105.0), -35.0), launch)
-		game.hit_confirm(best.position - Vector2(0, 50), combo_step >= 3)
+		var knockback_strength := 430.0 if launch else (155.0 if combo_step == 2 else 118.0)
+		best.take_hit(damage, Vector2(facing * knockback_strength, -35.0), launch)
+		var impact_strength := 3 if launch else (2 if combo_step == 2 or used_weapon else 1)
+		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing)
 		if combo_step == 1 and z_height <= 0.0 and best.can_be_grabbed() and best_dist < 39.0:
 			grabbed_enemy = best
 			best.grabbed_by(self)
@@ -157,7 +175,7 @@ func take_hit(damage: int, knockback: Vector2) -> void:
 	hurt_timer = 0.42
 	invulnerable = 0.65
 	velocity = knockback
-	game.hit_confirm(position - Vector2(0, 55), true)
+	game.hit_confirm(position - Vector2(0, 55), 2, -signi(int(knockback.x)))
 	game.play_sfx("hurt")
 	if health <= 0:
 		is_defeated = true

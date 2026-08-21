@@ -16,6 +16,9 @@ var attack_timer := 0.0
 var hurt_timer := 0.0
 var stun_timer := 0.0
 var invulnerable := 0.0
+var flash_timer := 0.0
+var recoil_offset := 0.0
+var impact_squash := 0.0
 var attack_hit_done := false
 var is_defeated := false
 var grabbed := false
@@ -81,6 +84,9 @@ func _physics_process(delta: float) -> void:
 	hurt_timer = maxf(0.0, hurt_timer - delta)
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
+	flash_timer = maxf(0.0, flash_timer - delta)
+	recoil_offset = move_toward(recoil_offset, 0.0, 95.0 * delta)
+	impact_squash = move_toward(impact_squash, 0.0, 5.5 * delta)
 	if hurt_timer > 0.0:
 		velocity = velocity.move_toward(Vector2.ZERO, 420.0 * delta)
 	elif stun_timer > 0.0:
@@ -134,6 +140,9 @@ func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 	stun_timer = hurt_timer
 	velocity = knockback
 	invulnerable = 0.08
+	flash_timer = 0.075 if not launch else 0.13
+	recoil_offset = signf(knockback.x) * (8.0 if not launch else 15.0)
+	impact_squash = 0.16 if not launch else 0.28
 	if launch:
 		velocity = knockback
 	if enemy_type == "boss":
@@ -188,9 +197,9 @@ func _draw() -> void:
 	var target_size := Vector2(174.0, 174.0) * body_scale
 	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 14.0, target_size.x, target_size.y)
 	var source_rect := Rect2(column * cell.x, row * cell.y, cell.x, cell.y)
-	var tint_color := Color(1.0, 0.72, 0.66) if hurt_timer > 0.0 else Color.WHITE
+	var tint_color := Color(1.0, 1.0, 1.0) if flash_timer > 0.0 else (Color(1.0, 0.68, 0.61) if hurt_timer > 0.0 else Color.WHITE)
 	# Enemy source art faces left, opposite to the player sheet.
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-facing, 1.0))
+	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(SPRITE_SHEET, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if enemy_type == "brute" and health > 0:
@@ -210,8 +219,8 @@ func _draw_raptor() -> void:
 	var source_rect := Rect2(column * cell.x, 0.0, cell.x, cell.y)
 	var target_size := Vector2(222.0, 322.0)
 	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 32.0, target_size.x, target_size.y)
-	var tint_color := Color(1.0, 0.66, 0.58) if hurt_timer > 0.0 else Color.WHITE
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(-facing, 1.0))
+	var tint_color := Color(1.0, 1.0, 1.0) if flash_timer > 0.0 else (Color(1.0, 0.62, 0.54) if hurt_timer > 0.0 else Color.WHITE)
+	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(RAPTOR_SHEET, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

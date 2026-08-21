@@ -6,11 +6,16 @@ var score := 0
 var lives := 2
 var boss_health := 0
 var boss_max := 0
+var boss_name := "WARDEN"
+var boss_phase := 1
 var banner := ""
 var banner_sub := ""
 var banner_time := 0.0
 var mode := "title"
 var stage_time_remaining := 0.0
+var dialogue_speaker := ""
+var dialogue_line := ""
+var dialogue_time := 0.0
 var weapon_name := ""
 var weapon_ammo := 0
 var font: Font
@@ -23,6 +28,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if banner_time > 0.0:
 		banner_time -= delta
+		queue_redraw()
+	if dialogue_time > 0.0:
+		dialogue_time -= delta
 		queue_redraw()
 
 func set_player_health(current: int, maximum: int) -> void:
@@ -41,6 +49,19 @@ func set_lives(value: int) -> void:
 func set_boss_health(current: int, maximum: int) -> void:
 	boss_health = current
 	boss_max = maximum
+	queue_redraw()
+
+
+func set_boss_identity(display_name: String, phase_number: int) -> void:
+	boss_name = display_name
+	boss_phase = maxi(phase_number, 1)
+	queue_redraw()
+
+
+func show_dialogue(speaker: String, line: String, duration: float = 2.8) -> void:
+	dialogue_speaker = speaker
+	dialogue_line = line
+	dialogue_time = maxf(duration, 0.0)
 	queue_redraw()
 
 func show_banner(text: String, subtext: String = "", duration: float = 2.0) -> void:
@@ -97,7 +118,7 @@ func _draw() -> void:
 
 	if boss_max > 0 and boss_health > 0 and mode == "playing":
 		draw_rect(Rect2(778,34,466,49),Color(0.04,0.025,0.04,0.9))
-		draw_string(font,Vector2(798,56),"WASTELAND LORD",HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#ffcf5e"))
+		draw_string(font,Vector2(798,56),"%s  // PHASE %d" % [boss_name, boss_phase],HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#ffcf5e"))
 		draw_rect(Rect2(798,63,424,10),Color("#3b1d27"))
 		draw_rect(Rect2(798,63,424.0*boss_health/boss_max,10),Color("#e94845"))
 
@@ -106,6 +127,12 @@ func _draw() -> void:
 		draw_rect(Rect2(350,260,580,4),Color("#efbf4d"))
 		draw_string(font,Vector2(350,310),banner,HORIZONTAL_ALIGNMENT_CENTER,580,34,Color("#ffe17c"))
 		draw_string(font,Vector2(350,344),banner_sub,HORIZONTAL_ALIGNMENT_CENTER,580,18,Color("#d5e0db"))
+
+	if dialogue_time > 0.0 and mode == "playing":
+		draw_rect(Rect2(270, 540, 740, 92), Color(0.025, 0.018, 0.025, 0.94))
+		draw_rect(Rect2(270, 540, 7, 92), Color("#d84a35"))
+		draw_string(font, Vector2(294, 570), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, 690, 18, Color("#f0b65b"))
+		draw_string(font, Vector2(294, 607), dialogue_line, HORIZONTAL_ALIGNMENT_LEFT, 690, 24, Color.WHITE)
 
 	if mode == "title":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.035,0.58))

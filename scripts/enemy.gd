@@ -7,6 +7,7 @@ const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
 const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rules.gd")
 const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
+const BossPhaseDataScript = preload("res://core/combat/boss_phase_data.gd")
 const MAX_CHAIN_HITS := 6
 const CHAIN_RESET_DURATION := 0.85
 const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
@@ -71,6 +72,9 @@ var state_machine = FighterStateMachineScript.new()
 var hurtbox
 var attack_hitbox
 var current_attack
+var boss_phase_index := -1
+var current_boss_phase: Resource = null
+var boss_transition_timer := 0.0
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -107,6 +111,10 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	attack_hitbox = HitboxScript.new()
 	add_child(attack_hitbox)
 	attack_hitbox.setup(self)
+	if definition.is_boss:
+		boss_phase_index = 0
+		_apply_boss_phase(false)
+		game.boss_spawned(self, current_boss_phase)
 
 func _physics_process(delta: float) -> void:
 	state_machine.tick(delta)
@@ -132,6 +140,7 @@ func _physics_process(delta: float) -> void:
 			queue_redraw()
 			return
 	attack_timer = maxf(0.0, attack_timer - delta)
+	boss_transition_timer = maxf(0.0, boss_transition_timer - delta)
 	hurt_timer = maxf(0.0, hurt_timer - delta)
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
@@ -156,7 +165,7 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, 420.0 * delta)
 	elif wake_up_timer > 0.0:
 		velocity = Vector2.ZERO
-	elif stun_timer > 0.0:
+	elif stun_timer > 0.0 or boss_transition_timer > 0.0:
 		velocity = Vector2.ZERO
 	else:
 		_update_combat_target()
@@ -164,11 +173,12 @@ func _physics_process(delta: float) -> void:
 		hurt_timer <= 0.0
 		and wake_up_timer <= 0.0
 		and stun_timer <= 0.0
+		and boss_transition_timer <= 0.0
 		and is_instance_valid(combat_target)
 		and not combat_target.is_defeated
 	):
 		_think(delta)
-	elif hurt_timer <= 0.0 and wake_up_timer <= 0.0 and stun_timer <= 0.0:
+	elif hurt_timer <= 0.0 and wake_up_timer <= 0.0 and stun_timer <= 0.0 and boss_transition_timer <= 0.0:
 		velocity = Vector2.ZERO
 	move_and_slide()
 	_resolve_throw_collisions()
@@ -201,6 +211,8 @@ func _think(delta: float) -> void:
 			_think_pressure(player_offset)
 		EnemyDefinitionScript.BehaviorKind.RANGED:
 			_think_ranged(player_offset)
+		EnemyDefinitionScript.BehaviorKind.BOSS:
+			_think_boss(player_offset)
 		_:
 			_think_flanker(player_offset)
 
@@ -267,6 +279,24 @@ func _think_ranged(player_offset: Vector2) -> void:
 	velocity = Vector2.ZERO
 
 
+func _think_boss(player_offset: Vector2) -> void:
+	if current_boss_phase == null:
+		_think_pressure(player_offset)
+		return
+	if _try_start_contact_attack(player_offset):
+		return
+	var distance := player_offset.length()
+	if (
+		behavior_cooldown_timer <= 0.0
+		and distance >= current_boss_phase.special_min_distance
+		and distance <= current_boss_phase.special_max_distance
+		and absf(player_offset.y) <= definition.lane_tolerance * 1.45
+	):
+		_begin_telegraph(player_offset.normalized(), &"boss_special_telegraph")
+		return
+	_approach_player(player_offset, false)
+
+
 func _try_start_contact_attack(player_offset: Vector2) -> bool:
 	if absf(player_offset.x) >= definition.attack_distance or absf(player_offset.y) >= definition.lane_tolerance:
 		return false
@@ -302,7 +332,11 @@ func _approach_player(player_offset: Vector2, use_lane_offset: bool) -> void:
 
 func _begin_telegraph(direction: Vector2, event: StringName) -> void:
 	behavior_phase = BehaviorPhase.TELEGRAPH
-	behavior_timer = definition.telegraph_duration
+	behavior_timer = (
+		current_boss_phase.telegraph_duration
+		if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS
+		else definition.telegraph_duration
+	)
 	behavior_direction = direction if direction != Vector2.ZERO else Vector2(facing, 0.0)
 	facing = 1 if behavior_direction.x >= 0.0 else -1
 	velocity = Vector2.ZERO
@@ -334,7 +368,11 @@ func _begin_evade(player_offset: Vector2) -> void:
 
 func _begin_recovery() -> void:
 	behavior_phase = BehaviorPhase.RECOVER
-	behavior_timer = definition.recovery_duration
+	behavior_timer = (
+		current_boss_phase.recovery_duration
+		if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS
+		else definition.recovery_duration
+	)
 	velocity = Vector2.ZERO
 	_record_behavior_event(&"recovery")
 	queue_redraw()
@@ -348,11 +386,18 @@ func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
 			if behavior_timer <= 0.0:
 				if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 					_fire_ranged_weapon()
+				elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
+					_execute_boss_special()
 				else:
 					_begin_burst()
 		BehaviorPhase.BURST:
 			facing = 1 if behavior_direction.x >= 0.0 else -1
-			velocity = behavior_direction * speed * definition.burst_speed_scale
+			var burst_scale: float = (
+				current_boss_phase.burst_speed_scale
+				if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS
+				else definition.burst_speed_scale
+			)
+			velocity = behavior_direction * speed * burst_scale
 			if _try_start_contact_attack(player_offset):
 				_begin_recovery()
 			elif behavior_timer <= 0.0:
@@ -365,7 +410,13 @@ func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
 			velocity = Vector2.ZERO
 			if behavior_timer <= 0.0:
 				behavior_phase = BehaviorPhase.NEUTRAL
-				behavior_cooldown_timer = definition.behavior_cooldown
+				behavior_cooldown_timer = (
+					current_boss_phase.special_cooldown
+					if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS
+					else definition.behavior_cooldown
+				)
+				if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
+					current_attack = current_boss_phase.attack
 				_record_behavior_event(&"ready")
 				queue_redraw()
 
@@ -382,6 +433,59 @@ func _fire_ranged_weapon() -> void:
 	game.play_sfx(definition.ranged_weapon.fire_sfx)
 	_record_behavior_event(&"ranged_fire")
 	_begin_recovery()
+
+
+func _execute_boss_special() -> void:
+	current_attack = current_boss_phase.special_attack
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.RUSH:
+		behavior_phase = BehaviorPhase.BURST
+		behavior_timer = current_boss_phase.burst_duration
+		velocity = behavior_direction * speed * current_boss_phase.burst_speed_scale
+		_record_behavior_event(&"boss_rush")
+		queue_redraw()
+		return
+	_start_attack()
+	_record_behavior_event(&"boss_slam")
+	_begin_recovery()
+
+
+func _apply_boss_phase(notify_game: bool) -> void:
+	if boss_phase_index < 0 or boss_phase_index >= definition.boss_phases.size():
+		return
+	current_boss_phase = definition.boss_phases[boss_phase_index]
+	current_attack = current_boss_phase.attack
+	speed = definition.speed * current_boss_phase.speed_scale
+	behavior_cooldown_timer = 0.0
+	if notify_game:
+		game.boss_phase_changed(self, current_boss_phase, boss_phase_index)
+	queue_redraw()
+
+
+func _try_advance_boss_phase() -> bool:
+	if not definition.is_boss or boss_phase_index + 1 >= definition.boss_phases.size():
+		return false
+	var next_phase: Resource = definition.boss_phases[boss_phase_index + 1]
+	var threshold_health := ceili(max_health * next_phase.health_threshold_ratio)
+	if health > threshold_health:
+		return false
+	health = maxi(health, threshold_health)
+	boss_phase_index += 1
+	_cancel_behavior()
+	attack_timer = 0.0
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	hurt_timer = 0.0
+	stun_timer = 0.0
+	wake_up_timer = 0.0
+	knockdown_state = false
+	hard_knockdown_lockout = false
+	boss_transition_timer = 1.0
+	invulnerable = 1.0
+	velocity = Vector2.ZERO
+	state_machine.transition(FighterStateMachineScript.State.STUN)
+	_apply_boss_phase(true)
+	_record_behavior_event(&"boss_phase_changed")
+	return true
 
 
 func _cancel_behavior() -> void:
@@ -537,6 +641,7 @@ func take_hit(
 	if launch:
 		velocity = knockback
 	if definition.is_boss:
+		_try_advance_boss_phase()
 		game.boss_health_changed(health, max_health)
 	if health <= 0:
 		_die(knockback)
@@ -690,6 +795,7 @@ func _apply_environment_collision_damage(amount: int, force: Vector2) -> void:
 	recoil_offset = signf(force.x) * 15.0
 	impact_squash = 0.28
 	if definition.is_boss:
+		_try_advance_boss_phase()
 		game.boss_health_changed(health, max_health)
 	if health <= 0:
 		_die(force)
@@ -710,7 +816,7 @@ func _sync_fighter_state() -> void:
 		)
 	elif wake_up_timer > 0.0:
 		next_state = FighterStateMachineScript.State.GET_UP
-	elif stun_timer > 0.0:
+	elif stun_timer > 0.0 or boss_transition_timer > 0.0:
 		next_state = FighterStateMachineScript.State.STUN
 	elif attack_timer > 0.0:
 		next_state = FighterStateMachineScript.State.ATTACK
@@ -749,7 +855,8 @@ func _draw() -> void:
 		target_size.y
 	)
 	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else definition.tint)
+	var base_tint: Color = current_boss_phase.tint if definition.is_boss and current_boss_phase != null else definition.tint
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
 	# Enemy source art faces left, opposite to the player sheet.
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
@@ -757,6 +864,8 @@ func _draw() -> void:
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED and not is_defeated:
 		draw_line(Vector2(facing * 15.0, -57.0), Vector2(facing * 44.0, -57.0), Color("#b9c6ca"), 9.0)
 		draw_line(Vector2(facing * 20.0, -53.0), Vector2(facing * 17.0, -44.0), Color("#624438"), 6.0)
+	elif definition.is_boss and not is_defeated:
+		_draw_boss_overlay()
 	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
@@ -771,11 +880,36 @@ func _draw_behavior_cue() -> void:
 		cue_color = Color(0.62, 0.95, 0.28, pulse)
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 		cue_color = Color(1.0, 0.82, 0.25, pulse)
+	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
+		cue_color = Color(1.0, 0.2, 0.08, pulse)
 	draw_arc(Vector2(0.0, -12.0), 37.0, 0.0, TAU, 28, cue_color, 4.0)
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER:
 		draw_line(Vector2(facing * 22.0, -12.0), Vector2(facing * 92.0, -12.0), cue_color, 5.0)
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 		draw_line(Vector2(facing * 18.0, -48.0), Vector2(facing * 150.0, -48.0), cue_color, 3.0)
+	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
+		draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
+
+
+func _draw_boss_overlay() -> void:
+	if boss_phase_index >= 1:
+		var aura_alpha := 0.22 + sin(Time.get_ticks_msec() * 0.018) * 0.08
+		draw_arc(Vector2(0.0, -78.0), 58.0, 0.0, TAU, 30, Color(1.0, 0.16, 0.05, aura_alpha), 9.0)
+	draw_line(Vector2(facing * 24.0, -68.0), Vector2(facing * 69.0, -99.0), Color("#422b24"), 13.0)
+	draw_line(Vector2(facing * 24.0, -68.0), Vector2(facing * 69.0, -99.0), Color("#8a5b3b"), 7.0)
+	var hammer_center := Vector2(facing * 73.0, -101.0)
+	var hammer_points := PackedVector2Array([
+		hammer_center + Vector2(-20.0, -14.0),
+		hammer_center + Vector2(15.0, -14.0),
+		hammer_center + Vector2(23.0, -6.0),
+		hammer_center + Vector2(18.0, 13.0),
+		hammer_center + Vector2(-18.0, 13.0),
+		hammer_center + Vector2(-24.0, 5.0),
+	])
+	draw_colored_polygon(hammer_points, Color("#555d66"))
+	hammer_points.append(hammer_points[0])
+	draw_polyline(hammer_points, Color("#aab0b4"), 3.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(0.0, -111.0), Vector2(12.0, -94.0), Vector2(0.0, -78.0), Vector2(-12.0, -94.0)]), Color("#7e251d"))
 
 func _draw_raptor() -> void:
 	_draw_oval(

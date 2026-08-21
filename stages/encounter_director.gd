@@ -90,6 +90,20 @@ func get_encounter(index: int) -> Resource:
 	return encounters[index] if index >= 0 and index < encounters.size() else null
 
 
+func is_active_encounter(encounter_id: StringName) -> bool:
+	return (
+		active
+		and current_encounter_index >= 0
+		and current_encounter_index < encounters.size()
+		and encounters[current_encounter_index].encounter_id == encounter_id
+	)
+
+
+func register_dynamic_enemies(count: int) -> void:
+	if active and count > 0:
+		remaining_enemies += count
+
+
 func _update_scene(player_x: float) -> void:
 	for index in range(scenes.size()):
 		var scene: Resource = scenes[index]

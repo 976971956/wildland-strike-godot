@@ -12,6 +12,7 @@ enum BehaviorKind {
 	POUNCER,
 	PRESSURE,
 	RANGED,
+	BOSS,
 }
 
 enum Faction {
@@ -49,6 +50,7 @@ enum Faction {
 @export_range(80.0, 600.0, 1.0) var preferred_range_min := 220.0
 @export_range(100.0, 900.0, 1.0) var preferred_range_max := 440.0
 @export var ranged_weapon: Resource
+@export var boss_phases: Array[Resource] = []
 
 @export_group("Presentation")
 @export var sprite_sheet: Texture2D
@@ -81,7 +83,7 @@ func is_valid_definition() -> bool:
 	)
 	if not core_valid:
 		return false
-	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.RANGED:
+	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.BOSS:
 		return false
 	if attack_distance <= 0.0 or lane_tolerance <= 0.0 or vertical_approach_scale <= 0.0:
 		return false
@@ -114,4 +116,18 @@ func is_valid_definition() -> bool:
 			and ranged_weapon.has_method("is_valid_weapon")
 			and ranged_weapon.is_valid_weapon()
 		)
+	if is_boss:
+		if boss_phases.size() < 2:
+			return false
+		var previous_threshold := 1.01
+		var phase_ids := {}
+		for phase in boss_phases:
+			if phase == null or not phase.has_method("is_valid_phase") or not phase.is_valid_phase():
+				return false
+			if phase.health_threshold_ratio >= previous_threshold or phase_ids.has(phase.phase_id):
+				return false
+			previous_threshold = phase.health_threshold_ratio
+			phase_ids[phase.phase_id] = true
+		if boss_phases[0].health_threshold_ratio != 1.0:
+			return false
 	return true

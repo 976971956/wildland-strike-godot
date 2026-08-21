@@ -32,6 +32,8 @@ func run(test) -> void:
 	test.check(not raptor.can_be_grabbed and not boss.can_be_grabbed, "raptor or boss grab immunity drifted")
 	test.check(brute.show_health_bar and brute.body_scale == 1.12, "brute presentation data drifted")
 	test.check(boss.is_boss and boss.actor_scale == Vector2(1.25, 1.25), "boss presentation data drifted")
+	test.check(boss.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS, "boss lost its unique behavior kind")
+	test.check(boss.boss_phases.size() == 2, "boss phase definition count drifted")
 	test.check(raptor.visual_kind == EnemyDefinitionScript.VisualKind.RAPTOR, "raptor visual kind drifted")
 	test.check(raptor.faction == EnemyDefinitionScript.Faction.NEUTRAL_CREATURE, "raptor neutral faction drifted")
 	test.check(grunt.faction == EnemyDefinitionScript.Faction.HUMAN_ENEMY, "human enemy faction drifted")

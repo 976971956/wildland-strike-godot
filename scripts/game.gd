@@ -41,6 +41,7 @@ var last_impact_profile_id: StringName
 var last_hit_stop_duration := 0.0
 var last_haptic_duration_ms := 0
 var last_haptic_strength := 0.0
+var boss_phase_history: Array[StringName] = []
 
 func _ready() -> void:
 	encounter_director = EncounterDirectorScript.new()
@@ -188,6 +189,31 @@ func weapon_changed(weapon_definition: Resource, ammo: int) -> void:
 func boss_health_changed(current: int, maximum: int) -> void:
 	hud.set_boss_health(current,maximum)
 
+
+func boss_spawned(boss: Node, phase: Resource) -> void:
+	boss_phase_history = [phase.phase_id]
+	hud.set_boss_identity(phase.dialogue_speaker, 1)
+	hud.set_boss_health(boss.health, boss.max_health)
+	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
+	play_sfx("boss_warning")
+
+
+func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
+	boss_phase_history.append(phase.phase_id)
+	hud.set_boss_identity(phase.dialogue_speaker, phase_index + 1)
+	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
+	play_sfx("boss_phase")
+	if (
+		phase.reinforcement_count <= 0
+		or not encounter_director.is_active_encounter(&"plant_boss")
+	):
+		return
+	encounter_director.register_dynamic_enemies(phase.reinforcement_count)
+	for index in range(phase.reinforcement_count):
+		var side := -1.0 if index % 2 == 0 else 1.0
+		var spawn_position: Vector2 = boss.position + Vector2(side * (180.0 + index * 45.0), -55.0 + index * 110.0)
+		spawn_enemy(spawn_position, String(phase.reinforcement_enemy_id))
+
 func _on_player_health(current: int, maximum: int) -> void:
 	hud.set_player_health(current,maximum)
 
@@ -279,6 +305,7 @@ func play_sfx(kind: StringName) -> void:
 		"impact_crack":[185.0,0.075],"impact_snap":[310.0,0.035],
 		"impact_clash":[420.0,0.055],"body_slam":[58.0,0.12],
 		"special_burst":[760.0,0.12],"enemy_down":[62.0,0.16],
+		"boss_warning":[145.0,0.28],"boss_phase":[52.0,0.34],
 		"gunshot":[920.0,0.065],"throw":[260.0,0.055],"explosion":[54.0,0.16],
 		"pickup":[880.0,0.11],"victory":[740.0,0.35]
 	}

@@ -18,6 +18,12 @@ func _ready() -> void:
 		if "baseline_benchmark=1" in query_string:
 			scenario = "four_enemy_wave"
 			call_deferred("_start_combat_benchmark")
+		elif "boss_preview=2" in query_string:
+			scenario = "boss_overdrive_preview"
+			call_deferred("_start_boss_preview", true)
+		elif "boss_preview=1" in query_string:
+			scenario = "boss_command_preview"
+			call_deferred("_start_boss_preview", false)
 
 
 func _process(delta: float) -> void:
@@ -42,6 +48,28 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_boss_preview(force_overdrive: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game") or game.encounter_director.get_encounter_count() < 4:
+		scenario = "boss_preview_setup_failed"
+		return
+	game._start_game()
+	var encounter: Resource = game.encounter_director.get_encounter(3)
+	game.player.position = Vector2(encounter.origin_x, 560.0)
+	game.encounter_director._update_scene(encounter.origin_x)
+	game.encounter_director.force_start_encounter(3)
+	# The normal campaign enters the plant well before the boss trigger. A
+	# direct visual-QA jump suppresses that unrelated scene-entry card.
+	game.hud.banner_time = 0.0
+	if not force_overdrive:
+		return
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.definition.is_boss:
+			enemy.invulnerable = 0.0
+			enemy.take_hit(9999, Vector2(300.0, -60.0), true)
+			return
 
 
 static func summarize(samples_ms: PackedFloat64Array) -> Dictionary:

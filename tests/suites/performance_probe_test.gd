@@ -17,3 +17,5 @@ func run(test) -> void:
 	test.check(summary["p99_ms"] == 40.0, "P99 frame time is incorrect")
 	test.check(summary["frames_over_20_ms"] == 1, "over-20ms frame count is incorrect")
 	test.check(summary["frames_over_33_ms"] == 1, "over-33ms frame count is incorrect")
+	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
+	test.check(probe_source.contains("boss_preview=1") and probe_source.contains("boss_preview=2"), "reproducible boss visual previews are missing")

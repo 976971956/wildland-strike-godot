@@ -93,5 +93,9 @@ func run(test) -> void:
 
 
 func _defeat_all_enemies(_test) -> void:
-	for enemy in _test.tree.get_nodes_in_group("enemies"):
-		enemy.take_hit(9999, Vector2(300.0, 0.0), true)
+	# Boss phase gates intentionally reject a one-hit phase skip. Two passes also
+	# collect any dynamic phase reinforcements created by the first pass.
+	for _pass in range(2):
+		for enemy in _test.tree.get_nodes_in_group("enemies"):
+			enemy.invulnerable = 0.0
+			enemy.take_hit(9999, Vector2(300.0, 0.0), true)

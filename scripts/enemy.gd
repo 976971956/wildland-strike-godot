@@ -4,6 +4,8 @@ extends CharacterBody2D
 const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/enemy_sheet.png")
 const RAPTOR_SHEET: Texture2D = preload("res://assets/sprites/raptor_sheet.png")
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
+const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
+const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 
 var game: Node
 var player: Node
@@ -31,6 +33,8 @@ var approach_lane_offset := 0.0
 var tint := Color("#a84a55")
 var knockdown_state := false
 var state_machine = FighterStateMachineScript.new()
+var hurtbox
+var attack_hitbox
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -73,6 +77,12 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	shape.shape = capsule
 	shape.position.y = -22
 	add_child(shape)
+	hurtbox = HurtboxScript.new()
+	add_child(hurtbox)
+	hurtbox.setup(self)
+	attack_hitbox = HitboxScript.new()
+	add_child(attack_hitbox)
+	attack_hitbox.setup(self)
 
 func _physics_process(delta: float) -> void:
 	state_machine.tick(delta)
@@ -136,6 +146,7 @@ func _think(_delta: float) -> void:
 		attack_timer = 0.72 if enemy_type != "boss" else 0.52
 		attack_hit_done = false
 		state_machine.transition(FighterStateMachineScript.State.ATTACK)
+		attack_hitbox.configure_circle(58.0 if enemy_type == "boss" else 47.0, facing)
 		velocity = Vector2.ZERO
 		game.play_sfx("enemy_swing")
 		return
@@ -176,8 +187,9 @@ func _check_attack() -> void:
 	var hit_time := 0.36 if enemy_type != "boss" else 0.27
 	if attack_timer < hit_time:
 		attack_hit_done = true
-		if position.distance_to(player.position) < (76.0 if enemy_type == "boss" else 65.0):
+		if attack_hitbox.overlaps(player.hurtbox):
 			player.take_hit(damage, Vector2(facing * 240.0, 0))
+		attack_hitbox.deactivate()
 
 func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 	if is_defeated or invulnerable > 0.0:
@@ -204,6 +216,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 
 func _die(knockback: Vector2) -> void:
 	is_defeated = true
+	attack_hitbox.deactivate()
 	state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 	grabbed = false
 	remove_from_group("enemies")
@@ -222,6 +235,7 @@ func grabbed_by(owner: Node) -> void:
 	velocity = Vector2.ZERO
 	stun_timer = 2.0
 	state_machine.transition(FighterStateMachineScript.State.GRABBED)
+	attack_hitbox.deactivate()
 
 func release_grab() -> void:
 	grabbed = false

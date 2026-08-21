@@ -125,13 +125,13 @@ Exit gate: roadmap, workflow, automated baseline, and task tracking are reproduc
 Status: **in progress**
 
 - [x] M1-01: Introduce a fighter state enum/state machine without changing current behavior.
-- [ ] M1-02: Add reusable hitbox/hurtbox components and debug visualization.
+- [x] M1-02: Add reusable hitbox/hurtbox components and debug visualization.
 - [ ] M1-03: Move attacks into typed frame-data resources.
 - [ ] M1-04: Separate player input intent from fighter simulation.
 - [ ] M1-05: Replace enemy type branches with typed enemy definitions.
 - [ ] M1-06: Add deterministic combat regression tests for hit, stun, invulnerability, knockback, and defeat.
 
-Evidence (2026-08-22): player and enemy controllers share explicit fighter states with elapsed time, transition revision, defeat locking, and forced revival. The focused state suite passes 20/20 assertions and the full deterministic run passes 50/50.
+Evidence (2026-08-22): player and enemy controllers share explicit fighter states with elapsed time, transition revision, defeat locking, and forced revival. Player and enemy melee now resolve through reusable, mirrored box/circle hitboxes and persistent hurtboxes with opt-in debug rendering. Focused state and geometry suites pass 20/20 and 18/18 assertions; the full deterministic run passes 68/68.
 
 Exit gate: one hero and current enemies run entirely through reusable combat/data layers, with no regression in Web or iOS builds.
 
@@ -233,9 +233,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
-2. **M1-03 — Attack frame data:** move attack timing and outcomes into typed resources.
-3. **M1-04 — Input intent:** separate keyboard, gamepad, touch, and future AI intent from fighter simulation.
+1. **M1-03 — Attack frame data:** move attack timing and outcomes into typed resources.
+2. **M1-04 — Input intent:** separate keyboard, gamepad, touch, and future AI intent from fighter simulation.
+3. **M1-05 — Enemy definitions:** replace enemy type branches with typed data resources.
 
 ## Definition of done for every task
 

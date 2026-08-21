@@ -8,6 +8,8 @@ const SPEED := 255.0
 const MAX_HEALTH := 120
 const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/ranger_sheet.png")
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
+const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
+const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 var health := MAX_HEALTH
 var facing := 1
 var z_height := 0.0
@@ -27,6 +29,8 @@ var is_defeated := false
 var walk_phase := 0.0
 var game: Node
 var state_machine = FighterStateMachineScript.new()
+var hurtbox
+var attack_hitbox
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -46,6 +50,12 @@ func setup(p_game: Node) -> void:
 	shape.shape = capsule
 	shape.position.y = -22
 	add_child(shape)
+	hurtbox = HurtboxScript.new()
+	add_child(hurtbox)
+	hurtbox.setup(self)
+	attack_hitbox = HitboxScript.new()
+	add_child(attack_hitbox)
+	attack_hitbox.setup(self)
 
 func _physics_process(delta: float) -> void:
 	state_machine.tick(delta)
@@ -109,6 +119,7 @@ func _start_attack() -> void:
 		return
 	if is_instance_valid(grabbed_enemy):
 		state_machine.transition(FighterStateMachineScript.State.ATTACK)
+		attack_hitbox.deactivate()
 		grabbed_enemy.thrown(Vector2(facing * 560.0, -80.0))
 		grabbed_enemy = null
 		attack_timer = 0.42
@@ -125,10 +136,12 @@ func _start_attack() -> void:
 		attack_timer = 0.26 if combo_step < 3 else 0.43
 		combo_window = 0.62
 		attack_lunge = [105.0, 132.0, 185.0][combo_step - 1]
+	_configure_attack_hitbox()
 	game.play_sfx("swing")
 
 func _start_special() -> void:
 	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
+	attack_hitbox.deactivate()
 	health -= 7
 	health_changed.emit(health, MAX_HEALTH)
 	special_timer = 0.62
@@ -152,15 +165,12 @@ func _check_attack_hit() -> void:
 	attack_hit_done = true
 	var best: Node = null
 	var best_dist := 9999.0
-	var attack_range := 92.0 if weapon_hits > 0 else 70.0
-	if combo_step == 4:
-		attack_range = 86.0
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or enemy.is_defeated:
 			continue
 		var dx: float = (enemy.position.x - position.x) * facing
 		var dy: float = absf(enemy.position.y - position.y)
-		if dx > -12.0 and dx < attack_range and dy < 46.0:
+		if attack_hitbox.overlaps(enemy.hurtbox):
 			var dist: float = absf(dx) + dy
 			if dist < best_dist:
 				best = enemy
@@ -179,6 +189,20 @@ func _check_attack_hit() -> void:
 		if combo_step == 1 and z_height <= 0.0 and best.can_be_grabbed() and best_dist < 39.0:
 			grabbed_enemy = best
 			best.grabbed_by(self)
+	attack_hitbox.deactivate()
+
+
+func _configure_attack_hitbox() -> void:
+	var attack_range := 92.0 if weapon_hits > 0 else 70.0
+	if combo_step == 4:
+		attack_range = 86.0
+	var target_half_width: float = hurtbox.half_extents.x
+	var left_edge: float = -12.0 + target_half_width
+	var right_edge: float = attack_range - target_half_width
+	var center_x: float = (left_edge + right_edge) * 0.5
+	var half_width: float = (right_edge - left_edge) * 0.5
+	var half_depth: float = 46.0 - hurtbox.half_extents.y
+	attack_hitbox.configure_box(Vector2(center_x, 0.0), Vector2(half_width, half_depth), facing)
 
 func take_hit(damage: int, knockback: Vector2) -> void:
 	if invulnerable > 0.0 or is_defeated:

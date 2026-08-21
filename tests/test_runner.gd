@@ -5,6 +5,7 @@ const SUITES := [
 	{"name": "baseline_flow", "path": "res://tests/suites/baseline_flow_test.gd"},
 	{"name": "combat_rules", "path": "res://tests/suites/combat_rules_test.gd"},
 	{"name": "fighter_state_machine", "path": "res://tests/suites/fighter_state_machine_test.gd"},
+	{"name": "hitbox_hurtbox", "path": "res://tests/suites/hitbox_hurtbox_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

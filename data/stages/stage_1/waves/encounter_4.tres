@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="SpawnBossLeft"]
+script = ExtResource("2")
+enemy_id = &"boss"
+offset = Vector2(270, 475)
+
+[sub_resource type="Resource" id="SpawnGruntRight"]
+script = ExtResource("2")
+enemy_id = &"grunt"
+offset = Vector2(-250, 536)
+
+[sub_resource type="Resource" id="SpawnGruntRear"]
+script = ExtResource("2")
+enemy_id = &"grunt"
+offset = Vector2(360, 597)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"plant_boss"
+spawns = Array[Resource]([SubResource("SpawnBossLeft"), SubResource("SpawnGruntRight"), SubResource("SpawnGruntRear")])

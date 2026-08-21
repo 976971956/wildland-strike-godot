@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/waves/encounter_1.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"ruins_intro"
+trigger_x = 430.0
+origin_x = 760.0
+arena_right = 1190.0
+unlock_right = 1960.0
+reward_id = &"food"
+waves = Array[Resource]([ExtResource("2")])

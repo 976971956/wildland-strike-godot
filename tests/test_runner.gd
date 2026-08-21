@@ -19,6 +19,7 @@ const SUITES := [
 	{"name": "combat_resolution", "path": "res://tests/suites/combat_resolution_test.gd"},
 	{"name": "impact_feedback", "path": "res://tests/suites/impact_feedback_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
+	{"name": "stage_director", "path": "res://tests/suites/stage_director_test.gd"},
 ]
 
 

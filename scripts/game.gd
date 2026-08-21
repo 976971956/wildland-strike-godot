@@ -4,6 +4,8 @@ const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
 const PickupScript = preload("res://scripts/pickup.gd")
 const ImpactScript = preload("res://scripts/impact_fx.gd")
+const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
+const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 
 @onready var actors: Node2D = $Actors
 @onready var camera: Camera2D = $Camera2D
@@ -11,9 +13,16 @@ const ImpactScript = preload("res://scripts/impact_fx.gd")
 
 var player
 var stage_limit := 1080.0
-var stage_index := 0
-var wave_active := false
-var remaining_enemies := 0
+var encounter_director: Node
+var stage_index: int:
+	get:
+		return encounter_director.current_encounter_index if is_instance_valid(encounter_director) else 0
+var wave_active: bool:
+	get:
+		return encounter_director.active if is_instance_valid(encounter_director) else false
+var remaining_enemies: int:
+	get:
+		return encounter_director.remaining_enemies if is_instance_valid(encounter_director) else 0
 var score := 0
 var lives := 2
 var state := "title"
@@ -28,14 +37,13 @@ var last_hit_stop_duration := 0.0
 var last_haptic_duration_ms := 0
 var last_haptic_strength := 0.0
 
-var waves := [
-	{"x":760.0,"enemies":["grunt","raptor","grunt"]},
-	{"x":1530.0,"enemies":["grunt","brute","grunt","grunt"]},
-	{"x":2350.0,"enemies":["brute","grunt","brute","grunt"]},
-	{"x":3180.0,"enemies":["boss","grunt","grunt"]}
-]
-
 func _ready() -> void:
+	encounter_director = EncounterDirectorScript.new()
+	add_child(encounter_director)
+	encounter_director.configure(self, STAGE_1_DEFINITION)
+	encounter_director.encounter_started.connect(_on_encounter_started)
+	encounter_director.encounter_cleared.connect(_on_encounter_cleared)
+	encounter_director.stage_completed.connect(_victory)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
 		for i in range(4):
@@ -76,12 +84,7 @@ func _process(delta: float) -> void:
 	else:
 		camera.offset = camera.offset.move_toward(Vector2.ZERO,delta*80.0)
 		shake_strength = move_toward(shake_strength, 0.0, delta * 90.0)
-	if not wave_active and stage_index < waves.size():
-		var wave: Dictionary = waves[stage_index]
-		if player.position.x >= float(wave["x"]) - 330.0:
-			_start_wave(wave)
-	if stage_index >= waves.size() and not wave_active:
-		_victory()
+	encounter_director.tick(delta, player.position.x)
 
 func _start_game() -> void:
 	state = "playing"
@@ -90,40 +93,32 @@ func _start_game() -> void:
 	hud.show_banner("READY", "CLEAR EVERY ENEMY IN THE BLOCK", 2.1)
 	play_sfx("start")
 
-func _start_wave(wave: Dictionary) -> void:
-	wave_active = true
-	var wave_x := float(wave["x"])
-	stage_limit = wave_x + 430.0
-	var enemy_list: Array = wave["enemies"]
-	remaining_enemies = enemy_list.size()
-	for i in range(enemy_list.size()):
-		var side := 1.0 if i % 2 == 0 else -1.0
-		var spawn_x := wave_x + 270.0 + (i/2)*90.0 if side > 0 else wave_x - 250.0 - (i/2)*70.0
-		spawn_enemy(Vector2(spawn_x,475.0 + (i*61)%175),enemy_list[i])
-	hud.show_banner("FIGHT!", "DEFEAT THEM ALL TO ADVANCE", 1.45)
-	play_sfx("alert")
-
 func spawn_enemy(pos: Vector2, type: String) -> void:
 	var enemy := EnemyScript.new()
 	actors.add_child(enemy)
 	enemy.position = pos
 	enemy.setup(self,player,type)
 
-func enemy_removed(_enemy: Node) -> void:
-	remaining_enemies = maxi(remaining_enemies - 1,0)
-	if remaining_enemies == 0 and wave_active:
-		wave_active = false
-		stage_index += 1
-		stage_limit = 4200.0 if stage_index >= waves.size() else float(waves[stage_index]["x"]) + 430.0
-		if stage_index < waves.size():
-			hud.show_banner("STAGE CLEAR", "KEEP MOVING RIGHT  →", 1.8)
-			_spawn_reward()
+func enemy_removed(enemy: Node) -> void:
+	encounter_director.enemy_removed(enemy)
 
-func _spawn_reward() -> void:
+
+func _on_encounter_started(encounter: Resource, _encounter_index: int) -> void:
+	hud.show_banner(encounter.banner_title, encounter.banner_subtitle, 1.45)
+	play_sfx("alert")
+
+
+func _on_encounter_cleared(encounter: Resource, _encounter_index: int) -> void:
+	if not encounter.reward_id.is_empty():
+		hud.show_banner("AREA CLEAR", "KEEP MOVING RIGHT  →", 1.8)
+		_spawn_reward(encounter.reward_id)
+
+
+func _spawn_reward(item_id: StringName) -> void:
 	var item := PickupScript.new()
 	actors.add_child(item)
 	item.position = player.position + Vector2(105,randf_range(-35,35))
-	item.setup(self,"weapon" if stage_index % 2 == 0 else "food")
+	item.setup(self, String(item_id))
 
 func add_score(amount: int) -> void:
 	score += amount

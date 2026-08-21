@@ -153,9 +153,9 @@ Evidence (2026-08-22): a reusable run controller quantizes all eight directions,
 
 ### M3 — Polished Stage 1 vertical slice
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] Data-driven stage/scene and encounter director.
+- [x] Data-driven stage/scene and encounter director.
 - [ ] Three distinct scenes with transitions, lock zones, breakables, drops, hazards, and stage timer.
 - [ ] Basic brawler, charging heavy, ranged hunter, and neutral raptor behaviors.
 - [ ] Three weapon families: melee/throwable, explosive, and firearm with ammo.
@@ -163,6 +163,8 @@ Status: **not started**
 - [ ] Final-quality original background, sprites, animation, music, SFX, HUD, and stage-clear flow.
 
 Exit gate: Stage 1 alone is release-quality and demonstrates the final art, combat, content, test, and performance standards.
+
+Evidence (2026-08-22): Stage 1 content now loads through typed stage, scene, encounter, wave, and enemy-spawn resources instead of a hard-coded `game.gd` wave table. The independent encounter director owns trigger progression, arena bounds, sequential reinforcement delays, live-enemy accounting, clear signals, final stage completion, and benchmark force-starts while the game remains responsible for entities, rewards, HUD, and scoring. The original four encounters and fourteen enemies migrated without score or baseline-flow drift; the courtyard now demonstrates a tested two-group reinforcement sequence. Eighteen deterministic suites pass 635/635 assertions. The final exported four-enemy Web benchmark averages 121.56 FPS over 300 frames with zero frames above 20 ms and no console errors; Web export, iOS project export, and unsigned arm64 Xcode build pass.
 
 ### M4 — Four heroes and local cooperation
 
@@ -235,9 +237,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M3 — Stage foundation:** introduce typed stage/scene data and the encounter director.
-2. **M3 — Stage 1 encounters:** build distinct lock zones, transitions, hazards, breakables, and drops.
-3. **M3 — Stage 1 roster:** add a ranged hunter, neutral raptor targeting, and the first three weapon families.
+1. **M3 — Stage 1 encounters:** build three distinct scene segments, transitions, lock zones, hazards, breakables, drops, and a stage timer.
+2. **M3 — Stage 1 roster:** add a ranged hunter, neutral raptor targeting, and the first three weapon families.
+3. **M3 — Stage 1 boss:** replace the placeholder boss with a unique two-phase fight, dialogue, and reinforcement logic.
 
 ## Definition of done for every task
 

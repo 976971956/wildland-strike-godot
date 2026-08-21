@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="SpawnBruteLeft"]
+script = ExtResource("2")
+enemy_id = &"brute"
+offset = Vector2(270, 475)
+
+[sub_resource type="Resource" id="SpawnGruntRight"]
+script = ExtResource("2")
+enemy_id = &"grunt"
+offset = Vector2(-250, 536)
+
+[sub_resource type="Resource" id="SpawnBruteRear"]
+script = ExtResource("2")
+enemy_id = &"brute"
+offset = Vector2(360, 597)
+
+[sub_resource type="Resource" id="SpawnGruntDeep"]
+script = ExtResource("2")
+enemy_id = &"grunt"
+offset = Vector2(-320, 658)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"factory_pressure"
+spawns = Array[Resource]([SubResource("SpawnBruteLeft"), SubResource("SpawnGruntRight"), SubResource("SpawnBruteRear"), SubResource("SpawnGruntDeep")])

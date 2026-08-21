@@ -35,13 +35,13 @@ func _process(delta: float) -> void:
 
 func _start_combat_benchmark() -> void:
 	var game := get_parent()
-	if not game.has_method("_start_game") or game.waves.size() < 3:
+	if not game.has_method("_start_game") or game.encounter_director.get_encounter_count() < 3:
 		scenario = "benchmark_setup_failed"
 		return
 	game._start_game()
-	var wave: Dictionary = game.waves[2]
-	game.player.position = Vector2(float(wave["x"]), 560.0)
-	game._start_wave(wave)
+	var encounter: Resource = game.encounter_director.get_encounter(2)
+	game.player.position = Vector2(encounter.origin_x, 560.0)
+	game.encounter_director.force_start_encounter(2)
 
 
 static func summarize(samples_ms: PackedFloat64Array) -> Dictionary:

@@ -6,8 +6,13 @@ const STAGE_1 = preload("res://data/stages/stage_1/stage_1.tres")
 
 func run(test) -> void:
 	var all_objects: Array[Resource] = []
+	var background_paths := {}
 	for scene in STAGE_1.scenes:
 		all_objects.append_array(scene.environment_objects)
+		test.check(scene.background_texture != null, "%s has no scene-specific background" % scene.scene_id)
+		if scene.background_texture != null:
+			background_paths[scene.background_texture.resource_path] = true
+	test.check(background_paths.size() == 3, "Stage 1 scenes do not use three independent background assets")
 	test.check(all_objects.size() == 4, "Stage 1 environment object count drifted")
 	var object_ids := {}
 	var breakable_count := 0
@@ -99,5 +104,5 @@ func run(test) -> void:
 	var player_source := FileAccess.get_file_as_string("res://scripts/player.gd")
 	test.check(player_source.contains("get_nodes_in_group(\"breakables\")"), "player targeting is not wired to breakables")
 	var world_source := FileAccess.get_file_as_string("res://scripts/world_art.gd")
-	test.check(world_source.contains("VisualTheme.COURTYARD") and world_source.contains("VisualTheme.PLANT"), "world art does not render distinct scene themes")
+	test.check(world_source.contains("scene.background_texture"), "world art does not render scene-specific background data")
 	await test.dispose(game)

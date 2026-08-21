@@ -18,4 +18,10 @@ func run(test) -> void:
 	test.check(summary["frames_over_20_ms"] == 1, "over-20ms frame count is incorrect")
 	test.check(summary["frames_over_33_ms"] == 1, "over-33ms frame count is incorrect")
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
+	test.check(
+		probe_source.contains("__wildlandPerformanceJson")
+		and probe_source.contains("data-wildland-performance"),
+		"Web benchmark result is not exposed to browser automation"
+	)
 	test.check(probe_source.contains("boss_preview=1") and probe_source.contains("boss_preview=2"), "reproducible boss visual previews are missing")
+	test.check(probe_source.contains("scene_preview=2") and probe_source.contains("scene_preview=3"), "reproducible scene-art previews are missing")

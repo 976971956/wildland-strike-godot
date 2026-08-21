@@ -24,6 +24,12 @@ func _ready() -> void:
 		elif "boss_preview=1" in query_string:
 			scenario = "boss_command_preview"
 			call_deferred("_start_boss_preview", false)
+		elif "scene_preview=3" in query_string:
+			scenario = "processing_plant_preview"
+			call_deferred("_start_scene_preview", 2)
+		elif "scene_preview=2" in query_string:
+			scenario = "flooded_courtyard_preview"
+			call_deferred("_start_scene_preview", 1)
 
 
 func _process(delta: float) -> void:
@@ -35,7 +41,13 @@ func _process(delta: float) -> void:
 		return
 	var result := summarize(frame_times_ms)
 	result["scenario"] = scenario
-	print(LOG_PREFIX + JSON.stringify(result))
+	var result_json := JSON.stringify(result)
+	print(LOG_PREFIX + result_json)
+	if OS.has_feature("web"):
+		var browser_window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+		browser_window.__wildlandPerformanceJson = result_json
+		var browser_document: JavaScriptObject = JavaScriptBridge.get_interface("document")
+		browser_document.body.setAttribute("data-wildland-performance", result_json)
 	set_process(false)
 
 
@@ -70,6 +82,26 @@ func _start_boss_preview(force_overdrive: bool) -> void:
 			enemy.invulnerable = 0.0
 			enemy.take_hit(9999, Vector2(300.0, -60.0), true)
 			return
+
+
+func _start_scene_preview(scene_index: int) -> void:
+	var game := get_parent()
+	if (
+		not game.has_method("_start_game")
+		or scene_index < 0
+		or scene_index >= game.encounter_director.scenes.size()
+	):
+		scenario = "scene_preview_setup_failed"
+		return
+	game._start_game()
+	var scene: Resource = game.encounter_director.scenes[scene_index]
+	var camera_center_x: float = (scene.start_x + scene.end_x) * 0.5
+	game.encounter_director.completed = true
+	game.player.position = Vector2(camera_center_x - 280.0, 560.0)
+	game.camera.position.x = camera_center_x
+	game.encounter_director._update_scene(game.player.position.x)
+	game.hud.banner_time = 0.0
+	game.player.set_physics_process(false)
 
 
 static func summarize(samples_ms: PackedFloat64Array) -> Dictionary:

@@ -14,12 +14,19 @@ enum VisualTheme {
 @export var end_x := 1280.0
 @export var environment_id: StringName
 @export var visual_theme := VisualTheme.RUINS
+@export var background_texture: Texture2D
 @export var encounters: Array[Resource] = []
 @export var environment_objects: Array[Resource] = []
 
 
 func is_valid_scene() -> bool:
-	if scene_id.is_empty() or display_name.is_empty() or environment_id.is_empty() or end_x <= start_x:
+	if (
+		scene_id.is_empty()
+		or display_name.is_empty()
+		or environment_id.is_empty()
+		or background_texture == null
+		or end_x <= start_x
+	):
 		return false
 	var encounter_ids := {}
 	var previous_trigger := -1.0

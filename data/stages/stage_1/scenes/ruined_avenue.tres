@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/encounters/ruins_intro.tres" id="2"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/objects/avenue_crate.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/ruined_city_stage.png" id="4"]
 
 [resource]
 script = ExtResource("1")
@@ -13,5 +14,6 @@ start_x = 0.0
 end_x = 1100.0
 environment_id = &"overgrown_city_sunset"
 visual_theme = 0
+background_texture = ExtResource("4")
 encounters = Array[Resource]([ExtResource("2")])
 environment_objects = Array[Resource]([ExtResource("3")])

@@ -1,0 +1,6 @@
+interface:
+  display_name: "荒野突击队街机复刻"
+  short_description: "按长期路线图推进原创街机清关游戏的开发、验收、打包与发布"
+  default_prompt: "Use $wildland-strike-arcade to select and complete the next verified project milestone."
+policy:
+  allow_implicit_invocation: true

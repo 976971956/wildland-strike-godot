@@ -3,6 +3,7 @@ extends CharacterBody2D
 
 const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/enemy_sheet.png")
 const RAPTOR_SHEET: Texture2D = preload("res://assets/sprites/raptor_sheet.png")
+const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 
 var game: Node
 var player: Node
@@ -28,11 +29,17 @@ var death_timer := 0.0
 var walk_phase := 0.0
 var approach_lane_offset := 0.0
 var tint := Color("#a84a55")
+var knockdown_state := false
+var state_machine = FighterStateMachineScript.new()
+var fighter_state: int:
+	get:
+		return state_machine.current_state
 
 func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	game = p_game
 	player = p_player
 	enemy_type = p_type
+	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("enemies")
 	# Enemies collide with the player (layer 1), but not with one another.
 	# Soft separation below keeps their spacing natural instead of making them
@@ -68,8 +75,10 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	add_child(shape)
 
 func _physics_process(delta: float) -> void:
+	state_machine.tick(delta)
 	z_index = int(position.y)
 	if is_defeated:
+		state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 		death_timer -= delta
 		position += fall_velocity * delta
 		fall_velocity = fall_velocity.move_toward(Vector2.ZERO, 330.0 * delta)
@@ -80,6 +89,7 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	if grabbed:
+		state_machine.transition(FighterStateMachineScript.State.GRABBED)
 		if not is_instance_valid(grabbed_owner):
 			release_grab()
 		else:
@@ -89,6 +99,8 @@ func _physics_process(delta: float) -> void:
 			return
 	attack_timer = maxf(0.0, attack_timer - delta)
 	hurt_timer = maxf(0.0, hurt_timer - delta)
+	if hurt_timer <= 0.0:
+		knockdown_state = false
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
 	flash_timer = maxf(0.0, flash_timer - delta)
@@ -107,6 +119,7 @@ func _physics_process(delta: float) -> void:
 	position.x = clampf(position.x, 60.0, game.stage_limit + 80.0)
 	walk_phase += velocity.length() * delta * 0.025
 	_check_attack()
+	_sync_fighter_state()
 	queue_redraw()
 
 func _think(_delta: float) -> void:
@@ -122,6 +135,7 @@ func _think(_delta: float) -> void:
 	if x_dist < 62.0 and y_dist < 36.0:
 		attack_timer = 0.72 if enemy_type != "boss" else 0.52
 		attack_hit_done = false
+		state_machine.transition(FighterStateMachineScript.State.ATTACK)
 		velocity = Vector2.ZERO
 		game.play_sfx("enemy_swing")
 		return
@@ -176,6 +190,10 @@ func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 	flash_timer = 0.075 if not launch else 0.13
 	recoil_offset = signf(knockback.x) * (8.0 if not launch else 15.0)
 	impact_squash = 0.16 if not launch else 0.28
+	knockdown_state = launch
+	state_machine.transition(
+		FighterStateMachineScript.State.KNOCKDOWN if launch else FighterStateMachineScript.State.HURT
+	)
 	if launch:
 		velocity = knockback
 	if enemy_type == "boss":
@@ -186,6 +204,7 @@ func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
 
 func _die(knockback: Vector2) -> void:
 	is_defeated = true
+	state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 	grabbed = false
 	remove_from_group("enemies")
 	death_timer = 0.75
@@ -202,15 +221,38 @@ func grabbed_by(owner: Node) -> void:
 	grabbed_owner = owner
 	velocity = Vector2.ZERO
 	stun_timer = 2.0
+	state_machine.transition(FighterStateMachineScript.State.GRABBED)
 
 func release_grab() -> void:
 	grabbed = false
 	grabbed_owner = null
 	stun_timer = 0.25
+	state_machine.transition(FighterStateMachineScript.State.STUN)
 
 func thrown(force: Vector2) -> void:
 	release_grab()
 	take_hit(22, force, true)
+
+
+func _sync_fighter_state() -> void:
+	var next_state := FighterStateMachineScript.State.IDLE
+	if is_defeated:
+		next_state = FighterStateMachineScript.State.DEFEATED
+	elif grabbed:
+		next_state = FighterStateMachineScript.State.GRABBED
+	elif hurt_timer > 0.0:
+		next_state = (
+			FighterStateMachineScript.State.KNOCKDOWN
+			if knockdown_state
+			else FighterStateMachineScript.State.HURT
+		)
+	elif stun_timer > 0.0:
+		next_state = FighterStateMachineScript.State.STUN
+	elif attack_timer > 0.0:
+		next_state = FighterStateMachineScript.State.ATTACK
+	elif velocity.length() > 10.0:
+		next_state = FighterStateMachineScript.State.MOVE
+	state_machine.transition(next_state)
 
 func _draw() -> void:
 	if enemy_type == "raptor":

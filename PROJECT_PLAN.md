@@ -122,14 +122,16 @@ Exit gate: roadmap, workflow, automated baseline, and task tracking are reproduc
 
 ### M1 — Combat and data foundation
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] M1-01: Introduce a fighter state enum/state machine without changing current behavior.
+- [x] M1-01: Introduce a fighter state enum/state machine without changing current behavior.
 - [ ] M1-02: Add reusable hitbox/hurtbox components and debug visualization.
 - [ ] M1-03: Move attacks into typed frame-data resources.
 - [ ] M1-04: Separate player input intent from fighter simulation.
 - [ ] M1-05: Replace enemy type branches with typed enemy definitions.
 - [ ] M1-06: Add deterministic combat regression tests for hit, stun, invulnerability, knockback, and defeat.
+
+Evidence (2026-08-22): player and enemy controllers share explicit fighter states with elapsed time, transition revision, defeat locking, and forced revival. The focused state suite passes 20/20 assertions and the full deterministic run passes 50/50.
 
 Exit gate: one hero and current enemies run entirely through reusable combat/data layers, with no regression in Web or iOS builds.
 
@@ -231,9 +233,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M1-01 — Fighter state machine:** introduce explicit states behind the current player/enemy behavior with regression coverage.
-2. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
-3. **M1-03 — Attack frame data:** move attack timing and outcomes into typed resources.
+1. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
+2. **M1-03 — Attack frame data:** move attack timing and outcomes into typed resources.
+3. **M1-04 — Input intent:** separate keyboard, gamepad, touch, and future AI intent from fighter simulation.
 
 ## Definition of done for every task
 

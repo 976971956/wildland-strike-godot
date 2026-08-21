@@ -7,6 +7,7 @@ signal defeated
 const SPEED := 255.0
 const MAX_HEALTH := 120
 const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/ranger_sheet.png")
+const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 var health := MAX_HEALTH
 var facing := 1
 var z_height := 0.0
@@ -25,9 +26,14 @@ var weapon_hits := 0
 var is_defeated := false
 var walk_phase := 0.0
 var game: Node
+var state_machine = FighterStateMachineScript.new()
+var fighter_state: int:
+	get:
+		return state_machine.current_state
 
 func setup(p_game: Node) -> void:
 	game = p_game
+	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("player")
 	# Player and enemies block each other, while enemies use a separate layer so
 	# they can steer apart without forming a rigid moving clump.
@@ -42,7 +48,9 @@ func setup(p_game: Node) -> void:
 	add_child(shape)
 
 func _physics_process(delta: float) -> void:
+	state_machine.tick(delta)
 	if is_defeated:
+		state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 		return
 	z_index = int(position.y)
 	attack_timer = maxf(attack_timer - delta, 0.0)
@@ -75,6 +83,7 @@ func _physics_process(delta: float) -> void:
 	if attack_buffer > 0.0 and attack_timer <= 0.105 and hurt_timer <= 0.0 and special_timer <= 0.0:
 		attack_buffer = 0.0
 		_start_attack()
+	_sync_fighter_state()
 	queue_redraw()
 
 func _read_input() -> void:
@@ -99,12 +108,14 @@ func _start_attack() -> void:
 	if attack_timer > 0.11:
 		return
 	if is_instance_valid(grabbed_enemy):
+		state_machine.transition(FighterStateMachineScript.State.ATTACK)
 		grabbed_enemy.thrown(Vector2(facing * 560.0, -80.0))
 		grabbed_enemy = null
 		attack_timer = 0.42
 		game.play_sfx("heavy")
 		return
 	attack_hit_done = false
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
 	if z_height > 15.0:
 		combo_step = 4
 		attack_timer = 0.34
@@ -117,6 +128,7 @@ func _start_attack() -> void:
 	game.play_sfx("swing")
 
 func _start_special() -> void:
+	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
 	health -= 7
 	health_changed.emit(health, MAX_HEALTH)
 	special_timer = 0.62
@@ -183,7 +195,20 @@ func take_hit(damage: int, knockback: Vector2) -> void:
 	game.play_sfx("hurt")
 	if health <= 0:
 		is_defeated = true
+		state_machine.transition(FighterStateMachineScript.State.DEFEATED)
 		defeated.emit()
+	else:
+		state_machine.transition(FighterStateMachineScript.State.HURT)
+	queue_redraw()
+
+
+func revive(respawn_position: Vector2) -> void:
+	health = MAX_HEALTH
+	is_defeated = false
+	invulnerable = 2.2
+	position = respawn_position
+	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
+	health_changed.emit(health, MAX_HEALTH)
 	queue_redraw()
 
 func heal(amount: int) -> void:
@@ -194,6 +219,25 @@ func heal(amount: int) -> void:
 func give_weapon() -> void:
 	weapon_hits = 12
 	game.play_sfx("pickup")
+
+
+func _sync_fighter_state() -> void:
+	var next_state := FighterStateMachineScript.State.IDLE
+	if is_defeated:
+		next_state = FighterStateMachineScript.State.DEFEATED
+	elif hurt_timer > 0.0:
+		next_state = FighterStateMachineScript.State.HURT
+	elif special_timer > 0.0:
+		next_state = FighterStateMachineScript.State.SPECIAL
+	elif attack_timer > 0.0:
+		next_state = FighterStateMachineScript.State.ATTACK
+	elif is_instance_valid(grabbed_enemy):
+		next_state = FighterStateMachineScript.State.GRAB_HOLD
+	elif z_height > 0.0 or z_velocity != 0.0:
+		next_state = FighterStateMachineScript.State.AIRBORNE
+	elif velocity.length() > 20.0:
+		next_state = FighterStateMachineScript.State.MOVE
+	state_machine.transition(next_state)
 
 func _draw() -> void:
 	var jump_offset := Vector2(0, -z_height)

@@ -135,12 +135,7 @@ func _on_player_defeated() -> void:
 	hud.set_lives(lives)
 	if lives >= 0:
 		await get_tree().create_timer(1.1).timeout
-		player.health = player.MAX_HEALTH
-		player.is_defeated = false
-		player.invulnerable = 2.2
-		player.position -= Vector2(70,0)
-		hud.set_player_health(player.health,player.MAX_HEALTH)
-		player.queue_redraw()
+		player.revive(player.position - Vector2(70,0))
 		hud.show_banner("CONTINUE!", "TEMPORARY INVINCIBILITY", 1.2)
 	else:
 		state = "gameover"

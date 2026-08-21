@@ -7,6 +7,9 @@ const ATTACKS := [
 	preload("res://data/attacks/player_combo_3.tres"),
 	preload("res://data/attacks/player_combo_4.tres"),
 	preload("res://data/attacks/player_air.tres"),
+	preload("res://data/attacks/player_run.tres"),
+	preload("res://data/attacks/player_apex.tres"),
+	preload("res://data/attacks/player_dive.tres"),
 	preload("res://data/attacks/player_throw.tres"),
 	preload("res://data/attacks/player_special.tres"),
 	preload("res://data/attacks/enemy_grunt.tres"),
@@ -27,16 +30,22 @@ func run(test) -> void:
 	var combo_one = ATTACKS[0]
 	var combo_three = ATTACKS[2]
 	var combo_four = ATTACKS[3]
-	var air_attack = ATTACKS[4]
-	var throw_attack = ATTACKS[5]
-	var special_attack = ATTACKS[6]
-	var grunt_attack = ATTACKS[7]
-	var boss_attack = ATTACKS[10]
+	var jump_attack = ATTACKS[4]
+	var run_attack = ATTACKS[5]
+	var apex_attack = ATTACKS[6]
+	var dive_attack = ATTACKS[7]
+	var throw_attack = ATTACKS[8]
+	var special_attack = ATTACKS[9]
+	var grunt_attack = ATTACKS[10]
+	var boss_attack = ATTACKS[13]
 	test.check(combo_one.duration == 0.26 and combo_one.hit_trigger_remaining == 0.18, "combo-one timing drifted")
 	test.check(combo_one.damage == 12 and combo_one.knockback == Vector2(118, -35), "combo-one outcome drifted")
 	test.check(combo_three.duration == 0.32 and not combo_three.launch, "combo bridge data drifted")
 	test.check(combo_four.duration == 0.48 and combo_four.launch, "combo finisher data drifted")
-	test.check(air_attack.box_half_extents == Vector2(31, 28), "air-attack reach drifted")
+	test.check(jump_attack.box_half_extents == Vector2(31, 28), "jump-attack reach drifted")
+	test.check(run_attack.damage == 17 and run_attack.counter_hit_damage_bonus == 6, "run-attack outcome drifted")
+	test.check(apex_attack.attack_id == &"player_apex_attack" and apex_attack.launch, "apex-attack data drifted")
+	test.check(dive_attack.attack_id == &"player_dive_attack" and dive_attack.knockback == Vector2(500, -65), "dive-attack data drifted")
 	test.check(throw_attack.knockback == Vector2(560, -80), "throw force drifted")
 	test.check(special_attack.self_damage == 7 and special_attack.effect_radius == 115.0, "special cost or radius drifted")
 	test.check(grunt_attack.damage == 8 and grunt_attack.circle_radius == 47.0, "grunt attack data drifted")
@@ -45,6 +54,10 @@ func run(test) -> void:
 	test.check(weapon_geometry == [Vector2(40, 0), Vector2(34, 28)], "weapon reach data drifted")
 	var invalid_attack = AttackFrameDataScript.new()
 	test.check(not invalid_attack.is_valid_frame_data(), "empty frame data should be invalid")
+	invalid_attack.attack_id = &"invalid_counter"
+	invalid_attack.duration = 0.2
+	invalid_attack.counter_hit_knockback_scale = 0.5
+	test.check(not invalid_attack.is_valid_frame_data(), "invalid counter-hit scale should be rejected")
 
 	var game: Node = await test.instantiate_main()
 	if game == null:
@@ -74,10 +87,12 @@ func run(test) -> void:
 		game.player.attack_timer = 0.0
 		game.player.combo_window = 0.4
 		game.player.z_height = 20.0
+		game.player.z_velocity = 250.0
 		game.player._start_attack()
-		test.check(game.player.current_attack.attack_id == &"player_air", "player did not select air-attack data")
-		test.check(game.player.combo_window == 0.4, "air attack unexpectedly cleared the ground combo window")
+		test.check(game.player.current_attack.attack_id == &"player_jump_attack", "player did not select jump-attack data")
+		test.check(game.player.combo_window == 0.0, "jump attack retained a ground combo window")
 		game.player.z_height = 0.0
+		game.player.z_velocity = 0.0
 
 		enemy.invulnerable = 0.0
 		enemy.hurt_timer = 0.0

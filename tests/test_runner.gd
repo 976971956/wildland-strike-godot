@@ -12,6 +12,7 @@ const SUITES := [
 	{"name": "combat_regression", "path": "res://tests/suites/combat_regression_test.gd"},
 	{"name": "run_controller", "path": "res://tests/suites/run_controller_test.gd"},
 	{"name": "combo_chain", "path": "res://tests/suites/combo_chain_test.gd"},
+	{"name": "aerial_combat", "path": "res://tests/suites/aerial_combat_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

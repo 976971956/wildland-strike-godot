@@ -11,10 +11,14 @@ const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_m
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
 const AttackFrameDataScript = preload("res://core/combat/attack_frame_data.gd")
+const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
 const ActionInputSourceScript = preload("res://core/input/action_input_source.gd")
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
 const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
-const AIR_ATTACK = preload("res://data/attacks/player_air.tres")
+const RUN_ATTACK = preload("res://data/attacks/player_run.tres")
+const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
+const APEX_ATTACK = preload("res://data/attacks/player_apex.tres")
+const DIVE_ATTACK = preload("res://data/attacks/player_dive.tres")
 const THROW_ATTACK = preload("res://data/attacks/player_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
 const RUN_SPEED_MULTIPLIER := 1.65
@@ -32,6 +36,7 @@ var finisher_armed := false
 var hurt_timer := 0.0
 var invulnerable := 0.0
 var special_timer := 0.0
+var last_hit_was_counter := false
 var grabbed_enemy: Node = null
 var weapon_hits := 0
 var is_defeated := false
@@ -159,6 +164,7 @@ func _handle_attack_intent() -> void:
 func _start_attack() -> void:
 	if attack_timer > 0.11:
 		return
+	var was_running := is_running
 	run_controller.cancel()
 	if is_instance_valid(grabbed_enemy):
 		_reset_combo()
@@ -173,9 +179,12 @@ func _start_attack() -> void:
 		return
 	attack_hit_done = false
 	state_machine.transition(FighterStateMachineScript.State.ATTACK)
-	if z_height > 15.0:
-		combo_step = 4
-		current_attack = AIR_ATTACK
+	if z_height > 0.0:
+		_reset_combo()
+		current_attack = _aerial_attack_for_velocity()
+	elif was_running:
+		_reset_combo()
+		current_attack = RUN_ATTACK
 	else:
 		if combo_step == COMBO_DEFINITION.finisher_from_step and combo_window > 0.0:
 			combo_step = COMBO_DEFINITION.finisher_step if finisher_armed else 1
@@ -193,6 +202,19 @@ func _start_attack() -> void:
 	attack_lunge = current_attack.lunge_speed
 	_configure_attack_hitbox()
 	game.play_sfx(current_attack.sound_event)
+
+
+func _aerial_attack_for_velocity():
+	var selected_attack
+	if z_velocity > 130.0:
+		selected_attack = JUMP_ATTACK
+	elif z_velocity >= -130.0:
+		selected_attack = APEX_ATTACK
+	else:
+		selected_attack = DIVE_ATTACK
+	if selected_attack.vertical_velocity_override != 0.0:
+		z_velocity = selected_attack.vertical_velocity_override
+	return selected_attack
 
 func _start_special() -> void:
 	run_controller.cancel()
@@ -240,16 +262,20 @@ func _check_attack_hit() -> void:
 				best = enemy
 				best_dist = dist
 	if best:
-		var damage: int = current_attack.damage
+		var counter_hit := CounterHitRulesScript.is_counterable(best)
+		var damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
 		var used_weapon := weapon_hits > 0
 		if used_weapon:
 			damage += current_attack.weapon_bonus_damage
 			weapon_hits -= 1
-		var launch: bool = current_attack.launch
+		var launch: bool = CounterHitRulesScript.launch_for(current_attack, counter_hit)
+		var resolved_knockback := CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
 		best.take_hit(
 			damage,
-			Vector2(facing * current_attack.knockback.x, current_attack.knockback.y),
-			launch
+			resolved_knockback,
+			launch,
+			counter_hit,
+			CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
 		)
 		var impact_strength: int = (
 			current_attack.weapon_impact_strength
@@ -275,17 +301,22 @@ func _configure_attack_hitbox() -> void:
 	else:
 		attack_hitbox.deactivate()
 
-func take_hit(damage: int, knockback: Vector2) -> void:
+func take_hit(damage: int, knockback: Vector2, counter_hit := false, counter_stun_bonus := 0.0) -> void:
 	if invulnerable > 0.0 or is_defeated:
 		return
 	run_controller.cancel()
 	_reset_combo()
+	last_hit_was_counter = counter_hit
+	if counter_hit:
+		attack_timer = 0.0
+		attack_hit_done = true
+		attack_hitbox.deactivate()
 	if is_instance_valid(grabbed_enemy):
 		grabbed_enemy.release_grab()
 		grabbed_enemy = null
 	health = maxi(health - damage, 0)
 	health_changed.emit(health, MAX_HEALTH)
-	hurt_timer = 0.42
+	hurt_timer = 0.42 + counter_stun_bonus
 	invulnerable = 0.65
 	velocity = knockback
 	game.hit_confirm(position - Vector2(0, 55), 2, -signi(int(knockback.x)))
@@ -374,8 +405,16 @@ func _visual_frame() -> Vector2i:
 	if is_instance_valid(grabbed_enemy):
 		return Vector2i(3, 2)
 	if z_height > 12.0:
-		return Vector2i(1, 2) if attack_timer > 0.0 else Vector2i(0, 2)
+		if attack_timer > 0.0 and current_attack != null:
+			if current_attack.attack_id == &"player_apex_attack":
+				return Vector2i(3, 2)
+			if current_attack.attack_id == &"player_dive_attack":
+				return Vector2i(4, 2)
+			return Vector2i(1, 2)
+		return Vector2i(0, 2)
 	if attack_timer > 0.0:
+		if current_attack != null and current_attack.attack_id == &"player_run_attack":
+			return Vector2i(4, 1)
 		if combo_step == 1:
 			return Vector2i(1 if attack_timer < 0.18 else 0, 1)
 		if combo_step == 2:

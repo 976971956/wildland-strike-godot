@@ -4,6 +4,7 @@ extends CharacterBody2D
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
+const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
 const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
 const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
@@ -36,6 +37,7 @@ var death_timer := 0.0
 var walk_phase := 0.0
 var approach_lane_offset := 0.0
 var knockdown_state := false
+var last_hit_was_counter := false
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
 var attack_hitbox
@@ -179,17 +181,25 @@ func _check_attack() -> void:
 	if attack_timer < current_attack.hit_trigger_remaining:
 		attack_hit_done = true
 		if attack_hitbox.overlaps(player.hurtbox):
+			var counter_hit := CounterHitRulesScript.is_counterable(player)
 			player.take_hit(
-				current_attack.damage,
-				Vector2(facing * current_attack.knockback.x, current_attack.knockback.y)
+				CounterHitRulesScript.damage_for(current_attack, counter_hit),
+				CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit),
+				counter_hit,
+				CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
 			)
 		attack_hitbox.deactivate()
 
-func take_hit(amount: int, knockback: Vector2, launch: bool) -> void:
+func take_hit(amount: int, knockback: Vector2, launch: bool, counter_hit := false, counter_stun_bonus := 0.0) -> void:
 	if is_defeated or invulnerable > 0.0:
 		return
 	health -= amount
-	hurt_timer = 0.25 if not launch else 0.46
+	last_hit_was_counter = counter_hit
+	if counter_hit:
+		attack_timer = 0.0
+		attack_hit_done = true
+		attack_hitbox.deactivate()
+	hurt_timer = (0.25 if not launch else 0.46) + counter_stun_bonus
 	stun_timer = hurt_timer
 	velocity = knockback
 	invulnerable = 0.08

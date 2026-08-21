@@ -18,6 +18,7 @@ enum HitboxShape {
 
 @export_group("Motion")
 @export var lunge_speed := 0.0
+@export var vertical_velocity_override := 0.0
 
 @export_group("Hitbox")
 @export var hitbox_shape := HitboxShape.NONE
@@ -37,6 +38,12 @@ enum HitboxShape {
 @export var can_grab := false
 @export var grab_range := 0.0
 
+@export_group("Counter Hit")
+@export var counter_hit_damage_bonus := 0
+@export_range(1.0, 3.0, 0.01) var counter_hit_knockback_scale := 1.0
+@export var counter_hit_launch := false
+@export_range(0.0, 1.0, 0.001) var counter_hit_stun_bonus := 0.0
+
 @export_group("Area Effect")
 @export var effect_radius := 0.0
 @export var radial_horizontal_scale := 0.0
@@ -49,6 +56,8 @@ func is_valid_frame_data() -> bool:
 	if attack_id.is_empty() or duration <= 0.0:
 		return false
 	if hit_trigger_remaining < 0.0 or hit_trigger_remaining > duration:
+		return false
+	if counter_hit_damage_bonus < 0 or counter_hit_knockback_scale < 1.0 or counter_hit_stun_bonus < 0.0:
 		return false
 	if hitbox_shape == HitboxShape.BOX:
 		return box_half_extents.x > 0.0 and box_half_extents.y > 0.0

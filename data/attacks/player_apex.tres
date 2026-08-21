@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"player_apex_attack"
+sound_event = &"swing"
+duration = 0.4
+hit_trigger_remaining = 0.24
+lunge_speed = 260.0
+hitbox_shape = 1
+box_center = Vector2(42, 0)
+box_half_extents = Vector2(34, 30)
+weapon_box_center = Vector2(48, 0)
+weapon_box_half_extents = Vector2(40, 30)
+damage = 19
+weapon_bonus_damage = 7
+knockback = Vector2(430, -50)
+launch = true
+impact_strength = 3
+weapon_impact_strength = 3
+counter_hit_damage_bonus = 5
+counter_hit_knockback_scale = 1.18
+counter_hit_launch = true
+counter_hit_stun_bonus = 0.1

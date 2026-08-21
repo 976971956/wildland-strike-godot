@@ -141,7 +141,7 @@ Status: **in progress**
 
 - [x] M2-01: Eight-direction double-tap run and turning behavior.
 - [x] M2-02: Four-hit combo and character-specific finisher windows.
-- [ ] M2-03: Running, jump, and apex/dive attacks with counter-hit rules.
+- [x] M2-03: Running, jump, and apex/dive attacks with counter-hit rules.
 - [ ] M2-04: Offensive command move and attack+jump defensive special.
 - [ ] M2-05: Full grab strikes, directional throws, combo throws, knockdown, and wake-up.
 - [ ] M2-06: Attack priority, multi-hit, wall/throw collision, and anti-infinite rules.
@@ -149,7 +149,7 @@ Status: **in progress**
 
 Exit gate: a graybox arena supports the complete combat grammar against three behaviorally distinct enemies at stable 60 FPS.
 
-Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ranger now uses a typed four-hit chain: combo three is a non-launch bridge, while a deliberate input during its 0.20–0.04 second remaining-time window buffers the heavy launching finisher; early and missed inputs do not automate the chain. The finisher has distinct frame data, weapon geometry, damage, knockback, and animation selection. Target acquisition also skips enemies still in hit invulnerability so they cannot intercept a valid follow-up. Eleven deterministic suites pass 299/299 assertions.
+Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ranger now uses a typed four-hit chain: combo three is a non-launch bridge, while a deliberate input during its 0.20–0.04 second remaining-time window buffers the heavy launching finisher; early and missed inputs do not automate the chain. The finisher has distinct frame data, weapon geometry, damage, knockback, and animation selection. Target acquisition also skips enemies still in hit invulnerability so they cannot intercept a valid follow-up. Running, rising-jump, apex, and descending-dive attacks each have independent typed timing, motion, reach, damage, launch, and counter-hit values; dive velocity is data-driven. Counter hits are restricted to unresolved attack startup, work in both directions, add attack-specific damage/knockback/stun, and interrupt the countered startup. Twelve deterministic suites pass 352/352 assertions.
 
 ### M3 — Polished Stage 1 vertical slice
 
@@ -235,9 +235,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
-2. **M2-04 — Command moves:** add the offensive command move and attack+jump defensive special.
-3. **M2-05 — Grapple grammar:** add grab strikes, directional and combo throws, knockdown, and wake-up.
+1. **M2-04 — Command moves:** add the offensive command move and attack+jump defensive special.
+2. **M2-05 — Grapple grammar:** add grab strikes, directional and combo throws, knockdown, and wake-up.
+3. **M2-06 — Combat resolution:** add priority, multi-hit, wall/throw collision, and anti-infinite rules.
 
 ## Definition of done for every task
 

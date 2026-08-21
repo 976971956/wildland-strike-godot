@@ -4,19 +4,22 @@
 
 [resource]
 script = ExtResource("1")
-attack_id = &"player_air"
+attack_id = &"player_jump_attack"
 sound_event = &"swing"
 duration = 0.34
 hit_trigger_remaining = 0.18
-lunge_speed = 170.0
+lunge_speed = 200.0
 hitbox_shape = 1
 box_center = Vector2(37, 0)
 box_half_extents = Vector2(31, 28)
 weapon_box_center = Vector2(37, 0)
 weapon_box_half_extents = Vector2(31, 28)
-damage = 18
+damage = 15
 weapon_bonus_damage = 7
-knockback = Vector2(430, -35)
-launch = true
-impact_strength = 3
+knockback = Vector2(300, -25)
+impact_strength = 2
 weapon_impact_strength = 3
+counter_hit_damage_bonus = 4
+counter_hit_knockback_scale = 1.15
+counter_hit_launch = true
+counter_hit_stun_bonus = 0.08

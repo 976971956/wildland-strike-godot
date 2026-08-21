@@ -113,10 +113,10 @@ Status: **in progress**
 - [x] iOS export preset, signing build, and paired-device installation path exist.
 - [x] Basic headless smoke test exists.
 - [x] Project-specific Skill and final-version plan exist.
-- [ ] Add a deterministic test runner that can execute multiple focused test scenes/scripts.
+- [x] Add a deterministic test runner that can execute multiple focused test scenes/scripts.
 - [ ] Capture baseline Web/iOS performance and known defects.
 
-Evidence (2026-08-22): the project Skill passes `quick_validate.py`; the existing Godot 4.7.1 headless smoke test passes title, player, combat wave, score, and reward checks.
+Evidence (2026-08-22): the project Skill passes `quick_validate.py`; Godot 4.7.1 runs the deterministic `baseline_flow` and `combat_rules` suites with 21/21 assertions passing. The compatibility smoke entry point and per-suite filtering also pass.
 
 Exit gate: roadmap, workflow, automated baseline, and task tracking are reproducible by a fresh agent checkout.
 
@@ -231,10 +231,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M0-05 — Deterministic test runner:** create a runner and split the current smoke test into baseline flow and focused combat checks.
-2. **M0-06 — Baseline evidence:** record current Web frame pacing, iOS build/install state, known defects, and screenshots without changing gameplay.
-3. **M1-01 — Fighter state machine:** introduce explicit states behind the current player/enemy behavior with regression coverage.
-4. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
+1. **M0-06 — Baseline evidence:** record current Web frame pacing, iOS build/install state, known defects, and screenshots without changing gameplay.
+2. **M1-01 — Fighter state machine:** introduce explicit states behind the current player/enemy behavior with regression coverage.
+3. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
 
 ## Definition of done for every task
 

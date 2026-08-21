@@ -29,8 +29,10 @@ Use this workflow for any task that mutates Wildland Strike.
 Minimum for any code change:
 
 ```sh
-godot --headless --path . --script res://tests/smoke_test.gd
+godot --headless --log-file /tmp/wildland-tests.log --path . --script res://tests/test_runner.gd
 ```
+
+Use `-- --suite=<name>` to isolate one registered suite. `tests/smoke_test.gd` remains a compatibility entry point for existing automation.
 
 Also require:
 

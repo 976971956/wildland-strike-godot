@@ -68,7 +68,7 @@ func run(test) -> void:
 	game.player._start_attack()
 	test.check(game.player.combo_step == 4 and game.player.current_attack.attack_id == &"player_combo_4", "armed chain did not select combo four")
 	test.check(game.player.current_attack.combo_window == 0.0 and game.player.current_attack.launch, "combo four did not close the chain with launch")
-	test.check(game.player._visual_frame() == Vector2i(4, 1), "combo-four visual frame drifted")
+	test.check(game.player._visual_frame() == Vector2i(3, 1), "combo-four visual frame drifted")
 
 	var target = enemies[0]
 	target.position = game.player.position + Vector2(60.0, 0.0)

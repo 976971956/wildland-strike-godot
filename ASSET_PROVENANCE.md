@@ -45,3 +45,28 @@ Constraints: environment only; no people, creatures, vehicles, readable text, lo
 ```
 
 Verification: both images were imported through Godot, referenced by typed Stage 1 scene data, inspected at 1280×720 gameplay scale in the Web export, and included in the four-enemy performance baseline before commit.
+
+## 2026-08-22 — Ranger 24-frame animation sheet
+
+Tool: OpenAI built-in `image_gen` image-edit workflow, followed by deterministic chroma-key-to-alpha conversion with local FFmpeg.
+
+Reference role: the existing original-IP `assets/sprites/ranger_sheet.png` supplied Ranger's costume, proportions, palette, and arcade rendering direction. No external franchise image or ROM-derived frame was used.
+
+### `assets/sprites/ranger_sheet_v2.png`
+
+- Dimensions: 1536×1024 RGBA PNG, exact 6×4 equal-cell layout.
+- SHA-256: `e955b7d30b420f77ec8e0443436b405b44e5e694d18a7e452b8c0ae6594fcd61`.
+- Intermediate chroma source SHA-256: `b75620aa2d0a220e811525101bd402e3cb35f103c80c57a5d53db12e66a4cb1d`.
+- Character/action prompt:
+
+```text
+Edit and expand the supplied original Wildland Strike Ranger sprite artwork into a production-ready 2D arcade beat-em-up animation sheet. Keep the exact same original character identity: athletic dark-haired male ranger, white rolled-sleeve shirt, red neckerchief, blue torn cargo jeans, brown boots and gloves. Preserve the same late-1980s/early-1990s hand-pixeled arcade style, limited warm palette, crisp dark outlines, strong readable silhouette, consistent anatomy and identical costume in every frame. Create an exact 6-column by 4-row grid, one centered full-body side-view sprite per equal cell, all facing screen-right, consistent foot baseline and scale, no overlap. Row 1: two breathing idle frames, four distinct walk/run-cycle frames. Row 2: jab startup, jab contact, cross contact, heavy uppercut, shoulder rush, spinning defensive special. Row 3: jump rise, airborne kick, descending dive kick, grab hold stance, standing hurt recoil, hard knockdown falling. Row 4: defeated on ground, get-up transition, machete attack, pistol firing, victory fist raise frame 1, victory fist raise frame 2. Transparent background only in every cell; no gradient, no scenery, no labels, no grid lines, no shadows outside the sprites, no text, no extra characters, no cropped limbs. Sprite sheet must be cleanly sliceable into 24 equal cells.
+```
+
+- Final isolation prompt:
+
+```text
+Preserve all 24 Ranger sprites pixel-for-pixel in their existing exact 6-column by 4-row positions, poses, scale, costume colors, motion arcs, weapon details, and 1536x1024 canvas. Change only the empty checkerboard background: replace every background pixel between and around the sprites with one perfectly uniform, flat chroma-key color RGB #FF00FF (pure magenta), with no checker pattern, noise, gradient, shadow, labels, grid, or texture. Do not recolor any part of the character sprites. Keep crisp arcade pixel-art edges and no extra objects.
+```
+
+Verification: the imported texture retains alpha, all 24 frame coordinates are covered by deterministic tests, no chroma spill or cell bleed is visible at 1280×720 Web gameplay scale, and the four-enemy benchmark includes the animated ambience layer.

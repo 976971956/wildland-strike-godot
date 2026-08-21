@@ -2,15 +2,21 @@ extends Node2D
 
 const WORLD_W := 4200.0
 const STAGE_TEXTURE: Texture2D = preload("res://assets/backgrounds/ruined_city_stage.png")
+const StageAmbienceScript = preload("res://scripts/stage_ambience.gd")
 
 var scenes: Array[Resource] = []
+var ambience: Node2D
 
 func _ready() -> void:
+	ambience = StageAmbienceScript.new()
+	add_child(ambience)
 	queue_redraw()
 
 
 func configure(stage_definition: Resource) -> void:
 	scenes = stage_definition.scenes if stage_definition != null else []
+	if is_instance_valid(ambience):
+		ambience.configure(scenes)
 	queue_redraw()
 
 

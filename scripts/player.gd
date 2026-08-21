@@ -6,7 +6,9 @@ signal defeated
 
 const SPEED := 255.0
 const MAX_HEALTH := 120
-const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/ranger_sheet.png")
+const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/ranger_sheet_v2.png")
+const SPRITE_COLUMNS := 6
+const SPRITE_ROWS := 4
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
@@ -77,6 +79,8 @@ var weapon_hits: int:
 			_sync_weapon_hud()
 var is_defeated := false
 var walk_phase := 0.0
+var visual_clock := 0.0
+var victory_pose_phase := 0
 var game: Node
 var state_machine = FighterStateMachineScript.new()
 var hurtbox
@@ -156,6 +160,7 @@ func _physics_process(delta: float) -> void:
 	position.x = clampf(position.x, 80.0, game.stage_limit)
 	position.y = clampf(position.y, 455.0, 665.0)
 	walk_phase += velocity.length() * delta * 0.025
+	visual_clock += delta
 	_check_attack_hit()
 	if attack_buffer > 0.0 and attack_timer <= 0.105 and hurt_timer <= 0.0 and special_timer <= 0.0:
 		attack_buffer = 0.0
@@ -674,7 +679,10 @@ func _draw() -> void:
 	# Ground shadow remains anchored while the sprite rises during jumps.
 	_draw_oval(Vector2(0, 1), 29.0, 9.0, Color(0.02,0.03,0.04,0.42))
 	var frame := _visual_frame()
-	var cell := Vector2(SPRITE_SHEET.get_width() / 5.0, SPRITE_SHEET.get_height() / 3.0)
+	var cell := Vector2(
+		SPRITE_SHEET.get_width() / float(SPRITE_COLUMNS),
+		SPRITE_SHEET.get_height() / float(SPRITE_ROWS)
+	)
 	var target_size := Vector2(154.0, 171.0)
 	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 16.0, target_size.x, target_size.y)
 	var source_rect := Rect2(frame.x * cell.x, frame.y * cell.y, cell.x, cell.y)
@@ -694,35 +702,49 @@ func _draw() -> void:
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, Color("#ffe37a"), 7)
 
 func _visual_frame() -> Vector2i:
-	if is_defeated or hurt_timer > 0.0:
-		return Vector2i(2, 2)
+	if victory_pose_phase > 0:
+		return Vector2i(4 if victory_pose_phase == 1 else 5, 3)
+	if is_defeated:
+		return Vector2i(0, 3)
+	if hurt_timer > 0.0:
+		return Vector2i(4, 2)
 	if special_timer > 0.0:
-		return Vector2i(3, 1)
+		return Vector2i(5, 1)
 	if is_instance_valid(grabbed_enemy):
 		return Vector2i(3, 2)
 	if z_height > 12.0:
 		if attack_timer > 0.0 and current_attack != null:
 			if current_attack.attack_id == &"player_apex_attack":
-				return Vector2i(3, 2)
+				return Vector2i(1, 2)
 			if current_attack.attack_id == &"player_dive_attack":
-				return Vector2i(4, 2)
+				return Vector2i(2, 2)
 			return Vector2i(1, 2)
 		return Vector2i(0, 2)
 	if attack_timer > 0.0:
+		if weapon_ammo > 0 and equipped_weapon != null:
+			return Vector2i(
+				2 if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE else 3,
+				3
+			)
 		if current_attack != null and current_attack.attack_id == &"player_run_attack":
 			return Vector2i(4, 1)
 		if current_attack != null and current_attack.attack_id == &"player_command_attack":
-			return Vector2i(3, 1)
+			return Vector2i(4, 1)
 		if combo_step == 1:
 			return Vector2i(1 if attack_timer < 0.18 else 0, 1)
 		if combo_step == 2:
 			return Vector2i(2, 1)
 		if combo_step == 4:
-			return Vector2i(4, 1)
-		return Vector2i(3, 1)
+			return Vector2i(3, 1)
+		return Vector2i(2, 1)
 	if velocity.length() > 20.0:
-		return Vector2i(2 + int(walk_phase) % 3, 0)
-	return Vector2i(int(walk_phase * 0.2) % 2, 0)
+		return Vector2i(2 + int(walk_phase) % 4, 0)
+	return Vector2i(int(visual_clock * 2.0) % 2, 0)
+
+
+func set_victory_pose(phase: int) -> void:
+	victory_pose_phase = clampi(phase, 0, 2)
+	queue_redraw()
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var pts := PackedVector2Array()

@@ -259,6 +259,7 @@ func _victory() -> void:
 	victory_clear_bonus = 5000
 	victory_bonus_applied = false
 	player.set_physics_process(false)
+	player.set_victory_pose(1)
 	hud.set_victory_summary(victory_time_bonus, victory_life_bonus, victory_clear_bonus, score)
 	hud.set_victory_phase(victory_phase)
 	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
@@ -280,6 +281,7 @@ func _tick_victory(delta: float) -> void:
 		play_sfx("bonus_tally")
 	elif victory_phase == &"bonus":
 		victory_phase = &"complete"
+		player.set_victory_pose(2)
 		hud.set_victory_phase(victory_phase)
 
 func hit_confirm(

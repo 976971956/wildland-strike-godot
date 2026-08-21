@@ -65,7 +65,7 @@ func run(test) -> void:
 	test.check(game.player.current_attack == COMMAND_ATTACK, "quarter-circle input did not select command attack")
 	test.check(game.player.combo_step == 0 and game.player.combo_window == 0.0, "command attack retained ground combo state")
 	test.check(game.player.attack_lunge == 320.0, "command-attack lunge drifted")
-	test.check(game.player._visual_frame() == Vector2i(3, 1), "command-attack visual frame drifted")
+	test.check(game.player._visual_frame() == Vector2i(4, 1), "command-attack visual frame drifted")
 
 	var command_target = enemies[0]
 	command_target.position = game.player.position + Vector2(80.0, 0.0)

@@ -57,7 +57,7 @@ func run(test) -> void:
 	game.player.z_velocity = 40.0
 	game.player._start_attack()
 	test.check(game.player.current_attack == APEX_ATTACK, "jump apex did not select apex attack")
-	test.check(game.player._visual_frame() == Vector2i(3, 2), "apex-attack visual frame drifted")
+	test.check(game.player._visual_frame() == Vector2i(1, 2), "apex-attack visual frame drifted")
 
 	game.player.attack_timer = 0.0
 	game.player.z_height = 60.0
@@ -65,7 +65,7 @@ func run(test) -> void:
 	game.player._start_attack()
 	test.check(game.player.current_attack == DIVE_ATTACK, "descending jump did not select dive attack")
 	test.check(game.player.z_velocity == -620.0, "dive attack did not force its descent velocity")
-	test.check(game.player._visual_frame() == Vector2i(4, 2), "dive-attack visual frame drifted")
+	test.check(game.player._visual_frame() == Vector2i(2, 2), "dive-attack visual frame drifted")
 
 	var idle_target = enemies[0]
 	idle_target.position = game.player.position + Vector2(80.0, 0.0)

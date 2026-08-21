@@ -122,16 +122,16 @@ Exit gate: roadmap, workflow, automated baseline, and task tracking are reproduc
 
 ### M1 — Combat and data foundation
 
-Status: **in progress**
+Status: **complete**
 
 - [x] M1-01: Introduce a fighter state enum/state machine without changing current behavior.
 - [x] M1-02: Add reusable hitbox/hurtbox components and debug visualization.
 - [x] M1-03: Move attacks into typed frame-data resources.
 - [x] M1-04: Separate player input intent from fighter simulation.
 - [x] M1-05: Replace enemy type branches with typed enemy definitions.
-- [ ] M1-06: Add deterministic combat regression tests for hit, stun, invulnerability, knockback, and defeat.
+- [x] M1-06: Add deterministic combat regression tests for hit, stun, invulnerability, knockback, and defeat.
 
-Evidence (2026-08-22): player and enemy controllers share explicit fighter states, reusable hitbox/hurtbox components, and ten typed attack resources. Player simulation consumes clamped fighter-intent snapshots and no longer reads the Input singleton; keyboard, gamepad, touch-action injection, test doubles, and future AI share the same boundary. Grunt, brute, raptor, and boss health, movement, attack, grab, score, boss, and sprite-layout rules now live in typed enemy definitions; `enemy.gd` has no enemy-type behavior branches. Eight deterministic suites pass 190/190 assertions; Web release export and unsigned iOS arm64 generic-device build pass.
+Evidence (2026-08-22): player and enemy controllers share explicit fighter states, reusable hitbox/hurtbox components, and ten typed attack resources. Player simulation consumes clamped fighter-intent snapshots and no longer reads the Input singleton; keyboard, gamepad, touch-action injection, test doubles, and future AI share the same boundary. Grunt, brute, raptor, and boss rules live in typed enemy definitions; `enemy.gd` has no enemy-type behavior branches. A dedicated combat outcome suite locks hit, hurt, stun, invulnerability, recoil, knockdown, grab/release, defeat, score, revive, and one-hit resolution. Nine deterministic suites pass 232/232 assertions; the M1 Web release export and unsigned iOS arm64 generic-device build pass.
 
 Exit gate: one hero and current enemies run entirely through reusable combat/data layers, with no regression in Web or iOS builds.
 
@@ -233,9 +233,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M1-06 — Combat regression:** lock hit, stun, invulnerability, knockback, and defeat outcomes with deterministic tests.
-2. **M2-01 — Eight-direction run:** add double-tap run and turning behavior after the combat/data foundation closes.
-3. **M2-02 — Four-hit combo:** expand the current three-hit chain with character-specific finisher windows.
+1. **M2-01 — Eight-direction run:** add double-tap run and turning behavior after the combat/data foundation closes.
+2. **M2-02 — Four-hit combo:** expand the current three-hit chain with character-specific finisher windows.
+3. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
 
 ## Definition of done for every task
 

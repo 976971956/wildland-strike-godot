@@ -9,6 +9,7 @@ const SUITES := [
 	{"name": "attack_frame_data", "path": "res://tests/suites/attack_frame_data_test.gd"},
 	{"name": "input_intent", "path": "res://tests/suites/input_intent_test.gd"},
 	{"name": "enemy_definition", "path": "res://tests/suites/enemy_definition_test.gd"},
+	{"name": "combat_regression", "path": "res://tests/suites/combat_regression_test.gd"},
 	{"name": "performance_probe", "path": "res://tests/suites/performance_probe_test.gd"},
 ]
 

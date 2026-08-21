@@ -39,5 +39,5 @@
 ## 自动检查
 
 ```sh
-godot --headless --path . --script res://tests/smoke_test.gd
+godot --headless --log-file /tmp/wildland-tests.log --path . --script res://tests/test_runner.gd
 ```

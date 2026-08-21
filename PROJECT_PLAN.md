@@ -107,16 +107,16 @@ Do not perform a disruptive all-at-once rewrite. Introduce these boundaries whil
 
 ### M0 — Governance and reproducible baseline
 
-Status: **in progress**
+Status: **complete**
 
 - [x] Web build and GitHub Pages are public.
 - [x] iOS export preset, signing build, and paired-device installation path exist.
 - [x] Basic headless smoke test exists.
 - [x] Project-specific Skill and final-version plan exist.
 - [x] Add a deterministic test runner that can execute multiple focused test scenes/scripts.
-- [ ] Capture baseline Web/iOS performance and known defects.
+- [x] Capture baseline Web/iOS performance and known defects.
 
-Evidence (2026-08-22): the project Skill passes `quick_validate.py`; Godot 4.7.1 runs the deterministic `baseline_flow` and `combat_rules` suites with 21/21 assertions passing. The compatibility smoke entry point and per-suite filtering also pass.
+Evidence (2026-08-22): the project Skill passes `quick_validate.py`; Godot 4.7.1 runs three deterministic suites with 30/30 assertions passing. The Web four-enemy baseline averages 124.70 FPS with no frames over 20 ms in a 300-frame sample. The iOS arm64 generic-device build passes without signing; current provisioning and device availability remain documented release blockers. See [`evidence/baseline/README.md`](evidence/baseline/README.md).
 
 Exit gate: roadmap, workflow, automated baseline, and task tracking are reproducible by a fresh agent checkout.
 
@@ -231,9 +231,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M0-06 — Baseline evidence:** record current Web frame pacing, iOS build/install state, known defects, and screenshots without changing gameplay.
-2. **M1-01 — Fighter state machine:** introduce explicit states behind the current player/enemy behavior with regression coverage.
-3. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
+1. **M1-01 — Fighter state machine:** introduce explicit states behind the current player/enemy behavior with regression coverage.
+2. **M1-02 — Hitbox/hurtbox components:** replace distance-only melee checks while preserving current timings.
+3. **M1-03 — Attack frame data:** move attack timing and outcomes into typed resources.
 
 ## Definition of done for every task
 
@@ -252,11 +252,14 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - **2026-08-22 — Vertical-slice strategy:** finish reusable combat architecture and one release-quality stage before producing the remaining seven stages.
 - **2026-08-22 — Platform hierarchy:** desktop/Web 1–3 player local co-op is the multiplayer reference; mobile guarantees polished single-player rather than forcing an unusable three-player touch layout.
 - **2026-08-22 — Continuous delivery:** every completed mutation is tested, documented, committed, pushed to `main`, and redeployed when Web-visible.
+- **2026-08-22 — Reproducible Web performance probe:** a query-gated four-enemy scenario prints one local console summary after fixed warm-up/sample counts, giving future milestones a comparable render baseline without changing ordinary gameplay.
 
 ## Known baseline limitations
 
 - The current 1,280×720 assets use a high-resolution pseudo-pixel style rather than a controlled low-resolution pixel pipeline.
 - Player and enemies switch between very few frames; many combat states share art.
 - Melee hit detection is distance-based and enemy AI mostly shares one chase/attack loop.
+- Four enemies converging on one player can still overlap visibly even though their collision bodies no longer move as a rigid clump.
 - The stage is one background repeated four times, not a true multi-scene campaign.
 - No music, character selection, multiplayer, firearm/ammo system, breakables, stage timer, vehicle, continue countdown, or high-score persistence exists yet.
+- The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

@@ -137,9 +137,9 @@ Exit gate: one hero and current enemies run entirely through reusable combat/dat
 
 ### M2 — Reference-quality combat vertical slice
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] M2-01: Eight-direction double-tap run and turning behavior.
+- [x] M2-01: Eight-direction double-tap run and turning behavior.
 - [ ] M2-02: Four-hit combo and character-specific finisher windows.
 - [ ] M2-03: Running, jump, and apex/dive attacks with counter-hit rules.
 - [ ] M2-04: Offensive command move and attack+jump defensive special.
@@ -148,6 +148,8 @@ Status: **not started**
 - [ ] M2-07: Tune hit stop, recoil, SFX layers, camera response, and haptics using frame-data tests.
 
 Exit gate: a graybox arena supports the complete combat grammar against three behaviorally distinct enemies at stable 60 FPS.
+
+Evidence (2026-08-22): a reusable run controller quantizes all eight directions, recognizes same-direction double taps within 0.28 seconds, permits adjacent-direction steering, cancels on release/attack/hurt, and drops to walk speed on hard reverse while updating facing. Player RUN state and 1.65× movement are explicit. Ten deterministic suites pass 259/259 assertions.
 
 ### M3 — Polished Stage 1 vertical slice
 
@@ -233,9 +235,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M2-01 — Eight-direction run:** add double-tap run and turning behavior after the combat/data foundation closes.
-2. **M2-02 — Four-hit combo:** expand the current three-hit chain with character-specific finisher windows.
-3. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
+1. **M2-02 — Four-hit combo:** expand the current three-hit chain with character-specific finisher windows.
+2. **M2-03 — Aerial combat:** add running, jump, apex, and dive attacks with counter-hit rules.
+3. **M2-04 — Command moves:** add the offensive command move and attack+jump defensive special.
 
 ## Definition of done for every task
 

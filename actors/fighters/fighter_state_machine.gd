@@ -6,6 +6,7 @@ signal changed(previous_state: int, current_state: int)
 enum State {
 	IDLE,
 	MOVE,
+	RUN,
 	ATTACK,
 	AIRBORNE,
 	SPECIAL,

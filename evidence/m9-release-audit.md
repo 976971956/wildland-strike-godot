@@ -26,11 +26,11 @@ Date: 2026-08-22
 
 ## Automated and package results
 
-- Content/provenance/license audit: 1,465 assertions, 0 failures.
-- Full project regression: 53 suites, 5,051 assertions, 0 failures.
+- Content/provenance/license audit: 133 deterministic assertions, 0 failures.
+- Full project regression: 53 suites, 3,719 assertions, 0 failures.
 - Maximum-load real Chromium fixture: 300 frames, 8.050 ms average, 0 frames over 20 ms, 0 over 33 ms, no browser warnings/errors.
 - Web package: 76,160,164 bytes, SHA-256 `2e20de3786f1f776decc02c76cfa8cd2557f6100f9f0af55c0f54af6d1080805`.
 - iOS package: 76,160,212 bytes, SHA-256 `ea7863933b569732847e122332e79ff5c756808c54dd351d1cc60546693deea5`.
 - Xcode generic iOS device build: `BUILD SUCCEEDED`; executable is Mach-O 64-bit arm64.
 
-The exact committed candidate will next be checked out into a new temporary directory and subjected to the clean-checkout test/export gate before final release publication.
+The exact committed candidate will next be checked out into a new temporary directory and subjected to the clean-checkout test/export gate before final release publication. The first clean run correctly exposed that a brand-new clone must execute Godot's `--import` step before loading Texture2D resources; `tools/verify_release.sh` and the README now make that prerequisite explicit. After import, the clean test tree passed; a follow-up commit will rerun the deterministic audit count and both clean exports.

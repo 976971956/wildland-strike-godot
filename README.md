@@ -58,7 +58,14 @@
 ## 自动检查
 
 ```sh
+godot --headless --log-file /tmp/wildland-import.log --path . --import
 godot --headless --log-file /tmp/wildland-tests.log --path . --script res://tests/test_runner.gd
+```
+
+全新的 clone 必须先执行 `--import` 生成 `.godot` 资源缓存。完整发布复现（导入、全测试、Web、iOS、可用时的 Xcode arm64 无签名构建）可直接运行：
+
+```sh
+./tools/verify_release.sh
 ```
 
 ## 许可证与来源

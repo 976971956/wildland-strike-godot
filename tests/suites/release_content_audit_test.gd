@@ -65,9 +65,9 @@ func run(test) -> void:
 	for token in PROTECTED_RUNTIME_TOKENS:
 		test.check(not runtime_text.contains(token), "protected franchise token entered runtime content: %s" % token)
 
-	for path in _collect_files("res://assets", []):
-		for extension in FORBIDDEN_ARCHIVE_EXTENSIONS:
-			test.check(not path.to_lower().ends_with(extension), "forbidden archive/ROM asset entered the repository: %s" % path)
+	for extension in FORBIDDEN_ARCHIVE_EXTENSIONS:
+		var forbidden_files := _collect_files("res://assets", [extension])
+		test.check(forbidden_files.is_empty(), "forbidden archive/ROM asset entered the repository: %s" % [forbidden_files])
 
 	var audio_files := _collect_files("res://assets", [".wav", ".mp3", ".ogg", ".flac", ".m4a"])
 	test.check(audio_files.is_empty(), "unexpected external audio bypassed the procedural-audio provenance contract")

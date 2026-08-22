@@ -413,3 +413,86 @@ Constraints: transparent background mandatory; no scenery, floor, labels, text, 
 The initial boss delivery was rejected for pose silhouettes joined across cell boundaries. A follow-up image edit requested stronger separation, unchanged character design, and a truly transparent background. That edit separated the poses but baked a pale checkerboard into the pixels instead of supplying usable alpha. The retained deterministic builder classifies and removes the near-neutral checker colors, bridges only small holes inside each isolated figure, finds the sixteen largest complete pose components, sorts them into two rows, and uniformly normalizes each pose onto exact transparent 320×320 cells. This makes the accepted 8×2 atlas reproducible without retaining any visual bridge or checkerboard contamination.
 
 Verification: all three Stage 5 scene resources validate and reference unique original backgrounds. The accepted boss sheet retains alpha, divides into sixteen exact cells, and presents distinct human and ash-beast phase rows. Exported 1280×720 environment and transformed-boss fixtures were inspected for active-lane readability, scene-boundary crop, silhouette scale, reinforcement occlusion, form change, hazard cues, and attack telegraphs. A boundary-framed environment fixture, occluding reinforcements, and an oversized inherited circular boss cue were rejected and corrected. Accepted fixtures average 120.00 and 120.08 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
+
+## 2026-08-22 — Jungle mine environments, ore cart, and Titan Warden Korva
+
+Tool: OpenAI built-in `image_gen` clean-room generation/edit workflow, followed by the retained project-local `tools/build_jungle_mine_assets.gd` neutral-checker removal, connected-component isolation, nearest-neighbor normalization, and exact transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, vehicle, creature, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/jungle_research_trail.png`: 1672×941 RGB; SHA-256 `b75b8b0a2bf0f1481f686e23f196cb742869550d345a63a45ded2eb9ad2bb1c9`.
+- `assets/backgrounds/jungle_mine_entrance.png`: 1672×941 RGB; SHA-256 `bdd09499d330a2b2220cb45a5e02fa20a4ea307d591814bfec7f1f2d552c9752`.
+- `assets/backgrounds/titan_shaft.png`: 1672×941 RGB; SHA-256 `64a03fe12d5bf2f48679d9e7bb9456c68cd62e0aaffe6bbf3887be26ba04b215`.
+- Archived Titan Warden original source: `assets/sprites/titan_warden_source.png`; SHA-256 `05975bc8f9bdb1038dc7d47d613df2d21ff9a404e3709afd729fd912825c73f9`.
+- Archived Titan Warden isolation-edit source: `assets/sprites/titan_warden_edit_source.png`; SHA-256 `40e45ba87437cadab892d0ad607eb6a11d77d53a75884f2d4a9771a9a5a22284`.
+- `assets/sprites/titan_warden_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `6c9ded982cae77133354897e09cb81e43eb4b83df98f3e39d7f4de8abfcb03ad`.
+- Archived ore-cart original source: `assets/sprites/jungle_mine_cart_source.png`; SHA-256 `a82fbf663ca377f4316c2f5802e7c2b16c4be553c1207806e32101a6cc853f27`.
+- Archived ore-cart isolation-edit source: `assets/sprites/jungle_mine_cart_edit_source.png`; SHA-256 `3ff3d247742346d5681020577a251eb9b290e25e7b09f4251f7d844bb67fdbb4`.
+- `assets/sprites/jungle_mine_cart.png`: 256×160 RGBA; SHA-256 `2759e74624f9de38aa135df2c8e7702316b4b561943e1d748d1ec0b25e6e1e80`.
+
+The four archived generation/edit sources are excluded from Web and iOS runtime exports.
+
+Jungle Research Trail generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 6, a serious 1990s 2.5D arcade beat-em-up
+Primary request: a rain-soaked primordial jungle research trail at predawn, colossal original cycads and tree ferns, abandoned steel survey pylons, suspended rope bridges and broken expedition equipment only behind the combat floor, distant gentle sauropod silhouettes high above the canopy
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed mud-and-stone gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; plants and structures remain behind the lane
+Lighting/mood: blue-green predawn rain, pale cyan research lamps, restrained amber emergency markers, tense expedition atmosphere
+Constraints: environment only; no people, no fighters, no foreground dinosaurs, no characters, no active vehicles, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing-point road, no vegetation or debris blocking the active combat lane, no foreground obstruction
+```
+
+Jungle Mine Entrance generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 6, a serious 1990s 2.5D arcade beat-em-up
+Primary request: an illegal open-pit jungle mine entrance carved through ancient basalt, rusted ore rails and empty mine carts behind safety barriers, vine-covered crusher machinery, floodlights, warning cages and a huge reinforced tunnel mouth, with the rainforest closing around the industrial scar
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed wet stone-and-mud gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; rails, carts and machinery stay behind barriers
+Lighting/mood: stormy emerald jungle shadows, hard amber mine floodlights, cold white work lamps and restrained red warning beacons, escalating industrial danger
+Constraints: environment only; no people, no dinosaurs, no characters, no active vehicle in the combat lane, no text, no UI, no logos, no watermark, no copyrighted imagery, no central perspective corridor, no foreground machinery or vines covering fighters
+```
+
+Titan Shaft generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production boss-arena background for Wildland Strike Stage 6, a serious 1990s 2.5D arcade beat-em-up
+Primary request: an immense subterranean fossil quarry called the Titan Shaft, ancient basalt columns and giant unidentified rib fossils behind reinforced rails, hanging ore elevators, broken drill gantries, glowing mineral seams and a massive sealed excavation gate framing a climactic arena deep under the jungle
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, premium grounded late-1990s belt-scrolling brawler environment, original clean-room identity and readable stone/metal materials
+Composition/framing: wide 16:9 strict side view, horizontal symmetrical arena composition, broad unobstructed dark stone gameplay platform occupying lower 40%, three readable depth lanes; fighters stand between y=455 and 665; fossils, shafts, drills and machinery remain in back and upper layers
+Lighting/mood: deep teal and violet cavern shadows, cold cyan mineral light, amber lift lamps and restrained red alerts, ancient and dangerous but highly readable
+Constraints: environment only; no people, no living dinosaurs, no boss, no characters, no text, no UI, no logos, no watermark, no copyrighted imagery, no central perspective corridor, no active machinery or rockfall crossing the combat floor, no foreground obstruction
+```
+
+Titan Warden generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent boss sprite action atlas for Wildland Strike Stage 6
+Primary request: one horizontal strip of EXACTLY EIGHT isolated equal-width cells showing the same original boss, TITAN WARDEN KORVA: a very tall broad human illegal-quarry commander in battered moss-green and black powered mining armor, reinforced amber drill-spear on the right arm, compact cyan seismic beacon backpack, fossil-white shoulder plates, braided dark hair, stern face, strict side profile facing LEFT
+Pose order: 1 armored idle with beacon pulse, 2 heavy walk, 3 drill-spear strike, 4 seismic telegraph bracing the beacon, 5 ground-fracture slam, 6 full-body drill charge, 7 hurt stagger with cracked shoulder plate, 8 defeated kneeling collapse
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade beat-em-up pixel art, strong readable silhouette, detailed late-1990s sprite rendering, original clean-room design
+Composition/framing: very wide landscape atlas; exactly one complete full-body boss centered per cell; same scale, foot baseline, orientation, lighting, proportions and costume in every frame; generous genuinely transparent separation; all limbs, drill, beacon and effects remain within their own cell
+Constraints: transparent background mandatory; exactly 8 cells in one row; no scenery, floor, labels, text, UI, logos, watermark, copyrighted designs, vehicles, creatures, detached distant effects, shadows crossing cell boundaries, cropped anatomy, extra characters
+```
+
+Ore-cart generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: one original transparent gameplay hazard sprite for Wildland Strike Stage 6
+Primary request: a single rugged illegal-jungle-mine ore cart viewed in strict side profile, facing RIGHT, low heavy rusted steel hopper loaded with dark basalt rocks and a few cyan mineral shards, reinforced frame, four small realistic flanged rail wheels, rivets, hazard-yellow worn stripe, compact red warning lamp, grounded 1990s industrial design
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade pixel art matching a premium late-1990s belt-scrolling brawler, readable at approximately 150 pixels wide, original clean-room design
+Composition/framing: exactly ONE complete cart centered on canvas with generous transparent margin, entire wheels, frame, ore and lamp visible, no motion blur and no shadow outside the silhouette
+Constraints: genuine transparent background mandatory; exactly one cart only; no track, no floor, no scenery, no people, no creatures, no text, no UI, no logo, no watermark, no copyrighted design, no cropped edges, no checkerboard
+```
+
+Both initial sprite deliveries retained unusable dark backgrounds. Isolation edits preserved the authored figures but baked checkerboard pixels instead of real alpha. The deterministic builder removes only bright neutral checker regions, isolates the largest complete component in each fixed boss cell, uniformly normalizes eight poses onto exact transparent 320×320 cells, and normalizes the cart onto a transparent 256×160 canvas. Two procedural cart drafts were rejected during Web review; the accepted generated cart is the runtime asset.
+
+Verification: all three Stage 6 scene resources validate and reference unique original backgrounds. Titan Warden's accepted atlas retains alpha and divides into eight exact cells; the cart retains alpha and remains fully inside its runtime canvas. Exported 1280×720 environment and phase-two boss fixtures were inspected for gameplay-lane readability, cart scale/materials, silhouette scale, crop loss, footprint warnings, seismic-fracture sequencing, reinforcement visibility, and phase telegraphs. Accepted fixtures average 120.00 and 120.006 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

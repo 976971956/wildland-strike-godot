@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/waves/titan_warden_boss.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"titan_warden_showdown"
+trigger_x = 3620.0
+origin_x = 3740.0
+arena_left = 3500.0
+arena_right = 4100.0
+unlock_right = 4200.0
+banner_title = "TITAN WARDEN KORVA"
+banner_subtitle = "SHUT DOWN THE DEEP-CORE DRILL"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

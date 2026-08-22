@@ -10,6 +10,7 @@ const TidalWaveScript = preload("res://scripts/tidal_wave.gd")
 const HighwayVehicleScript = preload("res://scripts/highway_vehicle.gd")
 const RoadMineScript = preload("res://scripts/road_mine.gd")
 const FurnaceWaveScript = preload("res://scripts/furnace_wave.gd")
+const SeismicFractureScript = preload("res://scripts/seismic_fracture.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
@@ -20,7 +21,8 @@ const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
 const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
 const STAGE_4_DEFINITION = preload("res://data/stages/stage_4/stage_4.tres")
 const STAGE_5_DEFINITION = preload("res://data/stages/stage_5/stage_5.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION]
+const STAGE_6_DEFINITION = preload("res://data/stages/stage_6/stage_6.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION, STAGE_6_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -748,6 +750,24 @@ func spawn_furnace_blast(source_actor: Node, damage: int) -> Array[Node]:
 		waves.append(wave)
 	play_sfx(&"furnace_blast")
 	return waves
+
+
+func spawn_seismic_fractures(source_actor: Node, damage: int, both_directions := false) -> Array[Node]:
+	var fractures: Array[Node] = []
+	var directions: Array[int] = []
+	if both_directions:
+		directions.assign([-1, 1])
+	else:
+		directions.append(source_actor.facing)
+	for direction in directions:
+		for index in range(3):
+			var fracture := SeismicFractureScript.new()
+			actors.add_child(fracture)
+			var fracture_position: Vector2 = source_actor.position + Vector2(direction * (92.0 + index * 112.0), (index - 1) * 34.0)
+			fracture.setup(self, source_actor, fracture_position, damage)
+			fractures.append(fracture)
+	play_sfx(&"boss_phase")
+	return fractures
 
 
 func _create_stage_objects() -> void:

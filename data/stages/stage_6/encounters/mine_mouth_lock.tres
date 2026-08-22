@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/waves/mine_mouth.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"mine_mouth_lock"
+trigger_x = 1610.0
+origin_x = 1800.0
+arena_left = 1460.0
+arena_right = 2110.0
+unlock_right = 2230.0
+banner_title = "ILLEGAL MINE"
+banner_subtitle = "THE QUARRY CREW IS ENTRENCHED"
+reward_id = &"weapon_rifle"
+waves = Array[Resource]([ExtResource("2")])

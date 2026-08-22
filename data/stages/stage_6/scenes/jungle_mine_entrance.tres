@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/encounters/mine_mouth_lock.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/encounters/cart_run.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/objects/mine_cart.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/objects/mine_spore_bloom.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/jungle_mine_entrance.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"jungle_mine_entrance"
+display_name = "JUNGLE MINE ENTRANCE"
+transition_subtitle = "THE ORE RAILS STILL HAVE POWER"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"illegal_jungle_mine"
+visual_theme = 16
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

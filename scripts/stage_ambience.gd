@@ -65,6 +65,12 @@ func _draw() -> void:
 				_draw_burning_market(scene)
 			14:
 				_draw_ashen_cistern(scene)
+			15:
+				_draw_jungle_research_trail(scene)
+			16:
+				_draw_jungle_mine_entrance(scene)
+			17:
+				_draw_titan_shaft(scene)
 
 
 func _draw_ruins(scene: Resource) -> void:
@@ -230,6 +236,34 @@ func _draw_firestorm(scene: Resource, strength: float) -> void:
 		var rise := fmod(animation_time * (32.0 + index) + index * 17.0, 142.0)
 		var ember_x: float = scene.start_x + fmod(index * 157.0 + sin(animation_time * 0.8 + index) * 24.0, width)
 		draw_rect(Rect2(ember_x, 486.0 - rise, 3.0, 3.0), Color(1.0, 0.48, 0.08, strength * 0.46 * (1.0 - rise / 148.0)))
+
+
+func _draw_jungle_research_trail(scene: Resource) -> void:
+	_draw_monsoon(scene, 0.72)
+	for index in range(11):
+		var glow_x: float = scene.start_x + fmod(index * 139.0 + sin(animation_time * 0.7 + index) * 24.0, scene.end_x - scene.start_x)
+		var glow_y := 382.0 + index % 4 * 42.0
+		var pulse := (sin(animation_time * 3.2 + index) + 1.0) * 0.5
+		draw_circle(Vector2(glow_x, glow_y), 2.0 + pulse * 2.0, Color(0.45, 1.0, 0.42, 0.18 + pulse * 0.32))
+
+
+func _draw_jungle_mine_entrance(scene: Resource) -> void:
+	_draw_monsoon(scene, 0.46)
+	for index in range(6):
+		var alarm := (sin(animation_time * 6.0 + index * 0.9) + 1.0) * 0.5
+		draw_circle(Vector2(scene.start_x + 138.0 + index * 228.0, 410.0), 4.0 + alarm * 2.0, Color(1.0, 0.2, 0.06, 0.22 + alarm * 0.42))
+	for index in range(5):
+		var spark_drop := fmod(animation_time * (54.0 + index * 3.0) + index * 31.0, 86.0)
+		draw_line(Vector2(scene.start_x + 210.0 + index * 244.0, 422.0 + spark_drop), Vector2(scene.start_x + 217.0 + index * 244.0, 435.0 + spark_drop), Color(1.0, 0.68, 0.18, 0.34), 2.0)
+
+
+func _draw_titan_shaft(scene: Resource) -> void:
+	for index in range(10):
+		var crystal_pulse := (sin(animation_time * 2.8 + index * 0.74) + 1.0) * 0.5
+		var crystal_x: float = scene.start_x + 108.0 + index * 132.0
+		draw_line(Vector2(crystal_x, 452.0), Vector2(crystal_x + sin(index) * 5.0, 428.0 - crystal_pulse * 8.0), Color(0.3, 0.9, 1.0, 0.16 + crystal_pulse * 0.3), 4.0)
+	var lift_pulse := (sin(animation_time * 5.4) + 1.0) * 0.5
+	draw_circle(Vector2((scene.start_x + scene.end_x) * 0.5, 396.0), 7.0 + lift_pulse * 3.0, Color(1.0, 0.18, 0.06, 0.28 + lift_pulse * 0.4))
 
 
 func _ellipse_points(center: Vector2, radius_x: float, radius_y: float) -> PackedVector2Array:

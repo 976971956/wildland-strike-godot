@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/waves/shaft_approach.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"shaft_breach"
+trigger_x = 3020.0
+origin_x = 3230.0
+arena_left = 2860.0
+arena_right = 3490.0
+unlock_right = 3560.0
+banner_title = "TITAN SHAFT"
+banner_subtitle = "THE GROUND IS MOVING"
+reward_id = &"weapon_rocket"
+waves = Array[Resource]([ExtResource("2")])

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+[sub_resource type="Resource" id="Shield"]
+script = ExtResource("2")
+enemy_id = &"shield_guard"
+offset = Vector2(-150, 594)
+[sub_resource type="Resource" id="Raptor"]
+script = ExtResource("2")
+enemy_id = &"raptor"
+offset = Vector2(40, 520)
+[sub_resource type="Resource" id="EliteBlade"]
+script = ExtResource("2")
+enemy_id = &"elite_blade"
+offset = Vector2(220, 624)
+[resource]
+script = ExtResource("1")
+wave_id = &"trail_reinforcement"
+reinforcement_delay = 0.7
+spawns = Array[Resource]([SubResource("Shield"), SubResource("Raptor"), SubResource("EliteBlade")])

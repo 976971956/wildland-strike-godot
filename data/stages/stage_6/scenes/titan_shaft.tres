@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/encounters/shaft_breach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/encounters/titan_warden_showdown.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/objects/titan_stomp_west.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/objects/titan_stomp_east.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/titan_shaft.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"titan_shaft"
+display_name = "TITAN SHAFT"
+transition_subtitle = "SOMETHING ENORMOUS IS ABOVE THE QUARRY"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"subterranean_titan_quarry"
+visual_theme = 17
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

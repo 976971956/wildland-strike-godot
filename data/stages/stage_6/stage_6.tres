@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/scenes/jungle_research_trail.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/scenes/jungle_mine_entrance.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_6/scenes/titan_shaft.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_6"
+stage_number = 6
+display_name = "THE TITAN QUARRY"
+route_subtitle = "JUNGLE DEEP-CORE MINE"
+clear_message = "THE TITAN SHAFT IS SILENT"
+map_position = Vector2(1000, 590)
+time_limit_seconds = 300.0
+enemy_health_scale = 1.43
+enemy_damage_scale = 1.21
+clear_bonus = 14000
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

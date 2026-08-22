@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/titan_warden_drill.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/titan_warden_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/titan_warden_seismic.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/titan_warden_call.tres" id="6"]
+
+[sub_resource type="Resource" id="PhaseSurveyor"]
+script = ExtResource("4")
+phase_id = &"seismic_survey"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 9
+speed_scale = 0.98
+telegraph_duration = 0.62
+special_cooldown = 1.46
+special_min_distance = 105.0
+special_max_distance = 560.0
+recovery_duration = 0.68
+dialogue_speaker = "TITAN WARDEN KORVA"
+dialogue_line = "This quarry was old before your species learned fear."
+tint = Color(0.94, 1, 0.88, 1)
+
+[sub_resource type="Resource" id="PhaseProtocol"]
+script = ExtResource("4")
+phase_id = &"titan_protocol"
+health_threshold_ratio = 0.6
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 10
+speed_scale = 1.14
+telegraph_duration = 0.48
+special_cooldown = 1.08
+special_min_distance = 80.0
+special_max_distance = 650.0
+recovery_duration = 0.54
+dialogue_speaker = "TITAN WARDEN KORVA"
+dialogue_line = "Wake, old giant. Clear the shaft."
+reinforcement_enemy_id = &"triceratops"
+reinforcement_count = 1
+tint = Color(0.82, 0.98, 1, 1)
+
+[sub_resource type="Resource" id="PhaseDeepCore"]
+script = ExtResource("4")
+phase_id = &"deep_core"
+health_threshold_ratio = 0.25
+attack = ExtResource("2")
+special_attack = ExtResource("2")
+special_kind = 1
+speed_scale = 1.34
+telegraph_duration = 0.32
+special_cooldown = 0.72
+special_min_distance = 100.0
+special_max_distance = 700.0
+burst_speed_scale = 2.45
+burst_duration = 0.52
+recovery_duration = 0.38
+dialogue_speaker = "TITAN WARDEN KORVA"
+dialogue_line = "Then I drill through you myself!"
+reinforcement_enemy_id = &"elite_bulwark"
+reinforcement_count = 1
+tint = Color(1, 0.82, 0.56, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"titan_warden"
+is_boss = true
+rank = 2
+max_health = 525
+speed = 106.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 4700
+outgoing_damage_scale = 1.2
+stun_duration_scale = 0.46
+knockdown_armor = 4
+behavior_kind = 5
+attack_distance = 86.0
+lane_tolerance = 62.0
+vertical_approach_scale = 0.78
+boss_phases = Array[Resource]([SubResource("PhaseSurveyor"), SubResource("PhaseProtocol"), SubResource("PhaseDeepCore")])
+sprite_sheet = ExtResource("3")
+visual_kind = 3
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(270, 270)
+target_bottom_offset = 16.0
+actor_scale = Vector2(1.18, 1.18)
+shadow_half_extents = Vector2(61, 14)
+show_health_bar = true

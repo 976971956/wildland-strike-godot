@@ -5,6 +5,7 @@ const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const EnvironmentObjectDataScript = preload("res://core/stages/environment_object_data.gd")
 const IndustrialHazardDataScript = preload("res://core/stages/industrial_hazard_data.gd")
 const DisasterHazardDataScript = preload("res://core/stages/disaster_hazard_data.gd")
+const JungleHazardDataScript = preload("res://core/stages/jungle_hazard_data.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -31,6 +32,9 @@ var hazard_actor_cooldowns := {}
 var disaster_cycle_time := 0.0
 var disaster_warning_active := false
 var disaster_damage_active := false
+var jungle_cycle_time := 0.0
+var jungle_warning_active := false
+var jungle_damage_active := false
 
 
 func setup(p_game: Node, p_definition: Resource) -> void:
@@ -55,6 +59,9 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
 			add_to_group("disaster_hazards")
 			disaster_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
+		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
+			add_to_group("jungle_hazards")
+			jungle_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -95,6 +102,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
 		_tick_disaster_hazard(delta)
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
+		_tick_jungle_hazard(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -397,6 +408,46 @@ func _tick_disaster_hazard(delta: float) -> void:
 			game.play_sfx(&"water_surge" if definition.hazard_kind == DisasterHazardDataScript.HazardKind.CISTERN_JET else &"industrial_impact")
 
 
+func _tick_jungle_hazard(delta: float) -> void:
+	for actor_id in hazard_actor_cooldowns.keys().duplicate():
+		var remaining := maxf(0.0, float(hazard_actor_cooldowns[actor_id]) - delta)
+		if remaining <= 0.0:
+			hazard_actor_cooldowns.erase(actor_id)
+		else:
+			hazard_actor_cooldowns[actor_id] = remaining
+	jungle_cycle_time = fmod(jungle_cycle_time + delta, definition.cycle_duration)
+	var active_start: float = definition.cycle_duration - definition.active_duration
+	jungle_warning_active = jungle_cycle_time >= active_start - definition.warning_duration and jungle_cycle_time < active_start
+	jungle_damage_active = jungle_cycle_time >= active_start
+	if definition.hazard_kind == JungleHazardDataScript.HazardKind.MINE_CART and jungle_damage_active:
+		position.x += direction * definition.move_speed * delta
+		roll_angle += direction * definition.move_speed * delta / maxf(definition.size.x * 0.32, 1.0)
+		if position.x <= definition.move_min_x or position.x >= definition.move_max_x:
+			position.x = clampf(position.x, definition.move_min_x, definition.move_max_x)
+			direction *= -1
+		z_index = int(position.y) + 5
+	if not jungle_damage_active:
+		return
+	for actor in _industrial_targets():
+		if not _overlaps_actor(actor):
+			continue
+		if definition.hazard_kind == JungleHazardDataScript.HazardKind.SPORE_BLOOM:
+			actor.velocity *= definition.movement_scale
+		if hazard_actor_cooldowns.has(actor.get_instance_id()):
+			continue
+		var knockback_direction := direction if definition.hazard_kind == JungleHazardDataScript.HazardKind.MINE_CART else (1 if actor.position.x >= position.x else -1)
+		var horizontal_force := 430.0 if definition.hazard_kind == JungleHazardDataScript.HazardKind.MINE_CART else (250.0 if definition.hazard_kind == JungleHazardDataScript.HazardKind.TITAN_STOMP else 150.0)
+		var vertical_force := -105.0 if definition.hazard_kind == JungleHazardDataScript.HazardKind.TITAN_STOMP else -38.0
+		var knockback := Vector2(knockback_direction * horizontal_force, vertical_force)
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, knockback, false, 0.08, true, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, knockback, true, false, 0.08, true)
+		hazard_actor_cooldowns[actor.get_instance_id()] = 0.9
+		if game.has_method("play_sfx"):
+			game.play_sfx(&"heavy" if definition.hazard_kind == JungleHazardDataScript.HazardKind.TITAN_STOMP else &"industrial_impact")
+
+
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
@@ -408,6 +459,8 @@ func _draw() -> void:
 		_draw_industrial_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
 		_draw_disaster_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
+		_draw_jungle_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -526,6 +579,75 @@ func _draw_disaster_hazard() -> void:
 			for index in range(6):
 				var jet_x := -half.x + fmod(index * 47.0 + disaster_cycle_time * definition.move_speed, definition.size.x)
 				draw_line(Vector2(jet_x, -half.y * 0.7), Vector2(jet_x + definition.initial_direction * 44.0, half.y * 0.5), Color(0.68, 0.95, 1.0, 0.72), 6.0)
+
+
+func _draw_jungle_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	var warning_alpha := 0.64 if jungle_warning_active else 0.2
+	if definition.hazard_kind == JungleHazardDataScript.HazardKind.SPORE_BLOOM:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.48, Color(0.16, 0.44, 0.18, warning_alpha * 0.35))
+		draw_arc(Vector2.ZERO, half.x * 0.9, 0.0, TAU, 28, Color(0.58, 0.94, 0.28, warning_alpha), 3.0)
+		if jungle_warning_active or jungle_damage_active:
+			for index in range(10):
+				var drift := fmod(jungle_cycle_time * (18.0 + index) + index * 23.0, maxf(definition.size.y, 1.0))
+				var spore_position := Vector2(-half.x * 0.78 + index * half.x * 0.17 + sin(jungle_cycle_time * 1.8 + index) * 8.0, half.y * 0.34 - drift)
+				draw_circle(spore_position, 4.0 + index % 3 * 2.0, Color(0.62, 1.0, 0.34, 0.52 if jungle_damage_active else 0.26))
+	elif definition.hazard_kind == JungleHazardDataScript.HazardKind.MINE_CART:
+		_draw_oval(Vector2(0.0, 8.0), half.x * 0.92, 12.0, Color(0.01, 0.02, 0.02, 0.48))
+		draw_line(Vector2(-half.x, 9.0), Vector2(half.x, 9.0), Color("#89744f"), 6.0)
+		draw_line(Vector2(-half.x, -16.0), Vector2(half.x, -16.0), Color("#504739"), 5.0)
+		for tie_index in range(5):
+			var tie_x: float = -half.x + 12.0 + tie_index * (definition.size.x - 24.0) / 4.0
+			draw_line(Vector2(tie_x - 8.0, -20.0), Vector2(tie_x + 8.0, 14.0), Color("#342e28"), 5.0)
+		if jungle_warning_active or jungle_damage_active:
+			for chevron_index in range(3):
+				var cue_x: float = direction * (half.x + 28.0 + chevron_index * 26.0)
+				draw_polyline(PackedVector2Array([Vector2(cue_x - direction * 13.0, -28.0), Vector2(cue_x, -14.0), Vector2(cue_x - direction * 13.0, 0.0)]), Color(1.0, 0.56, 0.12, warning_alpha), 4.0)
+		if definition.hazard_texture != null:
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(direction, 1.0))
+			draw_texture_rect(definition.hazard_texture, Rect2(-96.0, -112.0, 192.0, 120.0), false)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			if jungle_damage_active:
+				for spark_index in range(4):
+					var spark_origin: Vector2 = Vector2(-direction * half.x * 0.62, -4.0 - spark_index * 3.0)
+					draw_line(spark_origin, spark_origin + Vector2(-direction * (18.0 + spark_index * 7.0), 8.0 + spark_index * 3.0), Color(1.0, 0.58, 0.1, 0.72), 3.0)
+			return
+		var outer_body := PackedVector2Array([Vector2(-half.x * 0.86, -72.0), Vector2(half.x * 0.86, -72.0), Vector2(half.x * 0.68, -18.0), Vector2(-half.x * 0.68, -18.0)])
+		draw_colored_polygon(outer_body, Color("#252d2e"))
+		draw_polyline(PackedVector2Array([outer_body[0], outer_body[1], outer_body[2], outer_body[3], outer_body[0]]), Color("#87908a"), 6.0)
+		var panel_color := Color("#a86127") if jungle_damage_active else Color("#70492d")
+		draw_colored_polygon(PackedVector2Array([Vector2(-half.x * 0.72, -62.0), Vector2(half.x * 0.72, -62.0), Vector2(half.x * 0.55, -27.0), Vector2(-half.x * 0.55, -27.0)]), panel_color)
+		draw_line(Vector2(0.0, -61.0), Vector2(0.0, -28.0), Color("#3b3430"), 4.0)
+		for ore_index in range(7):
+			var ore_x: float = -half.x * 0.56 + ore_index * half.x * 0.19
+			var ore_y: float = -70.0 - ore_index % 3 * 7.0
+			draw_circle(Vector2(ore_x, ore_y), 9.0 + ore_index % 2 * 3.0, Color("#3d4d43" if ore_index % 2 == 0 else "#594a36"))
+			draw_arc(Vector2(ore_x, ore_y), 7.0, -PI, -PI * 0.15, 8, Color(0.62, 0.76, 0.58, 0.42), 2.0)
+		for rivet_x in [-half.x * 0.48, 0.0, half.x * 0.48]:
+			draw_circle(Vector2(rivet_x, -42.0), 3.0, Color("#d19a48"))
+		for wheel_x in [-half.x * 0.48, half.x * 0.48]:
+			draw_circle(Vector2(wheel_x, -5.0), 15.0, Color("#171c1e"))
+			draw_arc(Vector2(wheel_x, -5.0), 12.0, 0.0, TAU, 18, Color("#737e7e"), 4.0)
+			draw_circle(Vector2(wheel_x, -5.0), 4.0, Color("#d5a64d"))
+			for spoke_index in range(4):
+				var spoke_angle := roll_angle + spoke_index * PI * 0.5
+				draw_line(Vector2(wheel_x, -5.0), Vector2(wheel_x, -5.0) + Vector2(cos(spoke_angle), sin(spoke_angle)) * 10.0, Color("#899494"), 2.0)
+		if jungle_damage_active:
+			for spark_index in range(4):
+				var spark_origin: Vector2 = Vector2(-direction * half.x * 0.62, -4.0 - spark_index * 3.0)
+				draw_line(spark_origin, spark_origin + Vector2(-direction * (18.0 + spark_index * 7.0), 8.0 + spark_index * 3.0), Color(1.0, 0.58, 0.1, 0.72), 3.0)
+	else:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.52, Color(0.05, 0.07, 0.06, 0.36 + warning_alpha * 0.34))
+		draw_arc(Vector2.ZERO, half.x * 0.94, 0.0, TAU, 32, Color(0.78, 0.94, 0.34, warning_alpha), 5.0)
+		for toe_index in range(3):
+			var toe_x := -half.x * 0.38 + toe_index * half.x * 0.38
+			draw_arc(Vector2(toe_x, half.y * 0.15), half.x * 0.22, 0.0, PI, 16, Color(0.64, 0.76, 0.38, warning_alpha), 4.0)
+		if jungle_damage_active:
+			var leg_color := Color("#48643d")
+			draw_rect(Rect2(-half.x * 0.38, -300.0, half.x * 0.76, 250.0), leg_color)
+			draw_colored_polygon(PackedVector2Array([Vector2(-half.x * 0.58, -76.0), Vector2(half.x * 0.48, -76.0), Vector2(half.x * 0.82, -8.0), Vector2(-half.x * 0.76, -8.0)]), Color("#5f7d4a"))
+			for scale_index in range(5):
+				draw_line(Vector2(-half.x * 0.28, -278.0 + scale_index * 42.0), Vector2(half.x * 0.25, -265.0 + scale_index * 42.0), Color(0.25, 0.36, 0.22, 0.72), 5.0)
 
 
 func _draw_hazard() -> void:

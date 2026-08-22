@@ -17,6 +17,9 @@ enum VisualTheme {
 	BURNING_REFUGE,
 	BURNING_MARKET,
 	ASHEN_CISTERN,
+	JUNGLE_RESEARCH_TRAIL,
+	JUNGLE_MINE_ENTRANCE,
+	TITAN_SHAFT,
 }
 
 @export var scene_id: StringName

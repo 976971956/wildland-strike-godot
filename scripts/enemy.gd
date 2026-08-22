@@ -35,6 +35,7 @@ const ENEMY_DEFINITIONS := {
 	"iron_vulture": preload("res://data/enemies/iron_vulture.tres"),
 	"forge_regent": preload("res://data/enemies/forge_regent.tres"),
 	"cinder_matriarch": preload("res://data/enemies/cinder_matriarch.tres"),
+	"titan_warden": preload("res://data/enemies/titan_warden.tres"),
 }
 
 enum BehaviorPhase {
@@ -657,6 +658,20 @@ func _execute_boss_special() -> void:
 		_record_behavior_event(&"boss_cistern_burst")
 		_begin_recovery()
 		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.SEISMIC_FRACTURE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_seismic_fractures(self, current_attack.damage)
+		_record_behavior_event(&"boss_seismic_fracture")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.TITAN_CALL:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_seismic_fractures(self, current_attack.damage, true)
+		_record_behavior_event(&"boss_titan_call")
+		_begin_recovery()
+		return
 	_start_attack()
 	_record_behavior_event(&"boss_slam")
 	_begin_recovery()
@@ -1221,6 +1236,12 @@ func _draw_behavior_cue() -> void:
 				draw_line(Vector2(facing * 42.0, -74.0), Vector2(facing * 224.0, -74.0), Color(0.18, 0.9, 1.0, pulse), 5.0)
 				for index in range(4):
 					draw_arc(Vector2(facing * (74.0 + index * 42.0), -74.0), 11.0, -PI * 0.6, PI * 0.6, 12, Color(0.38, 0.95, 1.0, pulse), 3.0)
+			elif current_boss_phase.special_kind in [BossPhaseDataScript.SpecialKind.SEISMIC_FRACTURE, BossPhaseDataScript.SpecialKind.TITAN_CALL]:
+				for side in ([-1.0, 1.0] if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.TITAN_CALL else [float(facing)]):
+					draw_line(Vector2(side * 46.0, 3.0), Vector2(side * 238.0, 3.0), Color(0.28, 0.9, 1.0, pulse), 5.0)
+					for index in range(4):
+						var crack_x: float = side * (78.0 + index * 46.0)
+						draw_polyline(PackedVector2Array([Vector2(crack_x - 12.0, -8.0), Vector2(crack_x, 3.0), Vector2(crack_x + 9.0, 14.0)]), Color(0.46, 0.96, 1.0, pulse), 4.0)
 			else:
 				for side in [-1.0, 1.0]:
 					draw_line(Vector2(side * 48.0, 2.0), Vector2(side * 205.0, 2.0), cue_color, 5.0)
@@ -1357,7 +1378,7 @@ func _visual_column() -> int:
 		if attack_timer > 0.0:
 			return 2
 		if behavior_phase == BehaviorPhase.TELEGRAPH:
-			return 3 if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.MAGNET_PULL else 5
+			return 3 if current_boss_phase.special_kind in [BossPhaseDataScript.SpecialKind.MAGNET_PULL, BossPhaseDataScript.SpecialKind.SEISMIC_FRACTURE, BossPhaseDataScript.SpecialKind.TITAN_CALL] else 5
 		if velocity.length() > 10.0:
 			return 1
 		return 0

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=6 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+[sub_resource type="Resource" id="Shield"]
+script = ExtResource("2")
+enemy_id = &"shield_guard"
+offset = Vector2(-245, 520)
+[sub_resource type="Resource" id="Knife"]
+script = ExtResource("2")
+enemy_id = &"knife_raider"
+offset = Vector2(-55, 618)
+[sub_resource type="Resource" id="Triceratops"]
+script = ExtResource("2")
+enemy_id = &"triceratops"
+offset = Vector2(150, 560)
+[sub_resource type="Resource" id="Enforcer"]
+script = ExtResource("2")
+enemy_id = &"elite_enforcer"
+offset = Vector2(285, 624)
+[resource]
+script = ExtResource("1")
+wave_id = &"shaft_approach"
+spawns = Array[Resource]([SubResource("Shield"), SubResource("Knife"), SubResource("Triceratops"), SubResource("Enforcer")])

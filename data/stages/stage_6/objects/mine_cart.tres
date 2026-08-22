@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="JungleHazardData" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/jungle_hazard_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/jungle_mine_cart.png" id="2"]
+[resource]
+script = ExtResource("1")
+object_id = &"mine_cart"
+kind = 7
+position = Vector2(1840, 545)
+size = Vector2(150, 92)
+contact_damage = 18
+move_speed = 410.0
+move_min_x = 1540.0
+move_max_x = 2670.0
+initial_direction = 1
+hazard_kind = 1
+cycle_duration = 4.2
+warning_duration = 0.9
+active_duration = 1.35
+cycle_offset = 0.6
+hazard_texture = ExtResource("2")

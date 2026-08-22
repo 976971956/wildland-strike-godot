@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+[sub_resource type="Resource" id="Boss"]
+script = ExtResource("2")
+enemy_id = &"titan_warden"
+offset = Vector2(130, 560)
+[resource]
+script = ExtResource("1")
+wave_id = &"titan_warden_boss"
+spawns = Array[Resource]([SubResource("Boss")])

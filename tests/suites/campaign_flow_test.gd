@@ -6,14 +6,15 @@ const STAGES := [
 	preload("res://data/stages/stage_3/stage_3.tres"),
 	preload("res://data/stages/stage_4/stage_4.tres"),
 	preload("res://data/stages/stage_5/stage_5.tres"),
+	preload("res://data/stages/stage_6/stage_6.tres"),
 ]
 
 
 func run(test) -> void:
-	test.check(STAGES.size() == 5, "M7 campaign route must expose the first five stages")
-	var expected_health := [1.0, 1.08, 1.16, 1.25, 1.34]
-	var expected_damage := [1.0, 1.04, 1.08, 1.12, 1.17]
-	var expected_clear := [5000, 6500, 8000, 10000, 12000]
+	test.check(STAGES.size() == 6, "M7 campaign route must expose the first six stages")
+	var expected_health := [1.0, 1.08, 1.16, 1.25, 1.34, 1.43]
+	var expected_damage := [1.0, 1.04, 1.08, 1.12, 1.17, 1.21]
+	var expected_clear := [5000, 6500, 8000, 10000, 12000, 14000]
 	for index in range(STAGES.size()):
 		var stage: Resource = STAGES[index]
 		test.check(stage.is_valid_stage(), "Stage %d route profile is invalid" % (index + 1))
@@ -29,7 +30,7 @@ func run(test) -> void:
 	game._open_character_select()
 	game.confirm_hero_selection()
 	test.check(game.state == "campaign_map" and game.hud.mode == "campaign_map", "character select did not enter the first route map")
-	test.check(game.hud.campaign_stage_nodes.size() == 5 and game.hud.campaign_target_index == 0, "route map did not expose all five operations")
+	test.check(game.hud.campaign_stage_nodes.size() == 6 and game.hud.campaign_target_index == 0, "route map did not expose all six operations")
 	game._deploy_campaign_stage()
 	test.check(game.state == "playing" and game.campaign_stage_index == 0, "first route deployment did not start Stage 1")
 
@@ -51,12 +52,12 @@ func run(test) -> void:
 			game._deploy_campaign_stage()
 			await test.tree.process_frame
 
-	test.check(game.score == 57500, "five stage settlements did not preserve and tally the expected score")
+	test.check(game.score == 74500, "six stage settlements did not preserve and tally the expected score")
 	test.check(STAGES.all(func(stage: Resource): return stage.scenes.size() == 3 and stage.is_valid_stage()), "campaign transitions mutated cached stage resources")
 	game._complete_first_half_campaign()
 	test.check(game.state == "campaign_complete" and game.hud.mode == "campaign_complete", "Stage 5 did not enter the campaign sector report")
-	test.check(game.score == 77500 and game.hud.campaign_display_score == 77500, "campaign completion bonus was not applied exactly once")
+	test.check(game.score == 94500 and game.hud.campaign_display_score == 94500, "campaign completion bonus was not applied exactly once")
 	game._complete_first_half_campaign()
-	test.check(game.score == 77500, "campaign completion bonus was applied more than once")
-	test.check(game.local_player_registry.slot_at(0).remaining_lives == 2 and game.lives == 2, "five-stage route did not preserve remaining continues")
+	test.check(game.score == 94500, "campaign completion bonus was applied more than once")
+	test.check(game.local_player_registry.slot_at(0).remaining_lives == 2 and game.lives == 2, "six-stage route did not preserve remaining continues")
 	await test.dispose(game)

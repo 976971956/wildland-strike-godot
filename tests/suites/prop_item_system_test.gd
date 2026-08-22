@@ -2,6 +2,7 @@ extends RefCounted
 
 const PickupDefinitionScript = preload("res://core/items/pickup_definition.gd")
 const PickupCatalogScript = preload("res://core/items/pickup_catalog.gd")
+const PickupScript = preload("res://scripts/pickup.gd")
 
 
 func run(test) -> void:
@@ -26,7 +27,17 @@ func run(test) -> void:
 			test.check(item.score_value > last_score_value, "%s does not advance the treasure score curve" % item.display_name)
 			last_score_value = item.score_value
 	test.check(food_count == 4 and score_count == 4, "pickup family split drifted")
-	test.check(PickupCatalogScript.explicit_pickup_ids().size() == 8, "typed pickup drop IDs are incomplete")
+	var pickup_ids := PickupCatalogScript.explicit_pickup_ids()
+	test.check(pickup_ids.size() == 8, "typed pickup drop IDs are incomplete")
+	var atlas_indices := {}
+	for pickup_id in pickup_ids:
+		var atlas_index := PickupScript.item_atlas_index(pickup_id)
+		test.check(atlas_index >= 0, "%s has no production pickup artwork" % pickup_id)
+		test.check(not atlas_indices.has(atlas_index), "%s reuses another item pickup cell" % pickup_id)
+		atlas_indices[atlas_index] = true
+	test.check(atlas_indices.size() == 8, "item pickup atlas does not expose eight unique models")
+	test.check(PickupScript.ITEM_PICKUP_ATLAS.get_width() == 640 and PickupScript.ITEM_PICKUP_ATLAS.get_height() == 320, "item pickup atlas grid drifted")
+	test.check(PickupScript.item_atlas_index("food") == 1, "legacy food reward alias lost its ration model")
 
 	var game: Node = await test.instantiate_main()
 	if game == null:

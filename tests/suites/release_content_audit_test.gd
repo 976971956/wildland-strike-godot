@@ -12,6 +12,7 @@ const ARCHIVED_ASSETS := [
 	"assets/sprites/enemy_sheet.png",
 	"assets/sprites/forge_regent_source.png",
 	"assets/sprites/iron_vulture_source.png",
+	"assets/sprites/item_pickups_source.png",
 	"assets/sprites/jungle_mine_cart_edit_source.png",
 	"assets/sprites/jungle_mine_cart_source.png",
 	"assets/sprites/mirewarden_source.png",
@@ -20,6 +21,7 @@ const ARCHIVED_ASSETS := [
 	"assets/sprites/titan_warden_edit_source.png",
 	"assets/sprites/titan_warden_source.png",
 	"assets/sprites/vault_sentinels_source.png",
+	"assets/sprites/weapon_pickups_source.png",
 ]
 const PROTECTED_RUNTIME_TOKENS := [
 	"cadillacs and dinosaurs",
@@ -51,7 +53,7 @@ func run(test) -> void:
 	for path in png_assets:
 		test.check(provenance.contains(path.get_file()), "asset provenance is missing %s" % path)
 
-	test.check(ARCHIVED_ASSETS.size() == 19, "archived source inventory count drifted")
+	test.check(ARCHIVED_ASSETS.size() == 21, "archived source inventory count drifted")
 	for path in ARCHIVED_ASSETS:
 		test.check(FileAccess.file_exists("res://" + path), "archived source disappeared without an inventory update: %s" % path)
 		test.check(exports.count(path) == 2, "archived source is not excluded from both Web and iOS: %s" % path)

@@ -1,11 +1,43 @@
 class_name ArcadePickup
 extends Node2D
 
-const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const PickupDefinitionScript = preload("res://core/items/pickup_definition.gd")
 const PickupCatalogScript = preload("res://core/items/pickup_catalog.gd")
 const ArcadeFont = preload("res://assets/fonts/NotoSansSC-Variable.ttf")
+const ITEM_PICKUP_ATLAS = preload("res://assets/sprites/item_pickups_atlas.png")
+const WEAPON_PICKUP_ATLAS = preload("res://assets/sprites/weapon_pickups_atlas.png")
+const PICKUP_CELL_SIZE := Vector2(160.0, 160.0)
+const PICKUP_ATLAS_COLUMNS := 4
+const ITEM_ATLAS_INDEX := {
+	"food": 1,
+	"food_snack": 0,
+	"food_ration": 1,
+	"food_meal": 2,
+	"food_feast": 3,
+	"score_token": 4,
+	"score_badge": 5,
+	"score_relic": 6,
+	"score_intel": 7,
+}
+const WEAPON_ATLAS_INDEX := {
+	"weapon": 0,
+	"weapon_melee": 0,
+	"weapon_firearm": 4,
+	"weapon_explosive": 8,
+	"weapon_machete": 0,
+	"weapon_pipe": 1,
+	"weapon_whip": 2,
+	"weapon_shock_baton": 3,
+	"weapon_pistol": 4,
+	"weapon_shotgun": 5,
+	"weapon_rifle": 6,
+	"weapon_smg": 7,
+	"weapon_grenade": 8,
+	"weapon_molotov": 9,
+	"weapon_rocket": 10,
+	"weapon_mine": 11,
+}
 
 var kind := "food"
 var game
@@ -58,7 +90,7 @@ func collect(collector: Node) -> bool:
 
 func _draw() -> void:
 	var bob := sin(phase) * 3.0
-	_draw_oval(Vector2(0,4), 20, 6, Color(0.02,0.03,0.04,0.35))
+	_draw_oval(Vector2(0, 5), 28, 7, Color(0.02, 0.03, 0.04, 0.42))
 	if item_definition != null:
 		_draw_item_pickup(bob)
 	elif weapon_definition != null:
@@ -73,48 +105,33 @@ func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:
 
 
 func _draw_weapon_pickup(bob: float) -> void:
-	var weapon_color: Color = weapon_definition.color
-	if weapon_definition.kind == WeaponDefinitionScript.WeaponKind.MELEE:
-		var length: float = 42.0 * weapon_definition.melee_reach_scale
-		draw_line(Vector2(-length * 0.45, -7.0 + bob), Vector2(length * 0.45, -29.0 + bob), weapon_color.lightened(0.25), 8.0)
-		draw_line(Vector2(length * 0.28, -27.0 + bob), Vector2(length * 0.48, -36.0 + bob), weapon_color.darkened(0.35), 6.0)
-		if weapon_definition.chain_radius > 0.0:
-			draw_arc(Vector2(0.0, -20.0 + bob), 19.0, -PI * 0.9, PI * 0.25, 12, Color("#76efff"), 3.0)
-	elif weapon_definition.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-		var barrel: float = 46.0 if weapon_definition.penetration_count > 1 else 38.0
-		draw_line(Vector2(-barrel * 0.5, -17.0 + bob), Vector2(barrel * 0.5, -17.0 + bob), weapon_color.lightened(0.28), 10.0)
-		draw_line(Vector2(-5.0, -12.0 + bob), Vector2(-10.0, 0.0 + bob), weapon_color.darkened(0.35), 8.0)
-		for pellet_index in range(mini(weapon_definition.shots_per_use, 5)):
-			draw_circle(Vector2(24.0 + pellet_index * 4.0, -22.0 + bob + pellet_index * 2.5), 2.2, Color("#ffe68a"))
-	else:
-		if weapon_definition.stationary:
-			draw_rect(Rect2(-18.0, -20.0 + bob, 36.0, 13.0), weapon_color)
-			draw_circle(Vector2(0.0, -15.0 + bob), 4.0, Color("#ff6a47"))
-		elif weapon_definition.detonate_on_contact:
-			draw_rect(Rect2(-22.0, -24.0 + bob, 44.0, 12.0), weapon_color)
-			draw_colored_polygon(PackedVector2Array([Vector2(-22.0, -26.0 + bob), Vector2(-32.0, -18.0 + bob), Vector2(-22.0, -10.0 + bob)]), Color("#ffb347"))
-		else:
-			draw_circle(Vector2(0.0, -17.0 + bob), 13.0, weapon_color)
-			draw_rect(Rect2(-4.0, -34.0 + bob, 8.0, 8.0), Color("#d5b96d"))
-	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
+	var index := weapon_atlas_index(kind)
+	_draw_pickup_atlas(WEAPON_PICKUP_ATLAS, index, Vector2(112.0, 112.0), bob)
+	var label_rect := Rect2(-70.0, 14.0 + bob, 140.0, 20.0)
 	draw_string(ArcadeFont, label_rect.position, game.localized_content(weapon_definition.display_name), HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
 
 
 func _draw_item_pickup(bob: float) -> void:
-	var icon_position := Vector2(0.0, -16.0 + bob)
-	var icon_size: float = item_definition.icon_size
-	if item_definition.kind == PickupDefinitionScript.PickupKind.FOOD:
-		draw_circle(icon_position, icon_size, item_definition.color)
-		draw_circle(icon_position + Vector2(-icon_size * 0.28, -icon_size * 0.24), icon_size * 0.44, item_definition.color.lightened(0.25))
-		draw_line(icon_position + Vector2(2.0, -icon_size), icon_position + Vector2(8.0, -icon_size - 8.0), Color("#45291f"), 4.0)
-		draw_colored_polygon(PackedVector2Array([icon_position + Vector2(7.0, -icon_size - 7.0), icon_position + Vector2(17.0, -icon_size - 9.0), icon_position + Vector2(10.0, -icon_size + 1.0)]), Color("#55a34d"))
-	else:
-		var points := PackedVector2Array()
-		for index in range(8):
-			var radius := icon_size if index % 2 == 0 else icon_size * 0.52
-			var angle := -PI * 0.5 + TAU * index / 8.0
-			points.append(icon_position + Vector2(cos(angle), sin(angle)) * radius)
-		draw_colored_polygon(points, item_definition.color)
-		draw_circle(icon_position, icon_size * 0.3, item_definition.color.lightened(0.35))
-	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
+	var index := item_atlas_index(kind)
+	_draw_pickup_atlas(ITEM_PICKUP_ATLAS, index, Vector2(100.0, 100.0), bob)
+	var label_rect := Rect2(-70.0, 14.0 + bob, 140.0, 20.0)
 	draw_string(ArcadeFont, label_rect.position, game.localized_content(item_definition.display_name), HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
+
+
+func _draw_pickup_atlas(atlas: Texture2D, index: int, destination_size: Vector2, bob: float) -> void:
+	if index < 0:
+		return
+	var source_position := Vector2(index % PICKUP_ATLAS_COLUMNS, index / PICKUP_ATLAS_COLUMNS) * PICKUP_CELL_SIZE
+	var destination := Rect2(
+		Vector2(-destination_size.x * 0.5, -destination_size.y + 10.0 + bob),
+		destination_size
+	)
+	draw_texture_rect_region(atlas, destination, Rect2(source_position, PICKUP_CELL_SIZE))
+
+
+static func item_atlas_index(pickup_id: String) -> int:
+	return ITEM_ATLAS_INDEX.get(pickup_id, -1)
+
+
+static func weapon_atlas_index(pickup_id: String) -> int:
+	return WEAPON_ATLAS_INDEX.get(pickup_id, -1)

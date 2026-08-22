@@ -3,6 +3,7 @@ extends RefCounted
 const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
+const PickupScript = preload("res://scripts/pickup.gd")
 
 
 func run(test) -> void:
@@ -24,10 +25,19 @@ func run(test) -> void:
 	var pickup_ids := WeaponCatalogScript.explicit_pickup_ids()
 	test.check(pickup_ids.size() == 12, "explicit weapon drop table is incomplete")
 	var pickup_resources := {}
+	var atlas_indices := {}
 	for pickup_id in pickup_ids:
 		var weapon: Resource = WeaponCatalogScript.from_pickup_id(pickup_id)
 		pickup_resources[weapon.weapon_id] = true
+		var atlas_index := PickupScript.weapon_atlas_index(pickup_id)
+		test.check(atlas_index >= 0, "%s has no production pickup artwork" % pickup_id)
+		test.check(not atlas_indices.has(atlas_index), "%s reuses another weapon pickup cell" % pickup_id)
+		atlas_indices[atlas_index] = true
 	test.check(pickup_resources.size() == 12, "explicit weapon drops do not resolve to twelve unique resources")
+	test.check(atlas_indices.size() == 12, "weapon pickup atlas does not expose twelve unique models")
+	test.check(PickupScript.WEAPON_PICKUP_ATLAS.get_width() == 640 and PickupScript.WEAPON_PICKUP_ATLAS.get_height() == 480, "weapon pickup atlas grid drifted")
+	test.check(PickupScript.weapon_atlas_index("weapon") == 0 and PickupScript.weapon_atlas_index("weapon_melee") == 0, "legacy melee drop aliases lost their model")
+	test.check(PickupScript.weapon_atlas_index("weapon_firearm") == 4 and PickupScript.weapon_atlas_index("weapon_explosive") == 8, "legacy ranged drop aliases lost their models")
 
 	await _verify_melee_behaviors(test)
 	await _verify_firearm_behaviors(test)

@@ -640,6 +640,53 @@ Fixed-cell and whole-row slicing were rejected because irregular pose spacing ca
 
 Verification: all three Stage 8 scene resources validate and reference unique original backgrounds. The accepted final-boss atlas retains alpha and divides into twenty-four exact cells. Exported 1280×720 environment and boss fixtures were inspected for active-lane readability, silhouette scale, crop loss, hazard occlusion, phase identity, warning/impact clarity, ending hierarchy, and credits readability. Accepted environment and boss fixtures both average 119.9968 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
 
+## 2026-08-22 — Pickup model art refresh
+
+Tool: OpenAI built-in `image_gen` clean-room generation and isolation-edit workflow, followed by the retained project-local `tools/build_pickup_assets.gd` fixed-grid cleanup, connected-component isolation, catalog reordering, Lanczos normalization, and exact transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, branded product, character, or traced object was supplied. The prompts use only the original Wildland Strike setting and a general premium 1990s arcade pixel-art direction.
+
+### Final files
+
+- Archived item isolation source: `assets/sprites/item_pickups_source.png`; 1536×1024 RGB, 4×2; SHA-256 `087d61e57f6b08e3daf98dce337b8e605bfdf7a50af14805309afa028bfc8234`.
+- `assets/sprites/item_pickups_atlas.png`: 640×320 RGBA, 4×2 with 160×160 cells; SHA-256 `06c197ae0933864742c56e34b493cd981c4a2d18ffc9ec4fcd29050fea3489b3`.
+- Archived weapon isolation source: `assets/sprites/weapon_pickups_source.png`; 1448×1086 RGB, 4×3; SHA-256 `6d05eaebe791f443f59e34eff8b3ec321693ca88ab3ca1395f6b9c931080e992`.
+- `assets/sprites/weapon_pickups_atlas.png`: 640×480 RGBA, 4×3 with 160×160 cells; SHA-256 `a69a6e7d5326d3aff837fdd884c7eb3db5f941779eb8650782bd43ee2230a0b1`.
+
+The two archived sources are excluded from Web and iOS runtime exports.
+
+Item-atlas generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent pickup sprite atlas for Wildland Strike, a serious 1990s arcade beat-em-up
+Primary request: exactly FOUR COLUMNS by TWO ROWS of isolated collectible models. Top row in order: wrapped trail snack, compact field ration, hot plated meal, lavish roast feast. Bottom row in order: bronze frontier token, enamel ranger badge, sealed intelligence dossier, ornate ancient relic. Give every object an immediately distinct silhouette, material, color family, value tier and small grounded contact shadow.
+Style/medium: premium hand-authored 16-bit/32-bit arcade pixel art, crisp dark outlines, rich controlled color ramps, readable highlights, serious adventurous tone, original clean-room designs
+Composition/framing: one complete object centered in each equal cell, consistent scale and bottom baseline, generous separation, no object or effect crossing a cell boundary
+Constraints: genuine transparent background; exactly eight objects; no people, characters, scenery, labels, text, UI, logos, brands, watermark, copyrighted designs, cropped edges or duplicated silhouettes
+```
+
+Weapon-atlas generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent weapon-pickup sprite atlas for Wildland Strike, a serious 1990s arcade beat-em-up
+Primary request: exactly FOUR COLUMNS by THREE ROWS of isolated weapon models. Row 1: heavy brush machete, reinforced steel pipe, long field whip, blue-electric shock baton. Row 2: rugged pistol, pump shotgun, compact submachine gun, scoped field rifle. Row 3: fragmentation grenade, improvised fire bottle, shoulder rocket launcher, circular proximity mine. Every model needs a unique readable silhouette and material treatment suitable for a ground pickup.
+Style/medium: premium hand-authored 16-bit/32-bit arcade pixel art, crisp dark outlines, rich controlled metal/wood/leather/glass color ramps, restrained highlights, serious grounded original clean-room designs
+Composition/framing: one complete weapon centered independently in each equal cell, consistent visual scale and bottom baseline, generous transparent gutters, long weapons angled to fit without crossing cells
+Constraints: genuine transparent background; exactly twelve objects; no hands, people, characters, scenery, labels, text, UI, logos, real-world brands, watermark, copyrighted designs, cropped edges or duplicated silhouettes
+```
+
+Isolation-edit prompt used for both atlases:
+
+```text
+Production isolation edit of this exact atlas. Preserve every object design, color, material, order, orientation and detail exactly. Remove all atmospheric background, glow panels and floor rectangles. Place every complete object on a flat light neutral checker isolation field aligned to the same strict mathematical grid, with no object, shadow, spark, flame or fragment crossing a cell boundary. No scenery, grid lines, labels, text, UI, logos, watermark, extra objects or crop.
+```
+
+The first deliveries contained attractive objects but also translucent dark atmospheric panels, so they were rejected as runtime assets. The isolation edits preserved the selected designs on a bright neutral checker field. The deterministic builder removes only bright near-neutral checker pixels, remaps the two generated order differences to catalog order, isolates the largest eight-connected weapon component to discard cross-cell slivers, and bottom-aligns every accepted model inside an exact transparent 160×160 runtime cell.
+
+Verification: all twenty explicit pickup IDs map to unique atlas cells; both textures retain genuine alpha and divide into exact cells. The reproducible `weapon_sandbox_preview=1` and `prop_item_preview=1` Web fixtures are used to inspect silhouette readability, gameplay scale, label clearance, cell bleed, crop loss, and mobile-safe presentation.
+
 ## 2026-08-22 — v1.0.0 inventory closure
 
 The release audit compared every tracked PNG under `assets/` with this provenance log. Two early original-IP prototype canvases predated the roadmap log and are recorded here to close the inventory:

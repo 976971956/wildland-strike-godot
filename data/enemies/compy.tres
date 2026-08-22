@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_compy.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/compy_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"compy"
+max_health = 32
+speed = 178.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 350
+faction = 1
+opposing_faction_target_radius = 420.0
+behavior_kind = 0
+attack_distance = 48.0
+lane_tolerance = 42.0
+vertical_approach_scale = 1.0
+dinosaur_archetype = true
+starts_sleeping = false
+wake_radius = 110.0
+enrage_health_ratio = 0.65
+enrage_speed_scale = 1.32
+enrage_damage_scale = 1.2
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+visual_kind = 1
+sprite_rows = 1
+target_size = Vector2(176, 236)
+target_bottom_offset = 24.0
+shadow_half_extents = Vector2(38, 8)
+tint = Color(1, 1, 1, 1)
+hurt_tint = Color(1, 0.64, 0.56, 1)

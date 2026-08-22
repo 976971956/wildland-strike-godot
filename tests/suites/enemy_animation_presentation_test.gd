@@ -6,6 +6,9 @@ const DEFINITIONS := {
 	"brute": preload("res://data/enemies/brute.tres"),
 	"hunter": preload("res://data/enemies/hunter.tres"),
 	"raptor": preload("res://data/enemies/raptor.tres"),
+	"compy": preload("res://data/enemies/compy.tres"),
+	"ankylosaur": preload("res://data/enemies/ankylosaur.tres"),
+	"triceratops": preload("res://data/enemies/triceratops.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
 }
 
@@ -65,7 +68,12 @@ func run(test) -> void:
 		game.actors.add_child(actor)
 		actor.setup(game, game.player, enemy_type)
 		actor.visual_clock = 0.6
-		test.check(actor._visual_column() == 1, "%s did not use expanded idle animation" % enemy_type)
+		var expected_idle_column := 1
+		if actor.definition.dinosaur_archetype and not actor.definition.starts_sleeping:
+			expected_idle_column = 0
+		test.check(actor._visual_column() == expected_idle_column, "%s idle/sleep animation state drifted" % enemy_type)
+		if actor.definition.dinosaur_archetype and actor.definition.starts_sleeping:
+			actor._wake_creature()
 		actor.velocity = Vector2(80.0, 0.0)
 		actor.walk_phase = 1.0
 		test.check(actor._visual_column() == 3, "%s did not use expanded movement animation" % enemy_type)

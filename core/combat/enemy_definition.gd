@@ -52,6 +52,14 @@ enum Faction {
 @export var ranged_weapon: Resource
 @export var boss_phases: Array[Resource] = []
 
+@export_group("Creature Ecology")
+@export var dinosaur_archetype := false
+@export var starts_sleeping := false
+@export_range(40.0, 500.0, 1.0) var wake_radius := 150.0
+@export_range(0.05, 1.0, 0.01) var enrage_health_ratio := 0.5
+@export_range(1.0, 2.0, 0.01) var enrage_speed_scale := 1.2
+@export_range(1.0, 2.0, 0.01) var enrage_damage_scale := 1.15
+
 @export_group("Presentation")
 @export var sprite_sheet: Texture2D
 @export var visual_kind := VisualKind.HUMANOID
@@ -93,6 +101,20 @@ func is_valid_definition() -> bool:
 		return false
 	if opposing_faction_target_radius <= attack_distance:
 		return false
+	if starts_sleeping and not dinosaur_archetype:
+		return false
+	if dinosaur_archetype:
+		if (
+			faction != Faction.NEUTRAL_CREATURE
+			or can_be_grabbed
+			or visual_kind != VisualKind.RAPTOR
+			or wake_radius <= attack_distance
+			or enrage_health_ratio <= 0.0
+			or enrage_health_ratio > 1.0
+			or enrage_speed_scale <= 1.0
+			or enrage_damage_scale <= 1.0
+		):
+			return false
 	if behavior_kind in [BehaviorKind.CHARGER, BehaviorKind.POUNCER]:
 		if (
 			telegraph_duration <= 0.0

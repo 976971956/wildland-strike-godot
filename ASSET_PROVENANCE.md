@@ -123,3 +123,26 @@ Character-specific direction:
 Isolation edit changed only the empty generated checker background to a uniform chroma-magenta field while preserving the sprites and exact grid. FFmpeg converted that field to alpha. Browser inspection of a query-gated 24-cell fixture then identified both texture-filter sampling and disconnected neighboring-pose fragments. Nearest-neighbor sampling removed atlas-edge interpolation; the retained normalizer removed weak alpha, components below 128 pixels, and independent components farther than an eight-pixel expansion of the main character while preserving nearby weapon flashes and motion arcs.
 
 Verification: all four hero resources validate their own texture/grid metadata. Each final sheet retains alpha, is exactly divisible into 24 equal cells, and every cell passes deterministic opaque-silhouette and transparent-gutter checks. Mara, Kestrel, and Atlas were each inspected across all 24 exported-Web cells after cleanup; the final real-sprite character-select screen was also inspected. The animation and selection fixtures average about 120 FPS across 300 frames with zero frames above 20 ms and no console errors.
+
+## 2026-08-22 — Dinosaur ecosystem animation sheets
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/split_dinosaur_atlas.gd` black-key, connected-component isolation, nearest-neighbor normalization, and transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, or traced animation frame was supplied. The prompt referenced only the original Wildland Strike name and the project's general CPS-era arcade rendering direction.
+
+### Final files
+
+- `assets/sprites/compy_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `d6bdb8d8c511aa34291f77743e4326e988e6831f7255171d6c0e112de470b73d`.
+- `assets/sprites/ankylosaur_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `26f4db559f9735b132d14407ab24df8d0fbc1bb98f0b4ec67a8f465f08af296e`.
+- `assets/sprites/triceratops_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `65c789f8d01887a67d240db729ea256a64f8154db172dc8dc28d1a555b290b6d`.
+- Archived three-row source: `assets/sprites/dinosaur_ecosystem_source.png`; SHA-256 `7b2d226b91ef6808318013f73a98e4e56a7a81902b42aa845ddb938cc1b97443`. It is excluded from runtime exports.
+
+Generation prompt:
+
+```text
+Create one production-ready transparent PNG sprite atlas for an original 1990s arcade beat-em-up named Wildland Strike. EXACT layout: 8 columns by 3 rows, every cell isolated with generous transparent gutters, no grid lines, no labels, no text, no background, no shadows, no cropped limbs, no object crossing a cell boundary. Each row is one consistent dinosaur species facing LEFT in all eight poses, with consistent proportions/colors within its row. Row 1: small agile compsognathus-like pack hunter, teal and sand palette; poses idle alert, sleep curled, run, bite attack, hurt recoil, enraged roar, knockdown, defeated. Row 2: heavy ankylosaur-like armored dinosaur, slate blue and ochre palette; poses idle, sleep, walk, tail-club attack, hurt recoil, enraged roar, knockdown, defeated. Row 3: large triceratops-like charging dinosaur, rust red and cream palette; poses idle, sleep, walk, horn charge attack, hurt recoil, enraged roar, knockdown, defeated. High quality clean pixel art matching CPS-era arcade sprites, detailed lighting, crisp silhouettes, consistent pixel density, no anti-aliased blurry edges. Keep every complete creature centered independently in its cell. Transparent background is mandatory.
+```
+
+The generated source encoded the empty field as opaque black despite the requested transparency and did not respect equal column widths. It was rejected as a runtime atlas. The retained splitter keys only exact/near-exact black background pixels, discovers connected opaque components independently within each species row, selects and x-sorts the eight largest complete actors, scales each with nearest-neighbor interpolation, and centers it on a transparent 320×320 cell. This produces deterministic, cleanly sliceable output while preserving dark non-black outlines.
+
+Verification: all three new textures and the existing raptor texture are unique, retain alpha, and divide into eight exact cells. Every typed definition validates neutral faction, grab immunity, behavior, wake radius, enrage threshold, multipliers, and atlas metadata. The exported 1280×720 four-species fixture was inspected for silhouettes, sleeping/enraged readability, scale, gutters, and crop loss; its final sample averaged 119.99 FPS over 300 frames with zero frames above 20 ms or 33 ms.

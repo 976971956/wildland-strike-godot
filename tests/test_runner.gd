@@ -38,6 +38,7 @@ const SUITES := [
 	{"name": "m4_roster_acceptance", "path": "res://tests/suites/m4_roster_acceptance_test.gd"},
 	{"name": "weapon_sandbox", "path": "res://tests/suites/weapon_sandbox_test.gd"},
 	{"name": "prop_item_system", "path": "res://tests/suites/prop_item_system_test.gd"},
+	{"name": "dinosaur_ecosystem", "path": "res://tests/suites/dinosaur_ecosystem_test.gd"},
 ]
 
 

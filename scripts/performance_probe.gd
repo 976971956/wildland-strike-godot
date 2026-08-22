@@ -19,7 +19,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "prop_item_preview=1" in query_string:
+		if "dinosaur_ecosystem_preview=1" in query_string:
+			scenario = "dinosaur_ecosystem_preview"
+			call_deferred("_start_dinosaur_ecosystem_preview")
+		elif "prop_item_preview=1" in query_string:
 			scenario = "prop_item_preview"
 			call_deferred("_start_prop_item_preview")
 		elif "weapon_sandbox_preview=1" in query_string:
@@ -261,6 +264,47 @@ func _start_prop_item_preview() -> void:
 		var pickup: Node = get_tree().get_nodes_in_group("pickups").back()
 		pickup.set_process(false)
 	game.hud.show_banner("PROPS + PICKUP TIERS", "CARRY // THROW // HEAL // SCORE", 999.0)
+	game.set_process(false)
+
+
+func _start_dinosaur_ecosystem_preview() -> void:
+	var game := get_parent()
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.visible = false
+	game.player.set_physics_process(false)
+	for existing_enemy in get_tree().get_nodes_in_group("enemies"):
+		existing_enemy.remove_from_group("enemies")
+		existing_enemy.visible = false
+		existing_enemy.set_physics_process(false)
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_physics_process(false)
+	var preview_data := [
+		{"type": "compy", "position": Vector2(250.0, 555.0), "label": "COMPY // NEUTRAL"},
+		{"type": "raptor", "position": Vector2(505.0, 585.0), "label": "RAPTOR // HUNTING"},
+		{"type": "ankylosaur", "position": Vector2(805.0, 570.0), "label": "ANKYLOSAUR // SLEEPING"},
+		{"type": "triceratops", "position": Vector2(1110.0, 585.0), "label": "TRICERATOPS // ENRAGED"},
+	]
+	for index in range(preview_data.size()):
+		var preview: Dictionary = preview_data[index]
+		game.spawn_enemy(preview.position, preview.type)
+		var dinosaur: Node = get_tree().get_nodes_in_group("enemies").back()
+		dinosaur.set_physics_process(false)
+		dinosaur.invulnerable = 999.0
+		dinosaur.facing = -1
+		if preview.type == "triceratops":
+			dinosaur._enrage_creature()
+		dinosaur.queue_redraw()
+		var label := Label.new()
+		label.position = Vector2(preview.position.x - 105.0, 640.0)
+		label.size = Vector2(210.0, 28.0)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.text = preview.label
+		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_color_override("font_color", Color("#fff0bd"))
+		game.hud.add_child(label)
+	game.hud.show_banner("DINOSAUR ECOSYSTEM", "NEUTRAL // SLEEP // ENRAGE // CROSS-FACTION", 999.0)
 	game.set_process(false)
 
 

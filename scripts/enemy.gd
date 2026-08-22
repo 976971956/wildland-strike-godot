@@ -19,6 +19,9 @@ const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
 	"brute": preload("res://data/enemies/brute.tres"),
 	"raptor": preload("res://data/enemies/raptor.tres"),
+	"compy": preload("res://data/enemies/compy.tres"),
+	"ankylosaur": preload("res://data/enemies/ankylosaur.tres"),
+	"triceratops": preload("res://data/enemies/triceratops.tres"),
 	"hunter": preload("res://data/enemies/hunter.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
 }
@@ -29,6 +32,13 @@ enum BehaviorPhase {
 	BURST,
 	EVADE,
 	RECOVER,
+}
+
+enum CreatureState {
+	NONE,
+	NEUTRAL,
+	SLEEPING,
+	ENRAGED,
 }
 
 var game: Node
@@ -43,6 +53,8 @@ var definition: Resource
 var max_health := 42
 var health := 42
 var speed := 115.0
+var base_speed := 115.0
+var creature_state := CreatureState.NONE
 var facing := -1
 var attack_timer := 0.0
 var hurt_timer := 0.0
@@ -102,7 +114,10 @@ func setup(p_game: Node, p_player: Node, p_type: String, p_formation_slot: int =
 	current_attack = definition.attack
 	max_health = maxi(1, roundi(definition.max_health * health_scale_snapshot))
 	health = max_health
-	speed = definition.speed
+	base_speed = definition.speed
+	speed = base_speed
+	if definition.dinosaur_archetype:
+		creature_state = CreatureState.SLEEPING if definition.starts_sleeping else CreatureState.NEUTRAL
 	scale = definition.actor_scale
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("enemies")
@@ -182,6 +197,11 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 	elif stun_timer > 0.0 or boss_transition_timer > 0.0:
 		velocity = Vector2.ZERO
+	elif creature_state == CreatureState.SLEEPING:
+		_try_wake_from_proximity()
+		velocity = Vector2.ZERO
+		if creature_state != CreatureState.SLEEPING:
+			_update_combat_target()
 	else:
 		_update_combat_target()
 	if (
@@ -189,6 +209,7 @@ func _physics_process(delta: float) -> void:
 		and wake_up_timer <= 0.0
 		and stun_timer <= 0.0
 		and boss_transition_timer <= 0.0
+		and creature_state != CreatureState.SLEEPING
 		and is_instance_valid(combat_target)
 		and not combat_target.is_defeated
 	):
@@ -207,6 +228,9 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _think(delta: float) -> void:
+	if creature_state == CreatureState.SLEEPING:
+		velocity = Vector2.ZERO
+		return
 	if not is_instance_valid(combat_target):
 		velocity = Vector2.ZERO
 		return
@@ -232,6 +256,57 @@ func _think(delta: float) -> void:
 			_think_boss(player_offset)
 		_:
 			_think_flanker(player_offset)
+
+
+func _try_wake_from_proximity() -> bool:
+	if creature_state != CreatureState.SLEEPING:
+		return false
+	for candidate in _ecology_hostiles():
+		if position.distance_to(candidate.position) <= definition.wake_radius:
+			_wake_creature()
+			return true
+	return false
+
+
+func _wake_creature() -> void:
+	if creature_state != CreatureState.SLEEPING:
+		return
+	creature_state = CreatureState.NEUTRAL
+	visual_clock = 0.0
+	_record_behavior_event(&"creature_woke")
+	game.play_sfx(&"dinosaur_wake")
+	queue_redraw()
+
+
+func _enrage_creature() -> void:
+	if not definition.dinosaur_archetype or creature_state == CreatureState.ENRAGED:
+		return
+	if creature_state == CreatureState.SLEEPING:
+		_wake_creature()
+	creature_state = CreatureState.ENRAGED
+	speed = base_speed * definition.enrage_speed_scale
+	behavior_cooldown_timer = 0.0
+	_record_behavior_event(&"creature_enraged")
+	game.play_sfx(&"dinosaur_enrage")
+	queue_redraw()
+
+
+func _ecology_hostiles() -> Array[Node]:
+	var candidates: Array[Node] = []
+	if game != null and game.has_method("get_active_players"):
+		for fighter in game.get_active_players():
+			if is_instance_valid(fighter) and not fighter.is_defeated:
+				candidates.append(fighter)
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if (
+			other != self
+			and is_instance_valid(other)
+			and not other.is_defeated
+			and not other.grabbed
+			and other.definition.faction != definition.faction
+		):
+			candidates.append(other)
+	return candidates
 
 
 func _think_flanker(player_offset: Vector2) -> void:
@@ -628,6 +703,8 @@ func _check_attack() -> void:
 				and CounterHitRulesScript.is_counterable(combat_target)
 			)
 			var resolved_damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
+			if creature_state == CreatureState.ENRAGED:
+				resolved_damage = maxi(1, roundi(resolved_damage * definition.enrage_damage_scale))
 			if combat_target.is_in_group("player"):
 				resolved_damage = maxi(1, roundi(resolved_damage * damage_scale_snapshot))
 			var resolved_knockback: Vector2 = CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
@@ -672,6 +749,8 @@ func take_hit(
 ) -> void:
 	if is_defeated or invulnerable > 0.0 or hard_knockdown_lockout:
 		return
+	if creature_state == CreatureState.SLEEPING:
+		_wake_creature()
 	_cancel_behavior()
 	_register_chain_hit()
 	if chain_hit_count >= MAX_CHAIN_HITS:
@@ -679,6 +758,13 @@ func take_hit(
 		hard_knockdown_lockout = true
 		knockback.y = minf(knockback.y, -45.0)
 	health -= amount
+	if (
+		definition.dinosaur_archetype
+		and health > 0
+		and creature_state != CreatureState.ENRAGED
+		and health <= ceili(max_health * definition.enrage_health_ratio)
+	):
+		_enrage_creature()
 	last_hit_was_counter = counter_hit
 	if counter_hit or launch or force_interrupt:
 		attack_timer = 0.0
@@ -883,6 +969,7 @@ func _sync_fighter_state() -> void:
 	state_machine.transition(next_state)
 
 func _draw() -> void:
+	_draw_creature_state_cue()
 	_draw_behavior_cue()
 	if definition.visual_kind == EnemyDefinitionScript.VisualKind.RAPTOR:
 		_draw_raptor()
@@ -943,6 +1030,19 @@ func _draw_behavior_cue() -> void:
 		draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
 
 
+func _draw_creature_state_cue() -> void:
+	if not definition.dinosaur_archetype or is_defeated:
+		return
+	if creature_state == CreatureState.SLEEPING:
+		var sleep_pulse := 0.65 + sin(Time.get_ticks_msec() * 0.006) * 0.2
+		for index in range(3):
+			var origin := Vector2(30.0 + index * 12.0, -94.0 - index * 15.0)
+			draw_string(ThemeDB.fallback_font, origin, "Z", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 15 + index * 2, Color(0.62, 0.88, 1.0, sleep_pulse))
+	elif creature_state == CreatureState.ENRAGED:
+		var rage_pulse := 0.55 + sin(Time.get_ticks_msec() * 0.018) * 0.18
+		draw_arc(Vector2(0.0, -42.0), definition.shadow_half_extents.x + 13.0, -PI, 0.0, 24, Color(1.0, 0.2, 0.08, rage_pulse), 6.0)
+
+
 func _draw_boss_overlay() -> void:
 	if boss_phase_index >= 1:
 		var aura_alpha := 0.22 + sin(Time.get_ticks_msec() * 0.018) * 0.08
@@ -983,13 +1083,18 @@ func _draw_raptor() -> void:
 		target_size.x,
 		target_size.y
 	)
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else definition.tint)
+	var base_tint: Color = definition.tint
+	if creature_state == CreatureState.ENRAGED:
+		base_tint = base_tint.lerp(Color(1.0, 0.4, 0.3, 1.0), 0.2)
+	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _visual_column() -> int:
+	if creature_state == CreatureState.SLEEPING:
+		return 1
 	if is_defeated or knockdown_state:
 		return 7
 	if hurt_timer > 0.0 or stun_timer > 0.0 or boss_transition_timer > 0.0 or grabbed:
@@ -1004,6 +1109,8 @@ func _visual_column() -> int:
 		return 5
 	if velocity.length() > 10.0:
 		return 2 + int(walk_phase) % 2
+	if definition.dinosaur_archetype:
+		return 0
 	return int(visual_clock * 2.0) % 2
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_ankylosaur.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ankylosaur_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"ankylosaur"
+max_health = 124
+speed = 68.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 1200
+faction = 1
+opposing_faction_target_radius = 560.0
+behavior_kind = 3
+attack_distance = 82.0
+lane_tolerance = 64.0
+vertical_approach_scale = 0.58
+dinosaur_archetype = true
+starts_sleeping = true
+wake_radius = 190.0
+enrage_health_ratio = 0.6
+enrage_speed_scale = 1.22
+enrage_damage_scale = 1.28
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+visual_kind = 1
+sprite_rows = 1
+target_size = Vector2(286, 294)
+target_bottom_offset = 27.0
+shadow_half_extents = Vector2(67, 13)
+tint = Color(1, 1, 1, 1)
+hurt_tint = Color(1, 0.66, 0.55, 1)
+show_health_bar = true

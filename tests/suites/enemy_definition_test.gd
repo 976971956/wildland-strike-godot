@@ -7,6 +7,9 @@ const DEFINITIONS := [
 	preload("res://data/enemies/raptor.tres"),
 	preload("res://data/enemies/hunter.tres"),
 	preload("res://data/enemies/boss.tres"),
+	preload("res://data/enemies/compy.tres"),
+	preload("res://data/enemies/ankylosaur.tres"),
+	preload("res://data/enemies/triceratops.tres"),
 ]
 
 

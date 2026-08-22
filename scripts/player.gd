@@ -44,6 +44,16 @@ const RUN_SPEED_MULTIPLIER := 1.65
 const MAX_GRAB_STRIKES := 3
 const GRAB_HOLD_DURATION := 2.0
 var health := MAX_HEALTH
+var max_health := MAX_HEALTH
+var move_speed := SPEED
+var run_speed_multiplier := RUN_SPEED_MULTIPLIER
+var damage_scale := 1.0
+var item_efficiency := 1.0
+var aerial_control := 1.0
+var grapple_power := 1.0
+var hero_definition: Resource
+var hero_id: StringName = &"ranger"
+var hero_display_name := "RANGER"
 var facing := 1
 var z_height := 0.0
 var z_velocity := 0.0
@@ -96,8 +106,9 @@ var fighter_state: int:
 	get:
 		return state_machine.current_state
 
-func setup(p_game: Node) -> void:
+func setup(p_game: Node, p_hero_definition: Resource = null) -> void:
 	game = p_game
+	apply_hero_definition(p_hero_definition)
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("player")
 	# Player and enemies block each other, while enemies use a separate layer so
@@ -119,6 +130,25 @@ func setup(p_game: Node) -> void:
 	attack_hitbox.setup(self)
 	input_source = ActionInputSourceScript.new()
 	add_child(input_source)
+
+
+func apply_hero_definition(value: Resource) -> void:
+	if value == null or not value.has_method("is_valid_hero") or not value.is_valid_hero():
+		return
+	hero_definition = value
+	hero_id = value.hero_id
+	hero_display_name = value.display_name
+	max_health = value.max_health
+	move_speed = value.move_speed
+	run_speed_multiplier = value.run_multiplier
+	damage_scale = value.damage_scale
+	item_efficiency = value.item_efficiency
+	aerial_control = value.aerial_control
+	grapple_power = value.grapple_power
+	health = max_health
+	if game != null:
+		health_changed.emit(health, max_health)
+	queue_redraw()
 
 func _physics_process(delta: float) -> void:
 	state_machine.tick(delta)
@@ -176,7 +206,7 @@ func _apply_intent(intent) -> void:
 	var input_vec: Vector2 = intent.move
 	run_controller.update(input_vec)
 	command_controller.update(input_vec, facing)
-	var movement_speed := SPEED * (RUN_SPEED_MULTIPLIER if is_running else 1.0)
+	var movement_speed := move_speed * (run_speed_multiplier if is_running else 1.0)
 	var move_scale := 0.42 if attack_timer > 0.0 else 1.0
 	velocity = input_vec * movement_speed * move_scale + Vector2(facing * attack_lunge, 0.0)
 	if absf(input_vec.x) > 0.15 and not is_instance_valid(grabbed_enemy):
@@ -197,7 +227,7 @@ func _apply_intent(intent) -> void:
 		return
 	if intent.jump_pressed and z_height <= 0.0 and attack_timer <= 0.0:
 		command_controller.cancel()
-		z_velocity = 510.0
+		z_velocity = 510.0 * aerial_control
 		z_height = 2.0
 		game.play_sfx("jump")
 	if intent.attack_pressed:
@@ -311,7 +341,7 @@ func _start_special() -> void:
 				continue
 			var enemy_health_before: int = enemy.health
 			enemy.take_hit(
-				current_attack.damage,
+				_scaled_damage(current_attack.damage),
 				Vector2(
 					(enemy.position.x - position.x) * current_attack.radial_horizontal_scale,
 					current_attack.knockback.y
@@ -333,7 +363,7 @@ func _start_special() -> void:
 				)
 	if special_connected:
 		health = maxi(health - current_attack.self_damage, 1)
-		health_changed.emit(health, MAX_HEALTH)
+		health_changed.emit(health, max_health)
 		_apply_attacker_recoil(current_attack.impact_profile)
 		game._hit_stop(current_attack.impact_profile.hit_stop_duration)
 
@@ -376,6 +406,7 @@ func _check_attack_hit() -> void:
 			if used_weapon:
 				damage += current_attack.weapon_bonus_damage
 				weapon_hits -= 1
+			damage = _scaled_damage(damage)
 			var impact_position: Vector2 = best.position - Vector2(0.0, best.definition.size.y * 0.45)
 			if best.take_stage_hit(damage, facing):
 				var impact_strength: int = (
@@ -407,6 +438,7 @@ func _check_attack_hit() -> void:
 		if used_weapon:
 			damage += current_attack.weapon_bonus_damage
 			weapon_hits -= 1
+		damage = _scaled_damage(damage)
 		var launch: bool = CounterHitRulesScript.launch_for(current_attack, counter_hit)
 		var resolved_knockback := CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
 		var final_pulse: bool = attack_hits_resolved + 1 >= current_attack.max_hits
@@ -467,7 +499,7 @@ func _perform_grab_strike() -> void:
 	grab_hold_timer = 0.9
 	var force := Vector2(facing * current_attack.knockback.x, current_attack.knockback.y)
 	var target_position: Vector2 = grabbed_enemy.position
-	grabbed_enemy.take_grab_strike(current_attack.damage, force)
+	grabbed_enemy.take_grab_strike(_scaled_grapple_damage(current_attack.damage), force * grapple_power)
 	game.hit_confirm(target_position - Vector2(0, 50), current_attack.impact_strength, facing, true, current_attack.impact_profile)
 	_apply_attacker_recoil(current_attack.impact_profile)
 	game.play_sfx(current_attack.sound_event)
@@ -489,9 +521,12 @@ func _perform_throw(attack, throw_direction: int) -> void:
 	grabbed_enemy = null
 	grab_strike_count = 0
 	grab_hold_timer = 0.0
-	var force := Vector2(throw_direction * current_attack.knockback.x, current_attack.knockback.y)
+	var force := Vector2(
+		throw_direction * current_attack.knockback.x * grapple_power,
+		current_attack.knockback.y * lerpf(1.0, grapple_power, 0.55)
+	)
 	target.thrown(
-		current_attack.damage,
+		_scaled_grapple_damage(current_attack.damage),
 		force,
 		current_attack.throw_collision_damage,
 		current_attack.impact_profile
@@ -542,7 +577,7 @@ func take_hit(
 	if is_instance_valid(grabbed_enemy):
 		_release_grabbed_enemy()
 	health = maxi(health - damage, 0)
-	health_changed.emit(health, MAX_HEALTH)
+	health_changed.emit(health, max_health)
 	hurt_timer = 0.42 + counter_stun_bonus
 	invulnerable = 0.65
 	velocity = knockback
@@ -575,22 +610,22 @@ func revive(respawn_position: Vector2) -> void:
 	command_controller.cancel()
 	_release_grabbed_enemy()
 	_reset_combo()
-	health = MAX_HEALTH
+	health = max_health
 	is_defeated = false
 	invulnerable = 2.2
 	position = respawn_position
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
-	health_changed.emit(health, MAX_HEALTH)
+	health_changed.emit(health, max_health)
 	queue_redraw()
 
 func heal(amount: int) -> void:
-	health = mini(MAX_HEALTH, health + amount)
-	health_changed.emit(health, MAX_HEALTH)
+	health = mini(max_health, health + roundi(amount * item_efficiency))
+	health_changed.emit(health, max_health)
 	game.play_sfx("pickup")
 
 func give_weapon(pickup_id: String = "weapon_melee") -> void:
 	equipped_weapon = WEAPON_PICKUPS.get(pickup_id, MACHETE_WEAPON)
-	weapon_hits = equipped_weapon.capacity
+	weapon_hits = maxi(1, roundi(equipped_weapon.capacity * item_efficiency))
 	game.play_sfx("pickup")
 	queue_redraw()
 
@@ -626,6 +661,14 @@ func _fire_equipped_weapon() -> void:
 func _sync_weapon_hud() -> void:
 	if game != null and game.has_method("weapon_changed"):
 		game.weapon_changed(equipped_weapon, weapon_ammo)
+
+
+func _scaled_damage(amount: int) -> int:
+	return maxi(1, roundi(amount * damage_scale))
+
+
+func _scaled_grapple_damage(amount: int) -> int:
+	return maxi(1, roundi(amount * damage_scale * grapple_power))
 
 
 func _reset_combo() -> void:

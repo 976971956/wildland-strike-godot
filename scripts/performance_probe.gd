@@ -17,7 +17,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "formation_acceptance=1" in query_string:
+		if "hero_select_preview=1" in query_string:
+			scenario = "hero_select_preview"
+			call_deferred("_start_hero_select_preview")
+		elif "formation_acceptance=1" in query_string:
 			scenario = "enemy_formation_acceptance"
 			set_process(false)
 			call_deferred("_start_formation_acceptance")
@@ -82,6 +85,16 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_hero_select_preview() -> void:
+	var game := get_parent()
+	if not game.has_method("_open_character_select") or game.HERO_DEFINITIONS.size() != 4:
+		scenario = "hero_select_setup_failed"
+		return
+	game._open_character_select()
+	game.select_hero(2)
+	game.set_process(false)
 
 
 func _start_stage_acceptance() -> void:

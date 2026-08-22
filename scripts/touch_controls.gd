@@ -34,6 +34,15 @@ func _input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	if event.pressed:
+		if game.state == "select":
+			var card_width := size.x / maxf(game.HERO_DEFINITIONS.size(), 1)
+			var selected_index := clampi(int(event.position.x / card_width), 0, game.HERO_DEFINITIONS.size() - 1)
+			if selected_index == game.selected_hero_index:
+				game.confirm_hero_selection()
+			else:
+				game.select_hero(selected_index)
+			get_viewport().set_input_as_handled()
+			return
 		if game.state != "playing":
 			_pulse_start()
 			get_viewport().set_input_as_handled()

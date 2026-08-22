@@ -29,6 +29,7 @@ const SUITES := [
 	{"name": "enemy_animation_presentation", "path": "res://tests/suites/enemy_animation_presentation_test.gd"},
 	{"name": "audio_hud_polish", "path": "res://tests/suites/audio_hud_polish_test.gd"},
 	{"name": "stage_1_acceptance", "path": "res://tests/suites/stage_1_acceptance_test.gd"},
+	{"name": "hero_selection", "path": "res://tests/suites/hero_selection_test.gd"},
 ]
 
 

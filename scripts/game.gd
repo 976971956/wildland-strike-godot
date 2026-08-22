@@ -10,6 +10,12 @@ const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
+const HERO_DEFINITIONS := [
+	preload("res://data/heroes/ranger.tres"),
+	preload("res://data/heroes/mara.tres"),
+	preload("res://data/heroes/kestrel.tres"),
+	preload("res://data/heroes/atlas.tres"),
+]
 
 @onready var actors: Node2D = $Actors
 @onready var camera: Camera2D = $Camera2D
@@ -44,6 +50,7 @@ var sfx_voice_priorities: Array[int] = []
 var sfx_voice_serials: Array[int] = []
 var sfx_voice_serial := 0
 var enemy_spawn_serial := 0
+var selected_hero_index := 0
 var sfx_event_history: Array[StringName] = []
 var last_impact_profile_id: StringName
 var last_hit_stop_duration := 0.0
@@ -81,6 +88,7 @@ func _ready() -> void:
 	stage_time_remaining = STAGE_1_DEFINITION.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
 	_sync_hud_stage_progress()
+	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
 	hud.set_mode("title")
 	set_process(true)
 
@@ -88,16 +96,26 @@ func _create_player() -> void:
 	player = PlayerScript.new()
 	actors.add_child(player)
 	player.position = Vector2(260,570)
-	player.setup(self)
+	player.setup(self, selected_hero())
 	player.health_changed.connect(_on_player_health)
 	player.defeated.connect(_on_player_defeated)
-	hud.set_player_health(player.health, player.MAX_HEALTH)
+	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
+	hud.set_player_health(player.health, player.max_health)
 
 func _process(delta: float) -> void:
 	if state == "title":
 		player.set_physics_process(false)
 		if Input.is_action_just_pressed("start"):
-			_start_game()
+			_open_character_select()
+		return
+	if state == "select":
+		player.set_physics_process(false)
+		if Input.is_action_just_pressed("move_left"):
+			shift_hero_selection(-1)
+		elif Input.is_action_just_pressed("move_right"):
+			shift_hero_selection(1)
+		if Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("start"):
+			confirm_hero_selection()
 		return
 	if state == "victory":
 		_tick_victory(delta)
@@ -128,12 +146,42 @@ func _process(delta: float) -> void:
 	_sync_hud_stage_progress()
 
 func _start_game() -> void:
+	player.apply_hero_definition(selected_hero())
 	state = "playing"
 	player.set_physics_process(true)
+	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
+	hud.set_player_health(player.health, player.max_health)
 	hud.set_mode("playing")
 	hud.show_banner("READY", "CLEAR EVERY ENEMY IN THE BLOCK", 2.1)
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
 	play_sfx("start")
+
+
+func selected_hero() -> Resource:
+	return HERO_DEFINITIONS[clampi(selected_hero_index, 0, HERO_DEFINITIONS.size() - 1)]
+
+
+func _open_character_select() -> void:
+	state = "select"
+	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	hud.set_mode("select")
+	play_sfx(&"ui_confirm")
+
+
+func select_hero(index: int) -> void:
+	selected_hero_index = posmod(index, HERO_DEFINITIONS.size())
+	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	play_sfx(&"ui_confirm")
+
+
+func shift_hero_selection(direction: int) -> void:
+	select_hero(selected_hero_index + signi(direction))
+
+
+func confirm_hero_selection() -> void:
+	if state != "select":
+		return
+	_start_game()
 
 func spawn_enemy(pos: Vector2, type: String) -> void:
 	var enemy := EnemyScript.new()

@@ -28,6 +28,10 @@ var stage_area_total := 1
 var stage_hostiles := 0
 var arena_locked := false
 var force_touch_layout := false
+var player_name := "RANGER"
+var player_color := Color("#f5dc7c")
+var hero_roster: Array[Resource] = []
+var selected_hero_index := 0
 var font: Font
 
 func _ready() -> void:
@@ -87,6 +91,21 @@ func set_mode(value: String) -> void:
 	queue_redraw()
 
 
+func set_player_identity(display_name: String, color: Color) -> void:
+	player_name = display_name
+	player_color = color
+	queue_redraw()
+
+
+func set_hero_roster(definitions: Array, selected_index: int) -> void:
+	hero_roster.clear()
+	for definition in definitions:
+		if definition != null:
+			hero_roster.append(definition)
+	selected_hero_index = clampi(selected_index, 0, maxi(hero_roster.size() - 1, 0))
+	queue_redraw()
+
+
 func set_stage_time(seconds: float) -> void:
 	stage_time_remaining = maxf(0.0, seconds)
 	queue_redraw()
@@ -141,7 +160,7 @@ func _draw() -> void:
 	# Arcade HUD panel.
 	draw_rect(Rect2(22,20,430,82), Color(0.035,0.045,0.07,0.88))
 	draw_rect(Rect2(22,20,430,5), Color("#efbf4d"))
-	draw_string(font, Vector2(39,48), "RANGER  1", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("#f5dc7c"))
+	draw_string(font, Vector2(39,48), "%s  1" % player_name, HORIZONTAL_ALIGNMENT_LEFT, 250, 22, player_color.lightened(0.32))
 	draw_string(font, Vector2(315,48), "%08d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 	draw_rect(Rect2(39,61,360,23), Color("#271b25"))
 	var ratio := clampf(float(health)/maxf(max_health,1),0.0,1.0)
@@ -208,6 +227,14 @@ func _draw() -> void:
 		draw_rect(Rect2(size.x/2-210,330,420,4),Color("#e55045"))
 		draw_string(font,Vector2(size.x/2-210,371),"TAP / ENTER TO START",HORIZONTAL_ALIGNMENT_CENTER,420,24,Color.WHITE)
 		draw_string(font,Vector2(0,445),"AN ORIGINAL ARCADE TRIBUTE",HORIZONTAL_ALIGNMENT_CENTER,size.x,18,Color("#b9c7c2"))
+	elif mode == "select":
+		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 1.0))
+		draw_string(font, Vector2(0, 72), "SELECT OPERATIVE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
+		draw_string(font, Vector2(0, 105), "FOUR ROLES // ONE MISSION", HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
+		for index in range(hero_roster.size()):
+			_draw_hero_card(hero_roster[index], index, index == selected_hero_index)
+		var select_hint := "TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "LEFT / RIGHT  CHOOSE     ATTACK / ENTER  DEPLOY"
+		draw_string(font, Vector2(0, 664), select_hint, HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color.WHITE)
 	elif mode == "victory":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_rect(Rect2(318, 142, 644, 438), Color(0.025, 0.035, 0.05, 0.94))
@@ -231,3 +258,41 @@ func _draw() -> void:
 		draw_string(font,Vector2(0,278),"GAME OVER",HORIZONTAL_ALIGNMENT_CENTER,size.x,54,Color("#ed5a4c"))
 		draw_string(font,Vector2(0,338),"FINAL SCORE  %08d"%score,HORIZONTAL_ALIGNMENT_CENTER,size.x,25,Color.WHITE)
 		draw_string(font,Vector2(0,402),"TAP / ENTER TO RESTART",HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))
+
+
+func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
+	var card_width := 280.0
+	var gap := 24.0
+	var total_width := card_width * 4.0 + gap * 3.0
+	var card_x := (size.x - total_width) * 0.5 + index * (card_width + gap)
+	var card_rect := Rect2(card_x, 138, card_width, 470)
+	var edge_color: Color = hero.accent_color if selected else Color(0.24, 0.31, 0.34, 0.82)
+	draw_rect(card_rect, Color(0.035, 0.055, 0.075, 0.98))
+	draw_rect(Rect2(card_rect.position, Vector2(card_width, 7 if selected else 3)), edge_color)
+	if selected:
+		draw_rect(card_rect.grow(4), Color(edge_color, 0.18), false, 4.0)
+	var portrait_center := Vector2(card_x + card_width * 0.5, 255)
+	draw_circle(portrait_center + Vector2(0, -34), 38, hero.primary_color.lightened(0.2))
+	draw_colored_polygon(PackedVector2Array([
+		portrait_center + Vector2(-62, 82),
+		portrait_center + Vector2(-46, 8),
+		portrait_center + Vector2(46, 8),
+		portrait_center + Vector2(62, 82),
+	]), hero.primary_color)
+	draw_line(portrait_center + Vector2(-44, 22), portrait_center + Vector2(-76, 66), hero.accent_color, 12)
+	draw_line(portrait_center + Vector2(44, 22), portrait_center + Vector2(76, 66), hero.accent_color, 12)
+	draw_rect(Rect2(card_x + 38, 346, card_width - 76, 3), hero.accent_color)
+	draw_string(font, Vector2(card_x, 385), hero.display_name, HORIZONTAL_ALIGNMENT_CENTER, card_width, 28, Color.WHITE)
+	draw_string(font, Vector2(card_x + 10, 415), hero.role_title, HORIZONTAL_ALIGNMENT_CENTER, card_width - 20, 15, hero.accent_color.lightened(0.25))
+	_draw_hero_stat(card_x + 32, 452, "VIT", float(hero.max_health) / 150.0, hero.primary_color)
+	_draw_hero_stat(card_x + 32, 482, "SPD", hero.move_speed / 290.0, hero.primary_color)
+	_draw_hero_stat(card_x + 32, 512, "PWR", hero.damage_scale / 1.3, hero.primary_color)
+	_draw_hero_stat(card_x + 32, 542, "TECH", hero.item_efficiency / 1.5, hero.primary_color)
+	if selected:
+		draw_string(font, Vector2(card_x, 590), "READY", HORIZONTAL_ALIGNMENT_CENTER, card_width, 17, hero.accent_color.lightened(0.25))
+
+
+func _draw_hero_stat(x: float, y: float, label: String, value: float, color: Color) -> void:
+	draw_string(font, Vector2(x, y), label, HORIZONTAL_ALIGNMENT_LEFT, 48, 13, Color("#b7c8c3"))
+	draw_rect(Rect2(x + 52, y - 11, 160, 10), Color(0.09, 0.12, 0.14, 1.0))
+	draw_rect(Rect2(x + 52, y - 11, 160 * clampf(value, 0.0, 1.0), 10), color.lightened(0.18))

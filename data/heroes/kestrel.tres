@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+hero_id = &"kestrel"
+display_name = "KESTREL"
+role_title = "AERIAL SCOUT"
+role_summary = "Fastest runner and strongest air control, but the least forgiving health."
+primary_color = Color(0.643137, 0.286275, 0.596078, 1)
+accent_color = Color(0.952941, 0.494118, 0.32549, 1)
+max_health = 90
+move_speed = 290.0
+run_multiplier = 1.8
+damage_scale = 0.85
+item_efficiency = 0.9
+aerial_control = 1.4
+grapple_power = 0.7

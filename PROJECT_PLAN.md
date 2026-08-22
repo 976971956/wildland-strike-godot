@@ -168,14 +168,17 @@ Evidence (2026-08-22): Stage 1 content now loads through typed stage, scene, enc
 
 ### M4 — Four heroes and local cooperation
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] Character-select and four complete hero definitions/animation sets.
-- [ ] Balanced, technical/item, speed/aerial, and power/grapple differentiation.
+- [x] Character-select and four complete typed hero definitions.
+- [ ] Complete original animation sets for all four heroes.
+- [x] Balanced, technical/item, speed/aerial, and power/grapple differentiation.
 - [ ] 1–3 player local join/leave, spawn, camera, HUD, collisions, scaling, revive/continue, and team attack.
 - [ ] Mobile retains a complete, tuned single-player control path.
 
 Exit gate: all four heroes finish Stage 1 solo, and every 2–3 player combination can complete it locally.
+
+Evidence (2026-08-22, first batch): four validated `HeroDefinition` resources now establish Ranger, Mara, Kestrel, and Atlas as distinct balanced, item/technical, speed/aerial, and power/grapple roles. Their health, walk/run speed, damage, healing efficiency, weapon capacity, aerial control, and grapple scaling are applied by the shared player runtime while Ranger's established baseline remains unchanged. Title start now enters a four-card character-select flow with wraparound keyboard/controller navigation, direct touch-card selection, confirmation, dynamic identity/health HUD binding, and a query-gated exported-Web preview. The clean 1,280×720 selection screen was verified without stale HUD bleed or browser console errors and averaged 120.00 FPS across 300 sampled frames with no frame above 20 ms. Twenty-eight deterministic suites pass 1156/1156 assertions covering roster uniqueness, role tradeoffs, selection/wrap/confirm flow, data application, damage/grapple scaling, touch routing, and Web fixture availability. Web export, iOS project export, and an unsigned generic-device arm64 Xcode build pass. The non-Ranger heroes intentionally share Ranger's combat sheet until the next M4 animation-identity batch; local co-op architecture remains the following batch.
 
 ### M5 — Weapon sandbox and dinosaur ecology
 
@@ -237,7 +240,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M4 — Hero data/select:** introduce four typed hero definitions, role tradeoffs, and a character-select flow while preserving Ranger behavior.
+1. **M4 — Hero animation identities:** give Mara, Kestrel, and Atlas original state-complete sheets and visibly distinct combat silhouettes while preserving shared combat timing contracts.
 2. **M4 — Local-player architecture:** add reusable 1–3 player join/leave, per-device input routing, spawn safety, and shared-camera framing.
 3. **M4 — Co-op combat loop:** add per-player HUD, collision ownership, scaling, revive/continue, and team attack, then close the M4 exit gate.
 
@@ -266,5 +269,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The enemy roster still lacks explosive specialists, knife specialists, elites, additional dinosaur archetypes, and the remaining seven unique campaign boss state machines.
 - Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, multiplayer, vehicle, continue countdown, and high-score persistence do not exist yet; the procedural Stage 1 score and three-family weapon set are foundations for the final soundtrack and weapon sandbox rather than complete campaign coverage.
+- Character selection and typed four-hero role tuning exist, but Mara, Kestrel, and Atlas temporarily share Ranger's combat sheet pending the next M4 batch. Multiplayer, vehicle, continue countdown, and high-score persistence do not exist yet; the procedural Stage 1 score and three-family weapon set are foundations for the final soundtrack and weapon sandbox rather than complete campaign coverage.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

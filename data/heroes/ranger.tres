@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+hero_id = &"ranger"
+display_name = "RANGER"
+role_title = "BALANCED VANGUARD"
+role_summary = "Reliable reach, health and mobility. Built for learning every system."
+primary_color = Color(0.188235, 0.482353, 0.411765, 1)
+accent_color = Color(0.94902, 0.756863, 0.309804, 1)
+max_health = 120
+move_speed = 255.0
+run_multiplier = 1.65
+damage_scale = 1.0
+item_efficiency = 1.0
+aerial_control = 1.0
+grapple_power = 1.0

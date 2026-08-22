@@ -10,6 +10,13 @@ const DEFINITIONS := [
 	preload("res://data/enemies/compy.tres"),
 	preload("res://data/enemies/ankylosaur.tres"),
 	preload("res://data/enemies/triceratops.tres"),
+	preload("res://data/enemies/knife_raider.tres"),
+	preload("res://data/enemies/demolitionist.tres"),
+	preload("res://data/enemies/shield_guard.tres"),
+	preload("res://data/enemies/elite_enforcer.tres"),
+	preload("res://data/enemies/elite_blade.tres"),
+	preload("res://data/enemies/elite_bombardier.tres"),
+	preload("res://data/enemies/elite_bulwark.tres"),
 ]
 
 

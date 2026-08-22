@@ -146,3 +146,34 @@ Create one production-ready transparent PNG sprite atlas for an original 1990s a
 The generated source encoded the empty field as opaque black despite the requested transparency and did not respect equal column widths. It was rejected as a runtime atlas. The retained splitter keys only exact/near-exact black background pixels, discovers connected opaque components independently within each species row, selects and x-sorts the eight largest complete actors, scales each with nearest-neighbor interpolation, and centers it on a transparent 320×320 cell. This produces deterministic, cleanly sliceable output while preserving dark non-black outlines.
 
 Verification: all three new textures and the existing raptor texture are unique, retain alpha, and divide into eight exact cells. Every typed definition validates neutral faction, grab immunity, behavior, wake radius, enrage threshold, multipliers, and atlas metadata. The exported 1280×720 four-species fixture was inspected for silhouettes, sleeping/enraged readability, scale, gutters, and crop loss; its final sample averaged 119.99 FPS over 300 frames with zero frames above 20 ms or 33 ms.
+
+## 2026-08-22 — Human specialist and elite roster sheets
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/split_enemy_roster_atlas.gd` black-key, connected-component isolation, nearest-neighbor normalization, and transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, or traced animation frame was supplied. The prompt used only the original Wildland Strike name and a general 1990s arcade pixel-art direction.
+
+### Final files
+
+- `assets/sprites/hunter_sheet.png`: SHA-256 `44aca98bd2cb32201bd2d725b7a943ebd93eca703a95912e81cc9d511f7b4c48`.
+- `assets/sprites/knife_raider_sheet.png`: SHA-256 `902236f19926bb8a68f610abcae86b30df35827862428928967c59c5c2503aad`.
+- `assets/sprites/demolitionist_sheet.png`: SHA-256 `3228eabb571fb4bc745bbe1792f19a74282cdf7a325a8c1c18f2448d6f0f2c87`.
+- `assets/sprites/shield_guard_sheet.png`: SHA-256 `7682abfe8756ad04f7a1b5919fc9a378b0204b70ff96e26d7f4248304b45bbee`.
+- `assets/sprites/elite_enforcer_sheet.png`: SHA-256 `71070d314f6571228556864e57f13d21b167f4140021d041c131cff7fd4c65bb`.
+- `assets/sprites/elite_blade_sheet.png`: SHA-256 `9e060b4ab8567b4508a8fb9692c60c12a4e3b2065384349f8603a88d593d653f`.
+- `assets/sprites/elite_bombardier_sheet.png`: SHA-256 `e78b6b0f18840e598d49cb21be781535cc577e1d6a6bfa7a1dd38986e297abfa`.
+- `assets/sprites/elite_bulwark_sheet.png`: SHA-256 `b3cae34696686786b1182975d2dab2f0ebd8aa74fabb7973b9971ce282cb4d31`.
+- Archived 8×8 source: `assets/sprites/enemy_roster_source.png`; SHA-256 `e88439582edf6ff3d5438a955645b5449a46e4bf4b9a5a6d9a2b9ec4a685cecf`. It is excluded from runtime exports.
+
+Every final runtime file is a 2560×320 RGBA eight-state strip with transparent gutters.
+
+Generation prompt:
+
+```text
+Original clean-room pixel-art enemy sprite atlas for the original game Wildland Strike. 2560x2560 square canvas, pure opaque black background. EXACTLY 8 columns and 8 rows, generous black gutters, no cell overlap, no text, no logos, no UI, no scenery, no copyrighted characters. One consistent full-body human enemy per row, facing left, feet on a consistent baseline. The 8 columns per row are: idle, guard, run A, run B, signature attack, hurt, knockdown/get-up, defeated. Crisp hard-edged 32-bit arcade pixel art; each full character and weapon entirely inside its cell.
+Rows: (1) lean slate-blue long-coat pistol hunter; (2) agile rust-orange jacket bandana hooked-knife raider; (3) yellow-black hazard-vest gas-mask grenade demolition specialist; (4) teal industrial armor rectangular riot-shield and stun-baton controller; (5) massive crimson plated elite enforcer; (6) white-haired deep-magenta elite dual-blade duelist; (7) orange armored sealed-mask elite bombardier with canisters; (8) dark navy and gold elite bulwark with tower shield and shock mace. Every row must have a visibly distinct silhouette and weapon language. At least 20 pixels of pure black separation at all cell edges.
+```
+
+The generated service output was 1254×1254 RGB with a slightly lifted opaque black field rather than the requested exact dimensions. It was retained only as reproducible source, never used directly at runtime. The splitter first converts to RGBA, removes near-black background pixels, finds the eight largest connected actors independently in each row, sorts by x position, and reconstructs normalized transparent 320×320 cells. Separate muzzle flashes and distant particles are intentionally discarded so no detached effect can replace a character component.
+
+Verification: all eight outputs retain alpha, are unique, divide into eight exact cells, and were inspected individually before integration. The exported 1280×720 ten-character fixture was rejected once because its banner covered the upper row, then rebuilt with an unobstructed two-row layout. The accepted fixture exposes standard/elite identity, weapons, shield guard bars, and elite rank cues at 119.997 FPS over 300 frames with zero frames above 20 ms or 33 ms and no browser warnings/errors.

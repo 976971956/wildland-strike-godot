@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_elite_bulwark.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/elite_bulwark_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"elite_bulwark"
+rank = 1
+max_health = 164
+speed = 70.0
+attack = ExtResource("2")
+defeat_score = 1550
+outgoing_damage_scale = 1.22
+stun_duration_scale = 0.55
+knockdown_armor = 2
+behavior_kind = 3
+attack_distance = 76.0
+lane_tolerance = 58.0
+vertical_approach_scale = 0.55
+guard_capacity = 58
+guard_damage_scale = 0.2
+guard_break_duration = 1.05
+guard_recovery_duration = 4.4
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(228, 228)
+shadow_half_extents = Vector2(50, 12)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

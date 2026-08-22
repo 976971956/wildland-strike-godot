@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterRecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_recipe_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = &"demolition_crossfire"
+standard_enemy_ids = Array[StringName]([&"demolitionist", &"hunter", &"shield_guard"])
+elite_enemy_ids = Array[StringName]([&"elite_bombardier", &"elite_bulwark"])
+base_standard_count = 3
+standard_per_difficulty = 1
+base_elite_count = 1
+elite_per_difficulty = 0
+max_combatants = 8
+reinforcement_delay = 0.55
+formation_offsets = Array[Vector2]([Vector2(330, 470), Vector2(-340, 470), Vector2(220, 565), Vector2(-225, 565), Vector2(410, 635), Vector2(-415, 635), Vector2(520, 535), Vector2(-525, 535)])

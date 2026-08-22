@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_elite_enforcer.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/elite_enforcer_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"elite_enforcer"
+rank = 1
+max_health = 132
+speed = 101.0
+attack = ExtResource("2")
+defeat_score = 1250
+outgoing_damage_scale = 1.2
+stun_duration_scale = 0.65
+knockdown_armor = 2
+behavior_kind = 1
+attack_distance = 72.0
+lane_tolerance = 54.0
+vertical_approach_scale = 0.64
+telegraph_duration = 0.3
+burst_duration = 0.38
+burst_speed_scale = 2.85
+recovery_duration = 0.44
+behavior_cooldown = 0.62
+burst_min_distance = 130.0
+burst_max_distance = 450.0
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(222, 222)
+shadow_half_extents = Vector2(47, 11)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

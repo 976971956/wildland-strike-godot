@@ -49,6 +49,7 @@ tint = Color(0.95, 0.22, 0.12, 1)
 script = ExtResource("1")
 enemy_id = &"boss"
 is_boss = true
+rank = 2
 max_health = 260
 speed = 105.0
 attack = ExtResource("2")

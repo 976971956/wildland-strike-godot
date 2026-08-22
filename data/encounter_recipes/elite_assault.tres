@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterRecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_recipe_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = &"elite_assault"
+standard_enemy_ids = Array[StringName]([&"brute", &"knife_raider", &"shield_guard"])
+elite_enemy_ids = Array[StringName]([&"elite_enforcer", &"elite_blade", &"elite_bombardier", &"elite_bulwark"])
+base_standard_count = 2
+standard_per_difficulty = 0
+base_elite_count = 2
+elite_per_difficulty = 1
+max_combatants = 8
+reinforcement_delay = 0.7
+formation_offsets = Array[Vector2]([Vector2(250, 485), Vector2(-250, 485), Vector2(350, 565), Vector2(-350, 565), Vector2(450, 640), Vector2(-450, 640), Vector2(540, 525), Vector2(-540, 525)])

@@ -13,6 +13,13 @@ enum BehaviorKind {
 	PRESSURE,
 	RANGED,
 	BOSS,
+	DUELIST,
+}
+
+enum Rank {
+	STANDARD,
+	ELITE,
+	BOSS,
 }
 
 enum Faction {
@@ -23,6 +30,7 @@ enum Faction {
 @export_group("Identity")
 @export var enemy_id: StringName
 @export var is_boss := false
+@export var rank := Rank.STANDARD
 
 @export_group("Combat")
 @export var max_health := 1
@@ -30,6 +38,9 @@ enum Faction {
 @export var attack: AttackFrameData
 @export var can_be_grabbed := true
 @export var defeat_score := 0
+@export_range(0.5, 2.0, 0.05) var outgoing_damage_scale := 1.0
+@export_range(0.25, 1.0, 0.05) var stun_duration_scale := 1.0
+@export_range(0, 4, 1) var knockdown_armor := 0
 @export var faction := Faction.HUMAN_ENEMY
 @export_range(120.0, 900.0, 1.0) var opposing_faction_target_radius := 520.0
 
@@ -51,6 +62,12 @@ enum Faction {
 @export_range(100.0, 900.0, 1.0) var preferred_range_max := 440.0
 @export var ranged_weapon: Resource
 @export var boss_phases: Array[Resource] = []
+
+@export_group("Guard")
+@export_range(0, 200, 1) var guard_capacity := 0
+@export_range(0.05, 1.0, 0.05) var guard_damage_scale := 0.35
+@export_range(0.1, 3.0, 0.05) var guard_break_duration := 0.85
+@export_range(0.2, 8.0, 0.1) var guard_recovery_duration := 3.0
 
 @export_group("Creature Ecology")
 @export var dinosaur_archetype := false
@@ -91,8 +108,19 @@ func is_valid_definition() -> bool:
 	)
 	if not core_valid:
 		return false
-	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.BOSS:
+	if behavior_kind < BehaviorKind.FLANKER or behavior_kind > BehaviorKind.DUELIST:
 		return false
+	if rank < Rank.STANDARD or rank > Rank.BOSS:
+		return false
+	if is_boss != (rank == Rank.BOSS):
+		return false
+	if rank == Rank.ELITE and (outgoing_damage_scale <= 1.0 or stun_duration_scale >= 1.0 or knockdown_armor <= 0):
+		return false
+	if rank == Rank.STANDARD and knockdown_armor > 0:
+		return false
+	if guard_capacity > 0:
+		if guard_damage_scale >= 1.0 or guard_break_duration <= 0.0 or guard_recovery_duration <= guard_break_duration:
+			return false
 	if attack_distance <= 0.0 or lane_tolerance <= 0.0 or vertical_approach_scale <= 0.0:
 		return false
 	if faction < Faction.HUMAN_ENEMY or faction > Faction.NEUTRAL_CREATURE:
@@ -115,7 +143,7 @@ func is_valid_definition() -> bool:
 			or enrage_damage_scale <= 1.0
 		):
 			return false
-	if behavior_kind in [BehaviorKind.CHARGER, BehaviorKind.POUNCER]:
+	if behavior_kind in [BehaviorKind.CHARGER, BehaviorKind.POUNCER, BehaviorKind.DUELIST]:
 		if (
 			telegraph_duration <= 0.0
 			or burst_duration <= 0.0
@@ -125,7 +153,7 @@ func is_valid_definition() -> bool:
 			or burst_max_distance <= burst_min_distance
 		):
 			return false
-	if behavior_kind == BehaviorKind.POUNCER:
+	if behavior_kind in [BehaviorKind.POUNCER, BehaviorKind.DUELIST]:
 		return retreat_distance > attack_distance and retreat_duration > 0.0
 	if behavior_kind == BehaviorKind.RANGED:
 		return (

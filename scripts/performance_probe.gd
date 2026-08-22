@@ -19,7 +19,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "dinosaur_ecosystem_preview=1" in query_string:
+		if "enemy_roster_preview=2" in query_string:
+			scenario = "full_enemy_roster_preview"
+			call_deferred("_start_full_enemy_roster_preview")
+		elif "dinosaur_ecosystem_preview=1" in query_string:
 			scenario = "dinosaur_ecosystem_preview"
 			call_deferred("_start_dinosaur_ecosystem_preview")
 		elif "prop_item_preview=1" in query_string:
@@ -305,6 +308,76 @@ func _start_dinosaur_ecosystem_preview() -> void:
 		label.add_theme_color_override("font_color", Color("#fff0bd"))
 		game.hud.add_child(label)
 	game.hud.show_banner("DINOSAUR ECOSYSTEM", "NEUTRAL // SLEEP // ENRAGE // CROSS-FACTION", 999.0)
+	game.set_process(false)
+
+
+func _start_full_enemy_roster_preview() -> void:
+	var game := get_parent()
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.visible = false
+	game.player.set_physics_process(false)
+	for existing_enemy in get_tree().get_nodes_in_group("enemies"):
+		existing_enemy.remove_from_group("enemies")
+		existing_enemy.visible = false
+		existing_enemy.set_physics_process(false)
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_physics_process(false)
+	var preview_data := [
+		{"type": "grunt", "label": "GRUNT", "column": 0, "row": 0},
+		{"type": "brute", "label": "BRUTE", "column": 1, "row": 0},
+		{"type": "hunter", "label": "HUNTER", "column": 2, "row": 0},
+		{"type": "knife_raider", "label": "KNIFE", "column": 3, "row": 0},
+		{"type": "demolitionist", "label": "DEMOLITION", "column": 4, "row": 0},
+		{"type": "shield_guard", "label": "SHIELD", "column": 0, "row": 1},
+		{"type": "elite_enforcer", "label": "ELITE ENFORCER", "column": 1, "row": 1},
+		{"type": "elite_blade", "label": "ELITE BLADE", "column": 2, "row": 1},
+		{"type": "elite_bombardier", "label": "ELITE BOMBER", "column": 3, "row": 1},
+		{"type": "elite_bulwark", "label": "ELITE BULWARK", "column": 4, "row": 1},
+	]
+	for preview: Dictionary in preview_data:
+		var actor_position := Vector2(135.0 + preview.column * 252.0, 350.0 + preview.row * 250.0)
+		game.spawn_enemy(actor_position, preview.type)
+		var enemy: Node = get_tree().get_nodes_in_group("enemies").back()
+		enemy.set_physics_process(false)
+		enemy.invulnerable = 999.0
+		enemy.facing = -1
+		enemy.visual_clock = 0.58
+		if preview.type in ["knife_raider", "elite_blade"]:
+			enemy.behavior_phase = enemy.BehaviorPhase.TELEGRAPH
+		if preview.type in ["demolitionist", "elite_bombardier"]:
+			enemy.attack_timer = enemy.current_attack.duration
+		enemy.queue_redraw()
+		var label := Label.new()
+		label.position = Vector2(actor_position.x - 118.0, actor_position.y + 8.0)
+		label.size = Vector2(236.0, 24.0)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.text = preview.label
+		label.add_theme_font_size_override("font_size", 12)
+		label.add_theme_color_override(
+			"font_color",
+			Color("#ffd052") if preview.row == 1 and preview.column > 0 else Color("#d9f1f2")
+		)
+		game.hud.add_child(label)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	var title := Label.new()
+	title.position = Vector2(0.0, 106.0)
+	title.size = Vector2(1280.0, 42.0)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.text = "FULL ENEMY ROSTER"
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color("#ffd052"))
+	game.hud.add_child(title)
+	var subtitle := Label.new()
+	subtitle.position = Vector2(0.0, 143.0)
+	subtitle.size = Vector2(1280.0, 28.0)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.text = "6 STANDARD // 4 ELITE // RECIPE-READY"
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color("#d9f1f2"))
+	game.hud.add_child(subtitle)
 	game.set_process(false)
 
 

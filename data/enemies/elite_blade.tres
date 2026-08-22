@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_elite_blade.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/elite_blade_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"elite_blade"
+rank = 1
+max_health = 94
+speed = 176.0
+attack = ExtResource("2")
+defeat_score = 1100
+outgoing_damage_scale = 1.18
+stun_duration_scale = 0.58
+knockdown_armor = 1
+behavior_kind = 6
+attack_distance = 66.0
+lane_tolerance = 52.0
+vertical_approach_scale = 1.0
+telegraph_duration = 0.11
+burst_duration = 0.25
+burst_speed_scale = 3.05
+recovery_duration = 0.2
+behavior_cooldown = 0.3
+burst_min_distance = 100.0
+burst_max_distance = 390.0
+retreat_distance = 98.0
+retreat_duration = 0.18
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(198, 198)
+shadow_half_extents = Vector2(36, 9)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

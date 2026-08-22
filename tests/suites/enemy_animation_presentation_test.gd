@@ -5,6 +5,13 @@ const DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
 	"brute": preload("res://data/enemies/brute.tres"),
 	"hunter": preload("res://data/enemies/hunter.tres"),
+	"knife_raider": preload("res://data/enemies/knife_raider.tres"),
+	"demolitionist": preload("res://data/enemies/demolitionist.tres"),
+	"shield_guard": preload("res://data/enemies/shield_guard.tres"),
+	"elite_enforcer": preload("res://data/enemies/elite_enforcer.tres"),
+	"elite_blade": preload("res://data/enemies/elite_blade.tres"),
+	"elite_bombardier": preload("res://data/enemies/elite_bombardier.tres"),
+	"elite_bulwark": preload("res://data/enemies/elite_bulwark.tres"),
 	"raptor": preload("res://data/enemies/raptor.tres"),
 	"compy": preload("res://data/enemies/compy.tres"),
 	"ankylosaur": preload("res://data/enemies/ankylosaur.tres"),
@@ -20,7 +27,11 @@ func run(test) -> void:
 		test.check(definition.sprite_sheet.get_width() % 8 == 0, "%s sheet width is not evenly sliceable" % enemy_type)
 		var source_image: Image = definition.sprite_sheet.get_image()
 		test.check(source_image.detect_alpha() != Image.ALPHA_NONE, "%s sheet lost transparent alpha" % enemy_type)
-	test.check(DEFINITIONS.grunt.sprite_sheet == DEFINITIONS.hunter.sprite_sheet, "raider and hunter variants no longer share one aligned sheet")
+	test.check(DEFINITIONS.grunt.sprite_sheet != DEFINITIONS.hunter.sprite_sheet, "hunter did not receive its distinct specialist sheet")
+	var roster_textures := {}
+	for enemy_type in ["hunter", "knife_raider", "demolitionist", "shield_guard", "elite_enforcer", "elite_blade", "elite_bombardier", "elite_bulwark"]:
+		roster_textures[DEFINITIONS[enemy_type].sprite_sheet.resource_path] = true
+	test.check(roster_textures.size() == 8, "specialist and elite roster reuses generated character sheets")
 	test.check(DEFINITIONS.brute.sprite_sheet != DEFINITIONS.boss.sprite_sheet, "large enemies should use isolated sheets to prevent cell bleed")
 	test.check(DEFINITIONS.grunt.sprite_rows == 1 and DEFINITIONS.brute.sprite_rows == 1 and DEFINITIONS.boss.sprite_rows == 1, "humanoid animation sheets are not isolated single rows")
 	test.check(DEFINITIONS.raptor.sprite_rows == 1, "raptor sheet is no longer a single animation row")

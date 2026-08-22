@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterRecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_recipe_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = &"street_patrol"
+standard_enemy_ids = Array[StringName]([&"grunt", &"knife_raider", &"hunter"])
+elite_enemy_ids = Array[StringName]([&"elite_blade"])
+base_standard_count = 3
+standard_per_difficulty = 1
+base_elite_count = 0
+elite_per_difficulty = 1
+max_combatants = 8
+reinforcement_delay = 0.25
+formation_offsets = Array[Vector2]([Vector2(280, 476), Vector2(-260, 530), Vector2(350, 590), Vector2(-330, 650), Vector2(440, 525), Vector2(-420, 590), Vector2(520, 620), Vector2(-500, 480)])

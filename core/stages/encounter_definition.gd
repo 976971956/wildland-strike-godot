@@ -35,5 +35,5 @@ func is_valid_encounter() -> bool:
 func total_spawn_count() -> int:
 	var total := 0
 	for wave in waves:
-		total += wave.spawns.size()
+		total += wave.spawn_count()
 	return total

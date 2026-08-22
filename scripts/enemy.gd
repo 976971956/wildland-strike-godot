@@ -23,6 +23,13 @@ const ENEMY_DEFINITIONS := {
 	"ankylosaur": preload("res://data/enemies/ankylosaur.tres"),
 	"triceratops": preload("res://data/enemies/triceratops.tres"),
 	"hunter": preload("res://data/enemies/hunter.tres"),
+	"knife_raider": preload("res://data/enemies/knife_raider.tres"),
+	"demolitionist": preload("res://data/enemies/demolitionist.tres"),
+	"shield_guard": preload("res://data/enemies/shield_guard.tres"),
+	"elite_enforcer": preload("res://data/enemies/elite_enforcer.tres"),
+	"elite_blade": preload("res://data/enemies/elite_blade.tres"),
+	"elite_bombardier": preload("res://data/enemies/elite_bombardier.tres"),
+	"elite_bulwark": preload("res://data/enemies/elite_bulwark.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
 }
 
@@ -48,6 +55,7 @@ var combat_team: StringName = &"human_enemies"
 var combat_owner_id := -1
 var health_scale_snapshot := 1.0
 var damage_scale_snapshot := 1.0
+var source_power_scale_snapshot := 1.0
 var enemy_type := "grunt"
 var definition: Resource
 var max_health := 42
@@ -55,6 +63,11 @@ var health := 42
 var speed := 115.0
 var base_speed := 115.0
 var creature_state := CreatureState.NONE
+var knockdown_armor_remaining := 0
+var guard_points := 0
+var guard_recovery_timer := 0.0
+var guard_flash_timer := 0.0
+var last_guarded_damage := 0
 var facing := -1
 var attack_timer := 0.0
 var hurt_timer := 0.0
@@ -111,11 +124,14 @@ func setup(p_game: Node, p_player: Node, p_type: String, p_formation_slot: int =
 	combat_owner_id = p_formation_slot if p_formation_slot >= 0 else int(get_instance_id())
 	health_scale_snapshot = game.coop_enemy_health_scale() if game.has_method("coop_enemy_health_scale") else 1.0
 	damage_scale_snapshot = game.coop_enemy_damage_scale() if game.has_method("coop_enemy_damage_scale") else 1.0
+	source_power_scale_snapshot = definition.outgoing_damage_scale
 	current_attack = definition.attack
 	max_health = maxi(1, roundi(definition.max_health * health_scale_snapshot))
 	health = max_health
 	base_speed = definition.speed
 	speed = base_speed
+	knockdown_armor_remaining = definition.knockdown_armor
+	guard_points = definition.guard_capacity
 	if definition.dinosaur_archetype:
 		creature_state = CreatureState.SLEEPING if definition.starts_sleeping else CreatureState.NEUTRAL
 	scale = definition.actor_scale
@@ -189,6 +205,12 @@ func _physics_process(delta: float) -> void:
 			chain_timer = 0.0
 			throw_collision_active = false
 	flash_timer = maxf(0.0, flash_timer - delta)
+	guard_flash_timer = maxf(0.0, guard_flash_timer - delta)
+	if guard_points <= 0 and definition.guard_capacity > 0 and not is_defeated:
+		guard_recovery_timer = maxf(0.0, guard_recovery_timer - delta)
+		if guard_recovery_timer <= 0.0:
+			guard_points = definition.guard_capacity
+			_record_behavior_event(&"guard_restored")
 	recoil_offset = move_toward(recoil_offset, 0.0, 95.0 * delta)
 	impact_squash = move_toward(impact_squash, 0.0, 5.5 * delta)
 	if hurt_timer > 0.0:
@@ -254,6 +276,8 @@ func _think(delta: float) -> void:
 			_think_ranged(player_offset)
 		EnemyDefinitionScript.BehaviorKind.BOSS:
 			_think_boss(player_offset)
+		EnemyDefinitionScript.BehaviorKind.DUELIST:
+			_think_duelist(player_offset)
 		_:
 			_think_flanker(player_offset)
 
@@ -346,6 +370,24 @@ func _think_pouncer(player_offset: Vector2) -> void:
 		_begin_telegraph(player_offset.normalized(), &"pounce_telegraph")
 		return
 	_approach_player(player_offset, false)
+
+
+func _think_duelist(player_offset: Vector2) -> void:
+	var distance := player_offset.length()
+	if behavior_cooldown_timer <= 0.0 and distance < definition.retreat_distance:
+		_begin_duelist_evade(player_offset)
+		return
+	if _try_start_contact_attack(player_offset):
+		return
+	if (
+		behavior_cooldown_timer <= 0.0
+		and distance >= definition.burst_min_distance
+		and distance <= definition.burst_max_distance
+		and absf(player_offset.y) <= definition.lane_tolerance * 1.35
+	):
+		_begin_telegraph(player_offset.normalized(), &"duelist_feint")
+		return
+	_approach_player(player_offset, true)
 
 
 func _think_pressure(player_offset: Vector2) -> void:
@@ -449,11 +491,12 @@ func _begin_burst() -> void:
 	behavior_phase = BehaviorPhase.BURST
 	behavior_timer = definition.burst_duration
 	velocity = behavior_direction * speed * definition.burst_speed_scale
-	_record_behavior_event(
-		&"charge_burst"
-		if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER
-		else &"pounce_burst"
-	)
+	var burst_event := &"pounce_burst"
+	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.CHARGER:
+		burst_event = &"charge_burst"
+	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.DUELIST:
+		burst_event = &"duelist_lunge"
+	_record_behavior_event(burst_event)
 	queue_redraw()
 
 
@@ -464,6 +507,16 @@ func _begin_evade(player_offset: Vector2) -> void:
 	behavior_direction = Vector2(-signf(player_offset.x), vertical_side * 0.7).normalized()
 	velocity = behavior_direction * speed * 1.18
 	_record_behavior_event(&"retreat")
+	queue_redraw()
+
+
+func _begin_duelist_evade(player_offset: Vector2) -> void:
+	behavior_phase = BehaviorPhase.EVADE
+	behavior_timer = definition.retreat_duration
+	var vertical_side := -1.0 if approach_lane_offset <= 0.0 else 1.0
+	behavior_direction = Vector2(-signf(player_offset.x), vertical_side).normalized()
+	velocity = behavior_direction * speed * 1.32
+	_record_behavior_event(&"duelist_disengage")
 	queue_redraw()
 
 
@@ -504,7 +557,8 @@ func _advance_behavior_phase(delta: float, player_offset: Vector2) -> void:
 			elif behavior_timer <= 0.0:
 				_begin_recovery()
 		BehaviorPhase.EVADE:
-			velocity = behavior_direction * speed * 1.18
+			var evade_scale := 1.32 if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.DUELIST else 1.18
+			velocity = behavior_direction * speed * evade_scale
 			if behavior_timer <= 0.0:
 				_begin_recovery()
 		BehaviorPhase.RECOVER:
@@ -705,6 +759,7 @@ func _check_attack() -> void:
 			var resolved_damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
 			if creature_state == CreatureState.ENRAGED:
 				resolved_damage = maxi(1, roundi(resolved_damage * definition.enrage_damage_scale))
+			resolved_damage = maxi(1, roundi(resolved_damage * source_power_scale_snapshot))
 			if combat_target.is_in_group("player"):
 				resolved_damage = maxi(1, roundi(resolved_damage * damage_scale_snapshot))
 			var resolved_knockback: Vector2 = CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
@@ -739,6 +794,19 @@ func _check_attack() -> void:
 					)
 		attack_hitbox.deactivate()
 
+
+func _can_guard_hit(knockback: Vector2) -> bool:
+	return (
+		definition.guard_capacity > 0
+		and guard_points > 0
+		and guard_recovery_timer <= 0.0
+		and attack_timer <= 0.0
+		and hurt_timer <= 0.0
+		and wake_up_timer <= 0.0
+		and absf(knockback.x) > 0.01
+		and signf(knockback.x) == -facing
+	)
+
 func take_hit(
 	amount: int,
 	knockback: Vector2,
@@ -751,12 +819,39 @@ func take_hit(
 		return
 	if creature_state == CreatureState.SLEEPING:
 		_wake_creature()
+	var guarded := _can_guard_hit(knockback)
+	var guard_broken := false
+	if guarded:
+		var incoming_damage := amount
+		amount = maxi(1, roundi(amount * definition.guard_damage_scale))
+		guard_points = maxi(0, guard_points - incoming_damage)
+		last_guarded_damage = amount
+		guard_flash_timer = 0.16
+		launch = false
+		counter_hit = false
+		knockback *= 0.22
+		_record_behavior_event(&"guard_block")
+		game.play_sfx(&"shield_block")
+		if guard_points <= 0:
+			guard_broken = true
+			guard_recovery_timer = definition.guard_recovery_duration
+			counter_stun_bonus = maxf(counter_stun_bonus, definition.guard_break_duration)
+			force_interrupt = true
+			_record_behavior_event(&"guard_break")
+			game.play_sfx(&"shield_break")
 	_cancel_behavior()
 	_register_chain_hit()
 	if chain_hit_count >= MAX_CHAIN_HITS:
 		launch = true
 		hard_knockdown_lockout = true
 		knockback.y = minf(knockback.y, -45.0)
+	if launch and knockdown_armor_remaining > 0:
+		knockdown_armor_remaining -= 1
+		launch = false
+		hard_knockdown_lockout = false
+		knockback.y = maxf(0.0, knockback.y)
+		_record_behavior_event(&"elite_armor")
+		game.play_sfx(&"elite_armor")
 	health -= amount
 	if (
 		definition.dinosaur_archetype
@@ -770,7 +865,8 @@ func take_hit(
 		attack_timer = 0.0
 		attack_hit_done = true
 		attack_hitbox.deactivate()
-	hurt_timer = (0.25 if not launch else 0.46) + counter_stun_bonus
+	var resolved_hurt_duration := (0.08 if guarded and not guard_broken and not launch else (0.25 if not launch else 0.46))
+	hurt_timer = (resolved_hurt_duration + counter_stun_bonus) * definition.stun_duration_scale
 	stun_timer = hurt_timer
 	velocity = knockback
 	invulnerable = 0.08
@@ -971,6 +1067,7 @@ func _sync_fighter_state() -> void:
 func _draw() -> void:
 	_draw_creature_state_cue()
 	_draw_behavior_cue()
+	_draw_rank_cue()
 	if definition.visual_kind == EnemyDefinitionScript.VisualKind.RAPTOR:
 		_draw_raptor()
 		return
@@ -1001,13 +1098,38 @@ func _draw() -> void:
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED and not is_defeated:
-		draw_line(Vector2(facing * 15.0, -57.0), Vector2(facing * 44.0, -57.0), Color("#b9c6ca"), 9.0)
-		draw_line(Vector2(facing * 20.0, -53.0), Vector2(facing * 17.0, -44.0), Color("#624438"), 6.0)
+		if definition.ranged_weapon.kind == 1:
+			draw_circle(Vector2(facing * 39.0, -54.0), 9.0, definition.ranged_weapon.color)
+			draw_line(Vector2(facing * 38.0, -65.0), Vector2(facing * 45.0, -73.0), Color("#f0b55a"), 3.0)
+		else:
+			draw_line(Vector2(facing * 15.0, -57.0), Vector2(facing * 44.0, -57.0), Color("#b9c6ca"), 9.0)
+			draw_line(Vector2(facing * 20.0, -53.0), Vector2(facing * 17.0, -44.0), Color("#624438"), 6.0)
 	elif definition.is_boss and not is_defeated:
 		_draw_boss_overlay()
 	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
+	_draw_guard_cue()
+
+
+func _draw_rank_cue() -> void:
+	if definition.rank != EnemyDefinitionScript.Rank.ELITE or is_defeated:
+		return
+	var pulse := 0.34 + sin(Time.get_ticks_msec() * 0.012) * 0.08
+	draw_arc(Vector2(0.0, -5.0), definition.shadow_half_extents.x + 10.0, 0.0, TAU, 28, Color(1.0, 0.72, 0.18, pulse), 4.0)
+	for index in range(2):
+		var y := -183.0 - index * 8.0
+		draw_polyline(PackedVector2Array([Vector2(-9.0, y + 5.0), Vector2(0.0, y), Vector2(9.0, y + 5.0)]), Color("#ffd052"), 3.0)
+
+
+func _draw_guard_cue() -> void:
+	if definition.guard_capacity <= 0 or is_defeated:
+		return
+	var bar_color := Color("#70e5f2") if guard_points > 0 else Color("#e25a3d")
+	if guard_flash_timer > 0.0:
+		bar_color = Color.WHITE
+	draw_rect(Rect2(-31.0, -182.0, 62.0, 5.0), Color("#172a31"))
+	draw_rect(Rect2(-31.0, -182.0, 62.0 * guard_points / float(definition.guard_capacity), 5.0), bar_color)
 
 
 func _draw_behavior_cue() -> void:

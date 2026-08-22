@@ -12,6 +12,7 @@ var team: StringName
 var combat_team: StringName
 var combat_owner_id := -1
 var damage_scale_snapshot := 1.0
+var source_power_scale_snapshot := 1.0
 var direction := 1
 var velocity := Vector2.ZERO
 var lifetime := 0.0
@@ -47,6 +48,7 @@ func setup(
 	combat_team = source_actor.combat_team if is_instance_valid(source_actor) and "combat_team" in source_actor else p_team
 	combat_owner_id = source_actor.combat_owner_id if is_instance_valid(source_actor) and "combat_owner_id" in source_actor else -1
 	damage_scale_snapshot = source_actor.damage_scale_snapshot if is_instance_valid(source_actor) and "damage_scale_snapshot" in source_actor else 1.0
+	source_power_scale_snapshot = source_actor.source_power_scale_snapshot if is_instance_valid(source_actor) and "source_power_scale_snapshot" in source_actor else 1.0
 	position = p_position
 	direction = 1 if p_direction >= 0 else -1
 	shot_index = p_shot_index
@@ -127,11 +129,12 @@ func _direct_target_is_available(actor: Node, radius: float) -> bool:
 
 func _damage_direct_target(actor: Node) -> void:
 	if actor.is_in_group("player"):
-		var resolved_damage := maxi(1, roundi(definition.damage * damage_scale_snapshot))
+		var resolved_damage := maxi(1, roundi(definition.damage * source_power_scale_snapshot * damage_scale_snapshot))
 		actor.take_hit(resolved_damage, Vector2(direction * 250.0, 0.0), false, 0.0, true, definition.impact_profile)
 		return
 	var health_before: int = actor.health
-	actor.take_hit(definition.damage, Vector2(direction * 320.0, 0.0), false, false, 0.0, true)
+	var resolved_damage := maxi(1, roundi(definition.damage * source_power_scale_snapshot))
+	actor.take_hit(resolved_damage, Vector2(direction * 320.0, 0.0), false, false, 0.0, true)
 	if actor.health < health_before:
 		game.hit_confirm(actor.position - Vector2(0.0, 48.0), 2, direction, true, definition.impact_profile)
 
@@ -202,10 +205,11 @@ func _explode() -> void:
 func _damage_explosion_target(actor: Node, amount: int, launch: bool) -> void:
 	var blast_direction := 1 if actor.position.x >= position.x else -1
 	if actor.is_in_group("player"):
-		var resolved_damage := maxi(1, roundi(amount * damage_scale_snapshot))
+		var resolved_damage := maxi(1, roundi(amount * source_power_scale_snapshot * damage_scale_snapshot))
 		actor.take_hit(resolved_damage, Vector2(blast_direction * 360.0, -35.0), false, 0.0, true, definition.impact_profile)
 	else:
-		actor.take_hit(amount, Vector2(blast_direction * 430.0, -65.0 if launch else 0.0), launch, false, 0.0, true)
+		var resolved_damage := maxi(1, roundi(amount * source_power_scale_snapshot))
+		actor.take_hit(resolved_damage, Vector2(blast_direction * 430.0, -65.0 if launch else 0.0), launch, false, 0.0, true)
 
 
 func _tick_lingering(delta: float) -> void:

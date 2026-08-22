@@ -200,12 +200,12 @@ Exit evidence (2026-08-22): the deterministic M4 matrix completes Stage 1 with a
 
 ### M5 — Weapon sandbox and dinosaur ecology
 
-Status: **in progress**
+Status: **complete**
 
 - [x] At least twelve distinct weapon behaviors plus ammo/durability/drop rules.
 - [x] Breakables, carry/throw props, rolling hazards, food tiers, and score tiers.
 - [x] Four dinosaur archetypes with neutral, sleeping, enraged, and cross-faction targeting states.
-- [ ] Full enemy standard/elite roster and reusable encounter recipes.
+- [x] Full enemy standard/elite roster and reusable encounter recipes.
 
 Exit gate: weapons and dinosaurs create systemic interactions rather than scripted visual cameos.
 
@@ -214,6 +214,8 @@ Evidence (2026-08-22, weapon-sandbox batch): a typed catalog now owns twelve uni
 Evidence (2026-08-22, prop/item batch): Stage 1 now authors a tire, fuel canister, and industrial scrap bundle as independent carryable resources alongside its three breakable crates and bounded rolling drum. A nearby neutral attack lifts a prop out of the targetable world, keeps it visually attached above its carrier, and the next attack throws it along the gameplay floor plane. Each prop owns damage, travel speed/lifetime, break-on-contact behavior, durability, score, color, and a typed drop; thrown hits launch enemies and damage other breakables while explicit co-op ownership keeps teammates safe. Hurt, special, linked attack, revive, and player departure all drop a held object safely. A typed pickup catalog replaces the generic food path with four rising healing/score tiers and adds four pure-score treasure tiers; healing retains per-hero item efficiency and the health cap. Thirty-six suites pass 1946/1946 assertions. The exported Web fixture was visually accepted at 119.99 FPS over 300 frames with no frame above 20 ms or 33 ms. Web export, iOS project export, and unsigned Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m5-prop-item-system.md`.
 
 Evidence (2026-08-22, dinosaur-ecosystem batch): Compy, raptor, ankylosaur, and triceratops now form four typed neutral-creature archetypes with flanker, pouncer, pressure, and charger behavior families. Every creature participates in the existing faction-safe target pipeline, prefers a nearer human enemy over the player, and never targets another neutral dinosaur. Ankylosaur and triceratops can begin asleep: their AI remains motionless until a player or human enemy enters a resource-owned wake radius, while taking damage also wakes them. A resource-owned health threshold promotes any dinosaur into an explicit enraged state with observable audio/visual feedback and independent speed/damage multipliers that apply against players and enemy factions. The three new species use original 2560×320 transparent eight-state strips; a retained deterministic connected-component tool reconstructs those runtime sheets from the archived clean-room source without cross-cell bleed. Thirty-seven suites pass 2034/2034 assertions. The exported four-species Web fixture was visually accepted at 119.99 FPS over 300 frames with no frame above 20 ms or 33 ms. Web release export, iOS project export, and the unsigned Mach-O arm64 Xcode build pass. Detailed evidence is archived in `evidence/m5-dinosaur-ecosystem.md`.
+
+Exit evidence (2026-08-22, standard/elite roster batch): the human catalog now contains six standard roles—grunt, brute, hunter, knife raider, demolitionist, and shield guard—and four explicit elites: enforcer, blade, bombardier, and bulwark. Knife units use a data-driven feint/lunge/diagonal-disengage behavior; demolition units throw the shared delayed explosive through the faction-safe projectile pipeline; shield units reduce only frontal damage, absorb launch, break under an authored damage budget, and recover on a resource-owned timer. Every elite has an independent behavior family plus outgoing power, reduced stun duration, consumable knockdown armor, gold rank cues, and a unique original eight-state sheet. Four validated encounter recipes deterministically expand standard/elite pools, formation offsets, seeds, and difficulty tiers into ordinary wave spawns consumed by the encounter director. Thirty-eight suites pass 2260/2260 assertions. The unobstructed ten-character exported-Web fixture was visually accepted at 119.997 FPS over 300 frames with zero frames above 20 ms or 33 ms and no browser warnings/errors. Detailed evidence is archived in `evidence/m5-enemy-roster.md`.
 
 ### M6 — Stages 2–4 and vehicle set piece
 
@@ -264,7 +266,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M5 — Standard/elite enemy roster:** add the missing knife, explosive, shield/control, and elite variants as typed archetypes, then author reusable encounter recipes and close the M5 exit gate.
+1. **M6 — Flooded wilderness stage:** author the first post-Stage-1 multi-scene environment, encounter progression, ecological hazards, and a unique typed boss state machine while preserving the M0–M5 gates.
 
 ## Definition of done for every task
 
@@ -289,7 +291,7 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 
 - The current 1,280×720 assets use a high-resolution pseudo-pixel style rather than a controlled low-resolution pixel pipeline.
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
-- The enemy roster still lacks explosive specialists, knife specialists, elites, additional dinosaur archetypes, and the remaining seven unique campaign boss state machines.
+- The reusable human/dinosaur roster is complete through M5; the remaining seven campaign stages still require their unique boss state machines and stage-specific encounter composition.
 - Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog and Stage 1 carryable/breakable/hazard plus typed pickup distribution are complete; additional dinosaur archetypes and the standard/elite enemy roster remain the open M5 content work.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete through M5.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

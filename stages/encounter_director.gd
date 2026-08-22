@@ -135,8 +135,9 @@ func _spawn_wave(index: int) -> void:
 	current_wave_index = index
 	reinforcement_timer = 0.0
 	var wave: Resource = encounter.waves[index]
-	remaining_enemies = wave.spawns.size()
-	for spawn in wave.spawns:
+	var resolved_spawns: Array[Resource] = wave.resolved_spawns()
+	remaining_enemies = resolved_spawns.size()
+	for spawn in resolved_spawns:
 		game.spawn_enemy(Vector2(encounter.origin_x, 0.0) + spawn.offset, String(spawn.enemy_id))
 
 

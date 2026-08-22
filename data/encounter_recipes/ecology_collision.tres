@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterRecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_recipe_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = &"ecology_collision"
+standard_enemy_ids = Array[StringName]([&"compy", &"raptor", &"demolitionist", &"shield_guard"])
+elite_enemy_ids = Array[StringName]([&"elite_enforcer"])
+base_standard_count = 4
+standard_per_difficulty = 1
+base_elite_count = 1
+elite_per_difficulty = 0
+max_combatants = 8
+reinforcement_delay = 0.4
+formation_offsets = Array[Vector2]([Vector2(180, 500), Vector2(320, 620), Vector2(-210, 500), Vector2(-350, 620), Vector2(460, 550), Vector2(-470, 550), Vector2(560, 650), Vector2(-560, 650)])

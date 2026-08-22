@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_shield_guard.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/shield_guard_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"shield_guard"
+max_health = 82
+speed = 76.0
+attack = ExtResource("2")
+defeat_score = 700
+behavior_kind = 3
+attack_distance = 70.0
+lane_tolerance = 52.0
+vertical_approach_scale = 0.6
+guard_capacity = 28
+guard_damage_scale = 0.3
+guard_break_duration = 0.9
+guard_recovery_duration = 3.6
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(204, 204)
+shadow_half_extents = Vector2(42, 10)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

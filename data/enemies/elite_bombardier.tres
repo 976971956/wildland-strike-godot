@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_elite_bombardier.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/elite_bombardier_sheet.png" id="3"]
+[ext_resource type="Resource" path="res://data/weapons/grenade.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"elite_bombardier"
+rank = 1
+max_health = 108
+speed = 105.0
+attack = ExtResource("2")
+defeat_score = 1350
+outgoing_damage_scale = 1.28
+stun_duration_scale = 0.68
+knockdown_armor = 1
+behavior_kind = 4
+attack_distance = 60.0
+lane_tolerance = 64.0
+vertical_approach_scale = 0.78
+telegraph_duration = 0.38
+recovery_duration = 0.52
+behavior_cooldown = 0.78
+preferred_range_min = 240.0
+preferred_range_max = 540.0
+ranged_weapon = ExtResource("4")
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(214, 214)
+shadow_half_extents = Vector2(43, 10)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

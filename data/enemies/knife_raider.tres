@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/enemy_knife_raider.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/knife_raider_sheet.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"knife_raider"
+max_health = 46
+speed = 152.0
+attack = ExtResource("2")
+defeat_score = 425
+behavior_kind = 6
+attack_distance = 60.0
+lane_tolerance = 48.0
+vertical_approach_scale = 0.95
+telegraph_duration = 0.16
+burst_duration = 0.22
+burst_speed_scale = 2.6
+recovery_duration = 0.24
+behavior_cooldown = 0.4
+burst_min_distance = 105.0
+burst_max_distance = 330.0
+retreat_distance = 92.0
+retreat_duration = 0.2
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(184, 184)
+shadow_half_extents = Vector2(32, 8)
+tint = Color(1, 1, 1, 1)

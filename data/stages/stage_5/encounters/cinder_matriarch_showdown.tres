@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/waves/cinder_matriarch_boss.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"cinder_matriarch_showdown"
+trigger_x = 3620.0
+origin_x = 3740.0
+arena_right = 4100.0
+unlock_right = 4200.0
+banner_title = "CINDER MATRIARCH VEYRA"
+banner_subtitle = "BREAK THE FIRESTORM COMMAND"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

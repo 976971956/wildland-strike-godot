@@ -395,8 +395,8 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.92))
 		draw_rect(Rect2(280, 112, 720, 488), Color(0.025, 0.04, 0.055, 0.98))
 		draw_rect(Rect2(280, 112, 720, 7), Color("#f2c756"))
-		draw_string(font, Vector2(280, 202), "FIRST FRONT LIBERATED", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
-		draw_string(font, Vector2(280, 245), "FOUR-STAGE CAMPAIGN COMPLETE", HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
+		draw_string(font, Vector2(280, 202), "CAMPAIGN SECTOR SECURED", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
+		draw_string(font, Vector2(280, 245), "%d-STAGE CAMPAIGN BUILD COMPLETE" % maxi(campaign_stage_nodes.size(), campaign_completed_count), HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
 		draw_string(font, Vector2(355, 335), "FRONT COMPLETION BONUS", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
 		draw_string(font, Vector2(740, 335), "%08d" % campaign_final_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
 		draw_string(font, Vector2(355, 395), "REMAINING CONTINUES", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
@@ -418,7 +418,7 @@ func _draw_campaign_map() -> void:
 		var y := 118.0 + band * 72.0
 		draw_line(Vector2(0, y), Vector2(size.x, y - 36.0), Color(0.08, 0.16, 0.19, 0.22), 2.0)
 	draw_string(font, Vector2(0, 62), "WILDLAND CAMPAIGN ROUTE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 38, Color("#f2c756"))
-	draw_string(font, Vector2(0, 94), "FIRST FRONT // FOUR OPERATIONS", HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
+	draw_string(font, Vector2(0, 94), "ACTIVE FRONT // %d OPERATIONS" % campaign_stage_nodes.size(), HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
 	for index in range(campaign_stage_nodes.size() - 1):
 		var from: Vector2 = campaign_stage_nodes[index].position
 		var to: Vector2 = campaign_stage_nodes[index + 1].position

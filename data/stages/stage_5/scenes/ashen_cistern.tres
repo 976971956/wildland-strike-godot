@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/encounters/cistern_approach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/encounters/cinder_matriarch_showdown.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/objects/cistern_jet_west.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/objects/cistern_jet_east.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/ashen_cistern.png" id="6"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"ashen_cistern"
+display_name = "ASHEN CISTERN"
+transition_subtitle = "VEYRA IS WAITING ABOVE THE WATERWORKS"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"ashen_cistern_boss_arena"
+visual_theme = 14
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

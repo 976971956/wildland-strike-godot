@@ -238,12 +238,14 @@ Exit gate: first half of the campaign is content-complete and playable by all su
 
 ### M7 — Stages 5–8 and finale
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] Burning settlement stage and transformation boss.
+- [x] Burning settlement stage and transformation boss.
 - [ ] Jungle/mine stage with large-creature hazard and multi-phase boss.
 - [ ] Underground vault/elevator stage with paired boss encounter.
 - [ ] Laboratory finale with elite gauntlet, multi-phase final boss, ending, and credits.
+
+Evidence (2026-08-22, burning-settlement batch): Stage 5 adds a complete 4,200 px route through Ember Refuge, Burning Market, and Ashen Cistern, with five ordered encounters, fifteen authored spawns, independent original 1672×941 backgrounds, three firestorm ambience themes, and a fifth campaign-map node. A new typed `DisasterHazardData` system provides two cyclic fire patches, a damaging movement-slowing smoke cloud, and two directional cistern jets with explicit warning/active windows and independent phase offsets. Cinder Matriarch Veyra uses an original 2560×640 two-form atlas: her human fire-marshal phase launches opposing ember waves, the 58% gate switches to a genuinely different ash-beast row and rush behavior with two reinforcements, and the 24% rupture phase launches opposing water-pressure waves with a final reinforcement. Phase-owned sprite-row overrides, validation, animation columns, dialogue, telegraphs, and director accounting are data-driven. Exported QA rejected and corrected a scene-boundary framing issue, reinforcement occlusion, and an inherited oversized boss circle before acceptance. Forty-three deterministic suites pass 2606/2606 assertions. Accepted environment and boss Web fixtures average 120.00 and 120.08 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings/errors. Web release export, iOS project export, and unsigned generic-device Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m7-burning-settlement.md`.
 
 Exit gate: the complete eight-stage campaign can be finished from a fresh start without debug intervention.
 
@@ -274,7 +276,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M7 — Burning settlement Stage 5:** build three original burning-settlement scenes, fire/smoke and civilian-route hazards, escalation encounters, a unique transformation boss, Stage 4→5 campaign transition, and route-map expansion while preserving every completed M0–M6 gate.
+1. **M7 — Jungle/mine Stage 6:** build three original jungle-to-mine scenes, a systemic large-creature hazard, five escalating encounters, a unique multi-phase boss, Stage 5→6 transition, and six-node route expansion while preserving every completed M0–M7 gate.
 
 ## Definition of done for every task
 
@@ -300,6 +302,6 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - The current 1,280×720 assets use a high-resolution pseudo-pixel style rather than a controlled low-resolution pixel pipeline.
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The reusable human/dinosaur roster is complete through M5; Stages 1–2 have unique bosses and encounter composition, while the remaining six campaign stages still require theirs.
-- Stages 1–4 are completed release-quality campaign content; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while expanding the arcade shell and back-half campaign.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, four-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Local high-score persistence does not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
+- Stages 1–5 are completed release-quality campaign content; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while expanding the arcade shell and back-half campaign.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, five-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Local high-score persistence does not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
 - The current development provisioning profile is invalid; every stage passes an unsigned generic-device arm64 build, but a fresh signed iOS install requires renewed signing access and an available paired device.

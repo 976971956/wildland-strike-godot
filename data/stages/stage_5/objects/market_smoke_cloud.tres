@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DisasterHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/disaster_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"market_smoke_cloud"
+kind = 6
+position = Vector2(1960, 555)
+size = Vector2(300, 150)
+contact_damage = 8
+hazard_kind = 1
+cycle_duration = 3.6
+warning_duration = 0.85
+active_duration = 1.2
+cycle_offset = 1.1
+movement_scale = 0.48

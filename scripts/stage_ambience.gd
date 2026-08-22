@@ -59,6 +59,12 @@ func _draw() -> void:
 				_draw_industrial_assembly(scene)
 			11:
 				_draw_industrial_crucible(scene)
+			12:
+				_draw_burning_refuge(scene)
+			13:
+				_draw_burning_market(scene)
+			14:
+				_draw_ashen_cistern(scene)
 
 
 func _draw_ruins(scene: Resource) -> void:
@@ -193,6 +199,37 @@ func _draw_industrial_crucible(scene: Resource) -> void:
 		var rise := fmod(animation_time * (36.0 + index) + index * 19.0, 118.0)
 		var ember_x: float = scene.start_x + 120.0 + fmod(index * 173.0, scene.end_x - scene.start_x - 240.0)
 		draw_rect(Rect2(ember_x + sin(animation_time + index) * 10.0, 492.0 - rise, 3.0, 3.0), Color(1.0, 0.54, 0.1, 0.42 * (1.0 - rise / 124.0)))
+
+
+func _draw_burning_refuge(scene: Resource) -> void:
+	_draw_firestorm(scene, 0.58)
+	for index in range(5):
+		var pulse := (sin(animation_time * 4.8 + index) + 1.0) * 0.5
+		draw_circle(Vector2(scene.start_x + 145.0 + index * 268.0, 412.0), 4.0 + pulse * 2.0, Color(0.3, 0.88, 1.0, 0.28 + pulse * 0.38))
+
+
+func _draw_burning_market(scene: Resource) -> void:
+	_draw_firestorm(scene, 0.86)
+	for index in range(6):
+		var smoke_rise := fmod(animation_time * (18.0 + index) + index * 29.0, 126.0)
+		draw_circle(Vector2(scene.start_x + 120.0 + index * 225.0 + sin(animation_time + index) * 16.0, 456.0 - smoke_rise), 18.0 + index % 3 * 7.0, Color(0.11, 0.12, 0.15, 0.12 * (1.0 - smoke_rise / 134.0)))
+
+
+func _draw_ashen_cistern(scene: Resource) -> void:
+	_draw_firestorm(scene, 1.0)
+	for index in range(7):
+		var flow := fmod(animation_time * 82.0 + index * 97.0, scene.end_x - scene.start_x)
+		draw_line(Vector2(scene.start_x + flow, 632.0), Vector2(scene.start_x + flow + 38.0, 626.0), Color(0.52, 0.9, 1.0, 0.2), 4.0)
+	var alarm := (sin(animation_time * 6.4) + 1.0) * 0.5
+	draw_circle(Vector2((scene.start_x + scene.end_x) * 0.5, 396.0), 8.0 + alarm * 4.0, Color(1.0, 0.15, 0.06, 0.3 + alarm * 0.46))
+
+
+func _draw_firestorm(scene: Resource, strength: float) -> void:
+	var width: float = scene.end_x - scene.start_x
+	for index in range(13):
+		var rise := fmod(animation_time * (32.0 + index) + index * 17.0, 142.0)
+		var ember_x: float = scene.start_x + fmod(index * 157.0 + sin(animation_time * 0.8 + index) * 24.0, width)
+		draw_rect(Rect2(ember_x, 486.0 - rise, 3.0, 3.0), Color(1.0, 0.48, 0.08, strength * 0.46 * (1.0 - rise / 148.0)))
 
 
 func _ellipse_points(center: Vector2, radius_x: float, radius_y: float) -> PackedVector2Array:

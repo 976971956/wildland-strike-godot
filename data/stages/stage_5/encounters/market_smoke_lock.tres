@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/waves/market_smoke.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"market_smoke_lock"
+trigger_x = 1540.0
+origin_x = 1690.0
+arena_right = 2070.0
+unlock_right = 2160.0
+banner_title = "SMOKE LOCK"
+banner_subtitle = "FOLLOW THE CYAN EVACUATION LIGHTS"
+reward_id = &"weapon_rifle"
+waves = Array[Resource]([ExtResource("2")])

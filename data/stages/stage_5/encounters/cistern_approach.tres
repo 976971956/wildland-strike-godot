@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/waves/cistern_guard.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"cistern_approach"
+trigger_x = 2960.0
+origin_x = 3100.0
+arena_right = 3480.0
+unlock_right = 3580.0
+banner_title = "ASHEN CISTERN"
+banner_subtitle = "WATER PRESSURE IS UNSTABLE"
+reward_id = &"food_feast"
+waves = Array[Resource]([ExtResource("2")])

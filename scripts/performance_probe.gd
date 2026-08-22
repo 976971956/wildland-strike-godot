@@ -22,6 +22,12 @@ func _ready() -> void:
 		if "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
+		elif "stage5_preview=2" in query_string:
+			scenario = "stage_5_transformation_boss_preview"
+			call_deferred("_start_stage_5_preview", true)
+		elif "stage5_preview=1" in query_string:
+			scenario = "stage_5_burning_settlement_preview"
+			call_deferred("_start_stage_5_preview", false)
 		elif "stage4_preview=2" in query_string:
 			scenario = "stage_4_foundry_boss_preview"
 			call_deferred("_start_stage_4_preview", true)
@@ -732,6 +738,49 @@ func _start_stage_4_preview(show_boss: bool) -> void:
 	game.set_process(false)
 
 
+func _start_stage_5_preview(show_boss: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_advance_campaign_stage"):
+		scenario = "stage_5_preview_setup_failed"
+		return
+	for _stage in range(4):
+		game._advance_campaign_stage()
+	if game.active_stage_definition.stage_id != &"stage_5":
+		scenario = "stage_5_preview_setup_failed"
+		return
+	if show_boss:
+		game.player.position = Vector2(3540.0, 590.0)
+		game.camera.position.x = 3600.0
+		game.encounter_director._update_scene(game.player.position.x)
+		game.encounter_director.force_start_encounter(4)
+		var preview_boss: Node = null
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if enemy.definition.enemy_id == &"cinder_matriarch":
+				preview_boss = enemy
+		if preview_boss != null:
+			preview_boss.set_physics_process(false)
+			preview_boss.facing = -1
+			preview_boss.invulnerable = 0.0
+			preview_boss.take_hit(9999, Vector2(280.0, -30.0), true)
+			preview_boss.boss_transition_timer = 0.0
+			preview_boss.invulnerable = 999.0
+			preview_boss.behavior_phase = preview_boss.BehaviorPhase.TELEGRAPH
+			preview_boss.behavior_timer = 999.0
+			preview_boss.queue_redraw()
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if enemy != preview_boss:
+				enemy.queue_free()
+	else:
+		game.player.position = Vector2(2180.0, 585.0)
+		game.camera.position.x = 2100.0
+		game.encounter_director.completed = true
+		game.encounter_director._update_scene(game.player.position.x)
+	game.player.set_physics_process(false)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	game.set_process(false)
+
+
 func _start_scene_preview(scene_index: int) -> void:
 	var game := get_parent()
 	if (
@@ -777,13 +826,13 @@ func _start_campaign_flow_preview(complete: bool) -> void:
 	game.score = 68420
 	game.hud.set_score(game.score)
 	game.lives = 1
-	game.campaign_stage_index = 3
-	game.active_stage_definition = game.CAMPAIGN_STAGE_DEFINITIONS[3]
-	game.completed_stage_count = 4 if complete else 3
+	game.campaign_stage_index = 4 if complete else 3
+	game.active_stage_definition = game.CAMPAIGN_STAGE_DEFINITIONS[game.campaign_stage_index]
+	game.completed_stage_count = 5 if complete else 4
 	if complete:
 		game._complete_first_half_campaign()
 	else:
-		game._open_campaign_map(3)
+		game._open_campaign_map(4)
 	game.set_process(false)
 	game.player.set_physics_process(false)
 

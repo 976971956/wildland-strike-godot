@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/scenes/ember_refuge.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/scenes/burning_market.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/scenes/ashen_cistern.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_5"
+stage_number = 5
+display_name = "THE BURNING SETTLEMENT"
+route_subtitle = "FIRESTORM EVACUATION"
+clear_message = "THE SETTLEMENT STILL STANDS"
+map_position = Vector2(1170, 430)
+time_limit_seconds = 285.0
+enemy_health_scale = 1.34
+enemy_damage_scale = 1.17
+clear_bonus = 12000
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

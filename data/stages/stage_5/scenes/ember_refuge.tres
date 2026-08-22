@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/encounters/refuge_evacuation.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_5/objects/refuge_fire_patch.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/burning_refuge.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"ember_refuge"
+display_name = "EMBER REFUGE"
+transition_subtitle = "THE EVACUATION ROUTE IS COLLAPSING"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"fortified_refuge_firestorm"
+visual_theme = 12
+background_texture = ExtResource("4")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3")])

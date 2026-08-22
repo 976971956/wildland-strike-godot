@@ -34,6 +34,7 @@ const ENEMY_DEFINITIONS := {
 	"mirewarden": preload("res://data/enemies/mirewarden.tres"),
 	"iron_vulture": preload("res://data/enemies/iron_vulture.tres"),
 	"forge_regent": preload("res://data/enemies/forge_regent.tres"),
+	"cinder_matriarch": preload("res://data/enemies/cinder_matriarch.tres"),
 }
 
 enum BehaviorPhase {
@@ -639,6 +640,23 @@ func _execute_boss_special() -> void:
 		_record_behavior_event(&"boss_furnace_blast")
 		_begin_recovery()
 		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.EMBER_SURGE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_furnace_blast(self, current_attack.damage)
+		game.play_sfx(&"industrial_impact")
+		_record_behavior_event(&"boss_ember_surge")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.CISTERN_BURST:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		for direction in [-1, 1]:
+			game.spawn_tidal_wave(self, direction, current_attack.damage)
+		game.play_sfx(&"water_surge")
+		_record_behavior_event(&"boss_cistern_burst")
+		_begin_recovery()
+		return
 	_start_attack()
 	_record_behavior_event(&"boss_slam")
 	_begin_recovery()
@@ -1130,7 +1148,7 @@ func _draw() -> void:
 		target_size.x,
 		target_size.y
 	)
-	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
+	var source_rect := Rect2(column * cell.x, _visual_sprite_row() * cell.y, cell.x, cell.y)
 	var base_tint: Color = current_boss_phase.tint if definition.is_boss and current_boss_phase != null else definition.tint
 	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
 	# Enemy source art faces left, opposite to the player sheet.
@@ -1213,6 +1231,18 @@ func _draw_behavior_cue() -> void:
 							Vector2(flame_x, -22.0 - index * 3.0),
 							Vector2(flame_x + 12.0, 2.0),
 						]), Color(1.0, 0.42, 0.06, pulse * 0.72))
+		elif definition.visual_kind == EnemyDefinitionScript.VisualKind.TRANSFORMING:
+			if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.RUSH:
+				draw_line(Vector2(facing * 48.0, 2.0), Vector2(facing * 190.0, 2.0), cue_color, 5.0)
+				for index in range(3):
+					var rush_x := facing * (92.0 + index * 42.0)
+					draw_polyline(PackedVector2Array([Vector2(rush_x - facing * 13.0, -13.0), Vector2(rush_x, 2.0), Vector2(rush_x - facing * 13.0, 17.0)]), cue_color, 4.0)
+			elif current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.CISTERN_BURST:
+				for side in [-1.0, 1.0]:
+					draw_arc(Vector2(side * 42.0, -4.0), 32.0, -PI * 0.88, -PI * 0.12, 18, Color(0.48, 0.93, 1.0, pulse), 5.0)
+			else:
+				for side in [-1.0, 1.0]:
+					draw_colored_polygon(PackedVector2Array([Vector2(side * 28.0, 3.0), Vector2(side * 48.0, -38.0), Vector2(side * 68.0, 3.0)]), Color(1.0, 0.36, 0.04, pulse * 0.72))
 		else:
 			draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
 
@@ -1245,6 +1275,15 @@ func _draw_boss_overlay() -> void:
 		if boss_phase_index >= 2:
 			draw_arc(Vector2(0.0, -92.0), 74.0, -PI, 0.0, 28, Color(1.0, 0.38, 0.06, 0.42), 7.0)
 		return
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.TRANSFORMING:
+		var core_alpha := 0.32 + sin(Time.get_ticks_msec() * 0.022) * 0.12
+		var core_color := Color(0.2, 0.9, 1.0, core_alpha) if boss_phase_index == 0 else Color(1.0, 0.28, 0.04, core_alpha + 0.12)
+		draw_arc(Vector2(0.0, -88.0), 46.0 + boss_phase_index * 10.0, -PI, 0.0, 24, core_color, 6.0)
+		if boss_phase_index >= 1:
+			for index in range(4):
+				var ember_origin := Vector2(-34.0 + index * 24.0, -142.0 - index % 2 * 11.0)
+				draw_line(ember_origin, ember_origin + Vector2(4.0, -14.0), Color(1.0, 0.44, 0.08, core_alpha), 3.0)
+		return
 	if boss_phase_index >= 1:
 		var aura_alpha := 0.22 + sin(Time.get_ticks_msec() * 0.018) * 0.08
 		draw_arc(Vector2(0.0, -78.0), 58.0, 0.0, TAU, 30, Color(1.0, 0.16, 0.05, aura_alpha), 9.0)
@@ -1276,7 +1315,7 @@ func _draw_raptor() -> void:
 		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
 		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
 	)
-	var source_rect := Rect2(column * cell.x, definition.sprite_row * cell.y, cell.x, cell.y)
+	var source_rect := Rect2(column * cell.x, _visual_sprite_row() * cell.y, cell.x, cell.y)
 	var target_size: Vector2 = definition.target_size
 	var target_rect := Rect2(
 		-target_size.x * 0.5,
@@ -1300,6 +1339,18 @@ func _visual_column() -> int:
 		return 7
 	if hurt_timer > 0.0 or stun_timer > 0.0 or boss_transition_timer > 0.0 or grabbed:
 		return 6
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.TRANSFORMING:
+		if boss_special_pose_timer > 0.0 and boss_special_pose_column >= 0:
+			return boss_special_pose_column
+		if attack_timer > 0.0:
+			return 2
+		if behavior_phase == BehaviorPhase.TELEGRAPH:
+			return 3
+		if behavior_phase == BehaviorPhase.BURST:
+			return 5
+		if velocity.length() > 10.0:
+			return 1
+		return 0
 	if definition.visual_kind == EnemyDefinitionScript.VisualKind.EXOSUIT:
 		if boss_special_pose_timer > 0.0 and boss_special_pose_column >= 0:
 			return boss_special_pose_column
@@ -1323,6 +1374,12 @@ func _visual_column() -> int:
 	if definition.dinosaur_archetype:
 		return 0
 	return int(visual_clock * 2.0) % 2
+
+
+func _visual_sprite_row() -> int:
+	if definition.is_boss and current_boss_phase != null and current_boss_phase.sprite_row_override >= 0:
+		return current_boss_phase.sprite_row_override
+	return definition.sprite_row
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:
 	var pts := PackedVector2Array()

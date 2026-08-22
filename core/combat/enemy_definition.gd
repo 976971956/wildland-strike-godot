@@ -6,6 +6,7 @@ enum VisualKind {
 	RAPTOR,
 	VEHICLE,
 	EXOSUIT,
+	TRANSFORMING,
 }
 
 enum BehaviorKind {
@@ -175,6 +176,8 @@ func is_valid_definition() -> bool:
 		var phase_ids := {}
 		for phase in boss_phases:
 			if phase == null or not phase.has_method("is_valid_phase") or not phase.is_valid_phase():
+				return false
+			if phase.sprite_row_override >= sprite_rows:
 				return false
 			if phase.health_threshold_ratio >= previous_threshold or phase_ids.has(phase.phase_id):
 				return false

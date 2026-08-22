@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DisasterHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/disaster_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"cistern_jet_west"
+kind = 6
+position = Vector2(3190, 560)
+size = Vector2(190, 112)
+contact_damage = 17
+move_speed = 170.0
+initial_direction = 1
+hazard_kind = 2
+cycle_duration = 3.2
+warning_duration = 0.72
+active_duration = 0.62
+cycle_offset = 0.35

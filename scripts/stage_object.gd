@@ -4,6 +4,7 @@ extends Node2D
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const EnvironmentObjectDataScript = preload("res://core/stages/environment_object_data.gd")
 const IndustrialHazardDataScript = preload("res://core/stages/industrial_hazard_data.gd")
+const DisasterHazardDataScript = preload("res://core/stages/disaster_hazard_data.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -27,6 +28,9 @@ var industrial_cycle_time := 0.0
 var industrial_warning_active := false
 var industrial_damage_active := false
 var hazard_actor_cooldowns := {}
+var disaster_cycle_time := 0.0
+var disaster_warning_active := false
+var disaster_damage_active := false
 
 
 func setup(p_game: Node, p_definition: Resource) -> void:
@@ -48,6 +52,9 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
 			add_to_group("industrial_hazards")
 			industrial_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
+		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
+			add_to_group("disaster_hazards")
+			disaster_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -84,6 +91,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
 		_tick_industrial_hazard(delta)
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
+		_tick_disaster_hazard(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -353,6 +364,39 @@ func _industrial_targets() -> Array[Node]:
 	return result
 
 
+func _tick_disaster_hazard(delta: float) -> void:
+	for actor_id in hazard_actor_cooldowns.keys().duplicate():
+		var remaining := maxf(0.0, float(hazard_actor_cooldowns[actor_id]) - delta)
+		if remaining <= 0.0:
+			hazard_actor_cooldowns.erase(actor_id)
+		else:
+			hazard_actor_cooldowns[actor_id] = remaining
+	disaster_cycle_time = fmod(disaster_cycle_time + delta, definition.cycle_duration)
+	var active_start: float = definition.cycle_duration - definition.active_duration
+	disaster_warning_active = disaster_cycle_time >= active_start - definition.warning_duration and disaster_cycle_time < active_start
+	disaster_damage_active = disaster_cycle_time >= active_start
+	if not disaster_damage_active:
+		return
+	for actor in _industrial_targets():
+		if not _overlaps_actor(actor):
+			continue
+		if definition.hazard_kind == DisasterHazardDataScript.HazardKind.SMOKE_CLOUD:
+			actor.velocity *= definition.movement_scale
+		if definition.hazard_kind == DisasterHazardDataScript.HazardKind.CISTERN_JET:
+			actor.position.x += definition.initial_direction * definition.move_speed * delta
+		if hazard_actor_cooldowns.has(actor.get_instance_id()):
+			continue
+		var knockback_direction: int = definition.initial_direction if definition.initial_direction != 0 else (1 if actor.position.x >= position.x else -1)
+		var knockback := Vector2(knockback_direction * (340.0 if definition.hazard_kind == DisasterHazardDataScript.HazardKind.CISTERN_JET else 180.0), -42.0)
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, knockback, false, 0.0, true, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, knockback, true, false, 0.0, true)
+		hazard_actor_cooldowns[actor.get_instance_id()] = 0.85
+		if game.has_method("play_sfx"):
+			game.play_sfx(&"water_surge" if definition.hazard_kind == DisasterHazardDataScript.HazardKind.CISTERN_JET else &"industrial_impact")
+
+
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
@@ -362,6 +406,8 @@ func _draw() -> void:
 		_draw_road_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
 		_draw_industrial_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD:
+		_draw_disaster_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -454,6 +500,32 @@ func _draw_industrial_hazard() -> void:
 				Vector2(half.x * 0.32, -half.y * 0.7), Vector2(half.x * 0.7, -half.y * 1.55),
 				Vector2(half.x, -8.0),
 			]), Color(1.0, 0.28, 0.04, 0.82))
+
+
+func _draw_disaster_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	var warning_alpha := 0.58 if disaster_warning_active else 0.22
+	if definition.hazard_kind == DisasterHazardDataScript.HazardKind.FIRE_PATCH:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.46, Color(0.34, 0.07, 0.02, 0.28))
+		draw_arc(Vector2.ZERO, half.x * 0.88, 0.0, TAU, 28, Color(1.0, 0.5, 0.08, warning_alpha), 4.0)
+		if disaster_warning_active or disaster_damage_active:
+			for index in range(7):
+				var flame_x := -half.x * 0.78 + index * half.x * 0.26
+				var flame_height := 20.0 + fmod(disaster_cycle_time * 38.0 + index * 17.0, 34.0)
+				draw_colored_polygon(PackedVector2Array([Vector2(flame_x - 12.0, 0.0), Vector2(flame_x, -flame_height), Vector2(flame_x + 12.0, 0.0)]), Color(1.0, 0.25 + index % 2 * 0.18, 0.03, 0.78 if disaster_damage_active else 0.42))
+	elif definition.hazard_kind == DisasterHazardDataScript.HazardKind.SMOKE_CLOUD:
+		draw_arc(Vector2.ZERO, half.x * 0.9, 0.0, TAU, 28, Color(0.76, 0.84, 0.86, warning_alpha), 3.0)
+		if disaster_warning_active or disaster_damage_active:
+			for index in range(8):
+				var drift := fmod(disaster_cycle_time * (24.0 + index) + index * 19.0, maxf(definition.size.y, 1.0))
+				draw_circle(Vector2(-half.x * 0.72 + index * half.x * 0.21 + sin(disaster_cycle_time + index) * 9.0, half.y * 0.32 - drift), 16.0 + index % 3 * 6.0, Color(0.22, 0.24, 0.27, 0.2 if disaster_damage_active else 0.1))
+	else:
+		draw_rect(Rect2(-half.x, -half.y * 0.24, definition.size.x, half.y * 0.48), Color(0.2, 0.72, 0.84, warning_alpha * 0.45))
+		draw_rect(Rect2(-half.x, -half.y * 0.24, definition.size.x, half.y * 0.48), Color(0.62, 0.94, 1.0, warning_alpha), false, 3.0)
+		if disaster_damage_active:
+			for index in range(6):
+				var jet_x := -half.x + fmod(index * 47.0 + disaster_cycle_time * definition.move_speed, definition.size.x)
+				draw_line(Vector2(jet_x, -half.y * 0.7), Vector2(jet_x + definition.initial_direction * 44.0, half.y * 0.5), Color(0.68, 0.95, 1.0, 0.72), 6.0)
 
 
 func _draw_hazard() -> void:

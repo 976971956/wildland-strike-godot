@@ -20,6 +20,7 @@ func setup(p_game: Node, p_source: Node, p_direction: int, p_damage: int) -> voi
 	position = p_source.position + Vector2(direction * 82.0, 0.0)
 	z_index = int(position.y) + 18
 	add_to_group("stage_effects")
+	add_to_group("tidal_waves")
 	queue_redraw()
 
 

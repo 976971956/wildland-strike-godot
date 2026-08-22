@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DisasterHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/disaster_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"refuge_fire_patch"
+kind = 6
+position = Vector2(980, 604)
+size = Vector2(210, 88)
+contact_damage = 15
+hazard_kind = 0
+cycle_duration = 3.1
+warning_duration = 0.75
+active_duration = 0.72
+cycle_offset = 0.4

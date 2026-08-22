@@ -345,3 +345,71 @@ Constraints: transparent background mandatory; exactly 8 cells in one row; no sc
 The environment outputs already matched the established 1672×941 runtime contract and were retained directly. The Forge Regent service output retained real alpha but delivered irregular pose spacing and a non-runtime canvas. The deterministic builder discovers the eight largest complete opaque components, sorts them by x position, scales each silhouette uniformly with nearest-neighbor interpolation, and centers every pose on an exact transparent 320×320 cell without carrying detached effects across boundaries.
 
 Verification: all three Stage 4 scene resources validate and reference unique original backgrounds. The accepted boss sheet retains alpha and divides into eight exact cells. Exported 1280×720 environment and boss fixtures were inspected for gameplay-lane readability, press/vent silhouette identity, actor occlusion, boss scale, crop loss, phase cues, and telegraph clarity. Abstract floating press outlines and an oversized circular boss cue were rejected and replaced before acceptance. Final fixtures sustain approximately 120 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
+
+## 2026-08-22 — Burning settlement environments and Cinder Matriarch Veyra
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_burning_settlement_assets.gd` checker-background removal, connected-component isolation, nearest-neighbor normalization, and exact transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, creature, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/burning_refuge.png`: 1672×941 RGB; SHA-256 `cd928c4634623cf50678af059db7c8d82bf818276c9e2a02859821ca81c94831`.
+- `assets/backgrounds/burning_market.png`: 1672×941 RGB; SHA-256 `31cc9dfef57f37fbe7ca4f5b6b493af553dc1691f9ac471db76f585e6107f945`.
+- `assets/backgrounds/ashen_cistern.png`: 1672×941 RGB; SHA-256 `3728b5054a52898133afccdc4703aea6d4ac5f93f4fb42b6464b01497df15b25`.
+- Archived Cinder Matriarch source: `assets/sprites/cinder_matriarch_source.png`; 1774×887 RGBA; SHA-256 `7902c640a439874bc8143dda33ffc619ab27d227ecfdd3905496aff1562a58f9`.
+- `assets/sprites/cinder_matriarch_sheet.png`: 2560×640 RGBA, 8×2; SHA-256 `7c37f8d60ce85258d0eb8879879a20621fb993d5eba8fe43fc5ed4906a90cb12`.
+
+The archived boss source is excluded from Web and iOS runtime exports.
+
+Ember Refuge generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 5, a serious 1990s 2.5D arcade beat-em-up
+Primary request: a fortified desert refugee settlement at the first moments of a night firestorm, improvised adobe-and-steel homes, elevated water tanks, evacuation gantries, torn canvas awnings, controlled flames and smoke only in background structures, distant red mesas under a black sky
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail late-1990s belt-scrolling brawler environment, original clean-room visual identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed dusty-stone gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; civilians and structures remain absent from active floor
+Lighting/mood: cold moonlit navy shadows against urgent amber firelight and restrained red alarm lamps, serious evacuation atmosphere
+Constraints: environment only; no people, no dinosaurs, no characters, no active vehicles, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing-point road, no flames or debris blocking the active combat lane, no foreground obstruction
+```
+
+Burning Market generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 5, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the central market of an original fortified desert settlement during a spreading night firestorm, collapsed canvas stalls and adobe arcades kept behind railings, overhead emergency water pipes, a burning communications mast, falling embers and dense smoke high above, visible evacuation alleys behind the combat floor
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed stone-and-metal gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; all stalls, flames and collapsing structures remain behind barriers and never obscure active combat
+Lighting/mood: intense amber and crimson firelight against deep indigo smoke shadows, white emergency lamps, escalating disaster but strong fighter readability
+Constraints: environment only; no people, no dinosaurs, no characters, no active vehicles, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing point, no flame wall crossing the active lane, no foreground debris or obstruction
+```
+
+Ashen Cistern generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production boss-arena background for Wildland Strike Stage 5, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the high ceremonial water-cistern plaza of a fortified desert settlement at the peak of a night firestorm, a tall original ash-bell tower and ruptured waterworks behind thick safety rails, burning rooftops and smoke columns in the distance, emergency floodgates and wet reflective stone framing a dramatic transformation-boss arena
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, premium grounded late-1990s belt-scrolling brawler environment, original clean-room identity and readable materials
+Composition/framing: wide 16:9 strict side view, horizontal symmetrical arena composition, broad unobstructed wet-stone gameplay platform occupying lower 40%, three readable depth lanes; fighters stand between y=455 and 665; tower, flames, pipes and cistern machinery remain in back and upper layers
+Lighting/mood: fierce orange fire rim light, deep cobalt night shadows, pale cyan emergency water jets and white-hot embers, climactic yet highly readable
+Constraints: environment only; no people, no dinosaurs, no boss, no characters, no text, no UI, no logos, no watermark, no copyrighted imagery, no open flame crossing the active floor, no central perspective corridor, no foreground obstruction
+```
+
+Cinder Matriarch generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent transformation-boss sprite action atlas for Wildland Strike Stage 5
+Primary request: one two-row action atlas showing the same original boss, CINDER MATRIARCH VEYRA. ROW 1 is a tall human fire marshal in scorched black-and-brass emergency armor, ember-red mantle, long furnace lance, sealed respirator and cyan cistern canisters. ROW 2 is her transformed obsidian ash-beast form, a massive low horned quadruped with cracked volcanic plates, glowing orange seams, the same cyan cistern hardware fused into its shoulders, and a clearly different silhouette. Both forms face LEFT.
+Pose order in each row: 1 idle, 2 locomotion, 3 primary strike, 4 special telegraph, 5 special attack, 6 rush or heavy attack, 7 hurt, 8 defeated
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade beat-em-up pixel art, strong readable silhouettes, detailed late-1990s sprite rendering, original clean-room design
+Composition/framing: exactly eight isolated cells per row and exactly two rows; one complete figure centered in every cell; consistent scale, foot baseline, orientation, lighting and identity within each form; generous transparent separation; all anatomy, weapons and effects contained in their own cells
+Constraints: transparent background mandatory; no scenery, floor, labels, text, UI, logos, watermark, copyrighted designs, extra characters, cropped anatomy, or shadows and effects crossing cell boundaries
+```
+
+The initial boss delivery was rejected for pose silhouettes joined across cell boundaries. A follow-up image edit requested stronger separation, unchanged character design, and a truly transparent background. That edit separated the poses but baked a pale checkerboard into the pixels instead of supplying usable alpha. The retained deterministic builder classifies and removes the near-neutral checker colors, bridges only small holes inside each isolated figure, finds the sixteen largest complete pose components, sorts them into two rows, and uniformly normalizes each pose onto exact transparent 320×320 cells. This makes the accepted 8×2 atlas reproducible without retaining any visual bridge or checkerboard contamination.
+
+Verification: all three Stage 5 scene resources validate and reference unique original backgrounds. The accepted boss sheet retains alpha, divides into sixteen exact cells, and presents distinct human and ash-beast phase rows. Exported 1280×720 environment and transformed-boss fixtures were inspected for active-lane readability, scene-boundary crop, silhouette scale, reinforcement occlusion, form change, hazard cues, and attack telegraphs. A boundary-framed environment fixture, occluding reinforcements, and an oversized inherited circular boss cue were rejected and corrected. Accepted fixtures average 120.00 and 120.08 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

@@ -9,6 +9,8 @@ enum SpecialKind {
 	MINE_DROP,
 	MAGNET_PULL,
 	FURNACE_BLAST,
+	EMBER_SURGE,
+	CISTERN_BURST,
 }
 
 @export var phase_id: StringName
@@ -28,6 +30,7 @@ enum SpecialKind {
 @export var dialogue_line := "You should have stayed outside."
 @export var reinforcement_enemy_id: StringName
 @export_range(0, 6, 1) var reinforcement_count := 0
+@export_range(-1, 15, 1) var sprite_row_override := -1
 @export var tint := Color.WHITE
 
 

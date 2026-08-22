@@ -19,7 +19,8 @@ const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
 const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
 const STAGE_4_DEFINITION = preload("res://data/stages/stage_4/stage_4.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION]
+const STAGE_5_DEFINITION = preload("res://data/stages/stage_5/stage_5.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),

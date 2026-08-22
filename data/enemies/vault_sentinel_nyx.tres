@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/vault_nyx_blades.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vault_sentinels_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/vault_barrier_pulse.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/vault_sync_crossfire.tres" id="6"]
+
+[sub_resource type="Resource" id="PhaseBlades"]
+script = ExtResource("4")
+phase_id = &"nyx_phase_blades"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("2")
+special_kind = 1
+speed_scale = 1.18
+telegraph_duration = 0.38
+special_cooldown = 1.05
+special_min_distance = 95.0
+special_max_distance = 620.0
+burst_speed_scale = 2.35
+burst_duration = 0.42
+recovery_duration = 0.42
+dialogue_speaker = "VAULT SENTINEL NYX"
+dialogue_line = "You crossed six locks to die at the seventh."
+sprite_row_override = 1
+tint = Color(1, 0.9, 0.8, 1)
+
+[sub_resource type="Resource" id="PhaseLockstep"]
+script = ExtResource("4")
+phase_id = &"nyx_lockstep"
+health_threshold_ratio = 0.48
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 12
+speed_scale = 1.38
+telegraph_duration = 0.34
+special_cooldown = 0.76
+special_min_distance = 70.0
+special_max_distance = 680.0
+recovery_duration = 0.38
+dialogue_speaker = "VAULT SENTINEL NYX"
+dialogue_line = "Crossfire live. Close every lane."
+sprite_row_override = 1
+tint = Color(1, 0.76, 0.52, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"vault_sentinel_nyx"
+is_boss = true
+rank = 2
+max_health = 270
+speed = 128.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 3000
+outgoing_damage_scale = 1.16
+stun_duration_scale = 0.48
+knockdown_armor = 2
+behavior_kind = 5
+attack_distance = 88.0
+lane_tolerance = 58.0
+vertical_approach_scale = 0.9
+boss_phases = Array[Resource]([SubResource("PhaseBlades"), SubResource("PhaseLockstep")])
+sprite_sheet = ExtResource("3")
+visual_kind = 0
+sprite_columns = 8
+sprite_rows = 2
+target_size = Vector2(236, 236)
+target_bottom_offset = 12.0
+actor_scale = Vector2(1.06, 1.06)
+shadow_half_extents = Vector2(50, 12)
+show_health_bar = true

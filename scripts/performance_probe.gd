@@ -22,6 +22,12 @@ func _ready() -> void:
 		if "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
+		elif "stage7_preview=2" in query_string:
+			scenario = "stage_7_vault_sentinels_preview"
+			call_deferred("_start_stage_7_preview", true)
+		elif "stage7_preview=1" in query_string:
+			scenario = "stage_7_underground_vault_preview"
+			call_deferred("_start_stage_7_preview", false)
 		elif "stage6_preview=2" in query_string:
 			scenario = "stage_6_titan_warden_preview"
 			call_deferred("_start_stage_6_preview", true)
@@ -829,6 +835,58 @@ func _start_stage_6_preview(show_boss: bool) -> void:
 		game.camera.position.x = 2100.0
 		game.encounter_director.completed = true
 		game.encounter_director._update_scene(game.player.position.x)
+	game.player.set_physics_process(false)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	game.set_process(false)
+
+
+func _start_stage_7_preview(show_boss: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_advance_campaign_stage"):
+		scenario = "stage_7_preview_setup_failed"
+		return
+	for _stage in range(6):
+		game._advance_campaign_stage()
+	if game.active_stage_definition.stage_id != &"stage_7":
+		scenario = "stage_7_preview_setup_failed"
+		return
+	if show_boss:
+		game.player.position = Vector2(3515.0, 580.0)
+		game.camera.position.x = 3600.0
+		game.encounter_director._update_scene(game.player.position.x)
+		game.encounter_director.force_start_encounter(4)
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if not String(enemy.definition.enemy_id).begins_with("vault_sentinel"):
+				enemy.queue_free()
+				continue
+			enemy.set_physics_process(false)
+			enemy.facing = -1
+			enemy.invulnerable = 0.0
+			enemy.take_hit(9999, Vector2(280.0, -30.0), true)
+			enemy.boss_transition_timer = 0.0
+			enemy.hurt_timer = 0.0
+			enemy.stun_timer = 0.0
+			enemy.knockdown_state = false
+			enemy.invulnerable = 999.0
+			enemy.behavior_phase = enemy.BehaviorPhase.TELEGRAPH
+			enemy.behavior_timer = 999.0
+			enemy.queue_redraw()
+		for hazard in get_tree().get_nodes_in_group("vault_hazards"):
+			hazard.set_physics_process(false)
+			hazard.vault_damage_active = false
+			hazard.vault_warning_active = true
+			hazard.queue_redraw()
+	else:
+		game.player.position = Vector2(2130.0, 585.0)
+		game.camera.position.x = 2100.0
+		game.encounter_director.completed = true
+		game.encounter_director._update_scene(game.player.position.x)
+		for hazard in get_tree().get_nodes_in_group("vault_hazards"):
+			hazard.set_physics_process(false)
+			hazard.vault_damage_active = false
+			hazard.vault_warning_active = true
+			hazard.queue_redraw()
 	game.player.set_physics_process(false)
 	game.hud.banner_time = 0.0
 	game.hud.dialogue_time = 0.0

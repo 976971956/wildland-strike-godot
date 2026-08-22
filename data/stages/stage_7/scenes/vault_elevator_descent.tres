@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/encounters/elevator_boarding.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/encounters/counterweight_ambush.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/elevator_deck_shift_east.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/elevator_deck_shift_west.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/vault_elevator_descent.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"vault_elevator_descent"
+display_name = "DESCENT ELEVATOR"
+transition_subtitle = "THE VAULT IS TWO KILOMETERS BELOW"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"subterranean_freight_elevator"
+visual_theme = 18
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

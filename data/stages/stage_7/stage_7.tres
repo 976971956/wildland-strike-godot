@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/scenes/vault_elevator_descent.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/scenes/cryogenic_vault_hall.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/scenes/twin_core_vault.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_7"
+stage_number = 7
+display_name = "THE SEVENTH LOCK"
+route_subtitle = "DESCENT TO THE TWIN CORE"
+clear_message = "THE LOWER ARCHIVE IS OPEN"
+map_position = Vector2(1120, 440)
+time_limit_seconds = 315.0
+enemy_health_scale = 1.52
+enemy_damage_scale = 1.25
+clear_bonus = 16000
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

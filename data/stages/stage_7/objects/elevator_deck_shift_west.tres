@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="VaultHazardData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/stages/vault_hazard_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+object_id = &"elevator_deck_shift_west"
+kind = 8
+position = Vector2(1080, 575)
+size = Vector2(520, 150)
+contact_damage = 8
+move_speed = 118.0
+initial_direction = -1
+hazard_kind = 0
+cycle_duration = 4.2
+warning_duration = 0.8
+active_duration = 0.9
+cycle_offset = 2.1

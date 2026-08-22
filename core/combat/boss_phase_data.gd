@@ -13,6 +13,8 @@ enum SpecialKind {
 	CISTERN_BURST,
 	SEISMIC_FRACTURE,
 	TITAN_CALL,
+	BARRIER_PULSE,
+	SYNC_CROSSFIRE,
 }
 
 @export var phase_id: StringName

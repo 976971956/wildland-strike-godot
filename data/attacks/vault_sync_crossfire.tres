@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/heavy.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"vault_sync_crossfire"
+sound_event = &"boss_phase"
+duration = 0.74
+hit_trigger_remaining = 0.36
+hitbox_shape = 2
+circle_radius = 88.0
+damage = 19
+knockback = Vector2(320, -82)
+launch = true
+impact_strength = 3
+impact_profile = ExtResource("2")
+priority = 4

@@ -36,6 +36,8 @@ const ENEMY_DEFINITIONS := {
 	"forge_regent": preload("res://data/enemies/forge_regent.tres"),
 	"cinder_matriarch": preload("res://data/enemies/cinder_matriarch.tres"),
 	"titan_warden": preload("res://data/enemies/titan_warden.tres"),
+	"vault_sentinel_orin": preload("res://data/enemies/vault_sentinel_orin.tres"),
+	"vault_sentinel_nyx": preload("res://data/enemies/vault_sentinel_nyx.tres"),
 }
 
 enum BehaviorPhase {
@@ -672,6 +674,20 @@ func _execute_boss_special() -> void:
 		_record_behavior_event(&"boss_titan_call")
 		_begin_recovery()
 		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.BARRIER_PULSE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_vault_energy_lanes(self, current_attack.damage)
+		_record_behavior_event(&"boss_barrier_pulse")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.SYNC_CROSSFIRE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_vault_energy_lanes(self, current_attack.damage, true)
+		_record_behavior_event(&"boss_sync_crossfire")
+		_begin_recovery()
+		return
 	_start_attack()
 	_record_behavior_event(&"boss_slam")
 	_begin_recovery()
@@ -955,7 +971,7 @@ func take_hit(
 		velocity = knockback
 	if definition.is_boss:
 		_try_advance_boss_phase()
-		game.boss_health_changed(health, max_health)
+		game.boss_health_changed(health, max_health, self)
 	if health <= 0:
 		_die(knockback)
 	queue_redraw()
@@ -1013,7 +1029,7 @@ func take_grab_strike(amount: int, force: Vector2) -> void:
 	recoil_offset = signf(force.x) * 8.0
 	impact_squash = 0.18
 	if definition.is_boss:
-		game.boss_health_changed(health, max_health)
+		game.boss_health_changed(health, max_health, self)
 	if health <= 0:
 		_die(force)
 	else:
@@ -1109,7 +1125,7 @@ func _apply_environment_collision_damage(amount: int, force: Vector2) -> void:
 	impact_squash = 0.28
 	if definition.is_boss:
 		_try_advance_boss_phase()
-		game.boss_health_changed(health, max_health)
+		game.boss_health_changed(health, max_health, self)
 	if health <= 0:
 		_die(force)
 	queue_redraw()
@@ -1222,7 +1238,13 @@ func _draw_behavior_cue() -> void:
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 		draw_line(Vector2(facing * 18.0, -48.0), Vector2(facing * 150.0, -48.0), cue_color, 3.0)
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
-		if definition.visual_kind == EnemyDefinitionScript.VisualKind.VEHICLE:
+		if String(definition.enemy_id).begins_with("vault_sentinel"):
+			var energy_color := Color(1.0, 0.58, 0.12, pulse) if "nyx" in String(definition.enemy_id) else Color(0.28, 0.92, 1.0, pulse)
+			for lane_offset in [-42.0, 0.0, 42.0]:
+				draw_line(Vector2(facing * 46.0, lane_offset), Vector2(facing * 225.0, lane_offset), energy_color, 4.0)
+			if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.SYNC_CROSSFIRE:
+				draw_arc(Vector2.ZERO, 72.0, 0.0, TAU, 30, energy_color, 5.0)
+		elif definition.visual_kind == EnemyDefinitionScript.VisualKind.VEHICLE:
 			draw_line(Vector2(facing * 72.0, -10.0), Vector2(facing * 245.0, -10.0), cue_color, 6.0)
 			for index in range(3):
 				var chevron_x: float = facing * (118.0 + index * 48.0)
@@ -1282,6 +1304,14 @@ func _draw_creature_state_cue() -> void:
 
 
 func _draw_boss_overlay() -> void:
+	if String(definition.enemy_id).begins_with("vault_sentinel"):
+		var vault_alpha := 0.3 + sin(Time.get_ticks_msec() * 0.02) * 0.12
+		var vault_color := Color(1.0, 0.52, 0.1, vault_alpha) if "nyx" in String(definition.enemy_id) else Color(0.2, 0.9, 1.0, vault_alpha)
+		draw_arc(Vector2(0.0, -82.0), 48.0 + boss_phase_index * 7.0, -PI, 0.0, 24, vault_color, 6.0)
+		if boss_phase_index >= 1:
+			for side in [-1.0, 1.0]:
+				draw_line(Vector2(side * 18.0, -54.0), Vector2(side * 58.0, -108.0), vault_color, 4.0)
+		return
 	if definition.visual_kind == EnemyDefinitionScript.VisualKind.VEHICLE:
 		var exhaust_pulse := 0.4 + sin(Time.get_ticks_msec() * 0.018) * 0.16
 		for index in range(4):

@@ -45,6 +45,7 @@ const SUITES := [
 	{"name": "stage_4_industrial_foundry", "path": "res://tests/suites/stage_4_industrial_foundry_test.gd"},
 	{"name": "stage_5_burning_settlement", "path": "res://tests/suites/stage_5_burning_settlement_test.gd"},
 	{"name": "stage_6_jungle_mine", "path": "res://tests/suites/stage_6_jungle_mine_test.gd"},
+	{"name": "stage_7_underground_vault", "path": "res://tests/suites/stage_7_underground_vault_test.gd"},
 	{"name": "campaign_flow", "path": "res://tests/suites/campaign_flow_test.gd"},
 ]
 

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/encounters/vault_sentinels_showdown.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/twin_core_laser.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/twin_core_cryo_vent.tres" id="4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/twin_core_vault.png" id="5"]
+[resource]
+script = ExtResource("1")
+scene_id = &"twin_core_vault"
+display_name = "TWIN CORE VAULT"
+transition_subtitle = "TWO SENTINELS HOLD THE FINAL LOCK"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"twin_core_security_vault"
+visual_theme = 20
+background_texture = ExtResource("5")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("4")])

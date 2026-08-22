@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/medium.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"vault_nyx_blades"
+sound_event = &"enemy_swing"
+duration = 0.4
+hit_trigger_remaining = 0.2
+hitbox_shape = 1
+box_center = Vector2(48, -24)
+box_half_extents = Vector2(69, 35)
+damage = 17
+knockback = Vector2(270, -18)
+impact_strength = 2
+impact_profile = ExtResource("2")
+priority = 3
+counter_hit_damage_bonus = 5
+counter_hit_knockback_scale = 1.2
+counter_hit_stun_bonus = 0.1

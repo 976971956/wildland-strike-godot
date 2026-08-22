@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/waves/counterweight_ambush.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"counterweight_ambush"
+trigger_x = 1060.0
+origin_x = 1120.0
+arena_left = 820.0
+arena_right = 1360.0
+unlock_right = 1400.0
+banner_title = "COUNTERWEIGHT BREACH"
+banner_subtitle = "KEEP YOUR FOOTING"
+reward_id = &"score_gold"
+waves = Array[Resource]([ExtResource("2")])

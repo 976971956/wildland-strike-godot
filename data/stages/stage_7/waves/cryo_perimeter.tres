@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+[sub_resource type="Resource" id="A"]
+script = ExtResource("2")
+enemy_id = &"elite_bombardier"
+offset = Vector2(110, 520)
+[sub_resource type="Resource" id="B"]
+script = ExtResource("2")
+enemy_id = &"shield_guard"
+offset = Vector2(330, 610)
+[sub_resource type="Resource" id="C"]
+script = ExtResource("2")
+enemy_id = &"ankylosaur"
+offset = Vector2(520, 555)
+[resource]
+script = ExtResource("1")
+wave_id = &"cryo_perimeter"
+spawns = Array[Resource]([SubResource("A"), SubResource("B"), SubResource("C")])

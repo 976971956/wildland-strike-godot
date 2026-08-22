@@ -6,6 +6,7 @@ const EnvironmentObjectDataScript = preload("res://core/stages/environment_objec
 const IndustrialHazardDataScript = preload("res://core/stages/industrial_hazard_data.gd")
 const DisasterHazardDataScript = preload("res://core/stages/disaster_hazard_data.gd")
 const JungleHazardDataScript = preload("res://core/stages/jungle_hazard_data.gd")
+const VaultHazardDataScript = preload("res://core/stages/vault_hazard_data.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -35,6 +36,9 @@ var disaster_damage_active := false
 var jungle_cycle_time := 0.0
 var jungle_warning_active := false
 var jungle_damage_active := false
+var vault_cycle_time := 0.0
+var vault_warning_active := false
+var vault_damage_active := false
 
 
 func setup(p_game: Node, p_definition: Resource) -> void:
@@ -62,6 +66,9 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
 			add_to_group("jungle_hazards")
 			jungle_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
+		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
+			add_to_group("vault_hazards")
+			vault_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -106,6 +113,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
 		_tick_jungle_hazard(delta)
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
+		_tick_vault_hazard(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -448,6 +459,40 @@ func _tick_jungle_hazard(delta: float) -> void:
 			game.play_sfx(&"heavy" if definition.hazard_kind == JungleHazardDataScript.HazardKind.TITAN_STOMP else &"industrial_impact")
 
 
+func _tick_vault_hazard(delta: float) -> void:
+	for actor_id in hazard_actor_cooldowns.keys().duplicate():
+		var remaining := maxf(0.0, float(hazard_actor_cooldowns[actor_id]) - delta)
+		if remaining <= 0.0:
+			hazard_actor_cooldowns.erase(actor_id)
+		else:
+			hazard_actor_cooldowns[actor_id] = remaining
+	vault_cycle_time = fmod(vault_cycle_time + delta, definition.cycle_duration)
+	var active_start: float = definition.cycle_duration - definition.active_duration
+	vault_warning_active = vault_cycle_time >= active_start - definition.warning_duration and vault_cycle_time < active_start
+	vault_damage_active = vault_cycle_time >= active_start
+	if not vault_damage_active:
+		return
+	for actor in _industrial_targets():
+		if not _overlaps_actor(actor):
+			continue
+		if definition.hazard_kind == VaultHazardDataScript.HazardKind.DECK_SHIFT:
+			actor.position.x += definition.initial_direction * definition.move_speed * delta
+		elif definition.hazard_kind == VaultHazardDataScript.HazardKind.CRYO_VENT:
+			actor.velocity *= definition.movement_scale
+		if hazard_actor_cooldowns.has(actor.get_instance_id()):
+			continue
+		var knockback_direction: int = definition.initial_direction if definition.hazard_kind == VaultHazardDataScript.HazardKind.DECK_SHIFT else (1 if actor.position.x >= position.x else -1)
+		var horizontal_force := 300.0 if definition.hazard_kind == VaultHazardDataScript.HazardKind.SECURITY_LASER else 185.0
+		var knockback := Vector2(knockback_direction * horizontal_force, -58.0)
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, knockback, false, 0.06, true, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, knockback, true, false, 0.06, true)
+		hazard_actor_cooldowns[actor.get_instance_id()] = 0.82
+		if game.has_method("play_sfx"):
+			game.play_sfx(&"industrial_impact")
+
+
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
@@ -461,6 +506,8 @@ func _draw() -> void:
 		_draw_disaster_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD:
 		_draw_jungle_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
+		_draw_vault_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -648,6 +695,35 @@ func _draw_jungle_hazard() -> void:
 			draw_colored_polygon(PackedVector2Array([Vector2(-half.x * 0.58, -76.0), Vector2(half.x * 0.48, -76.0), Vector2(half.x * 0.82, -8.0), Vector2(-half.x * 0.76, -8.0)]), Color("#5f7d4a"))
 			for scale_index in range(5):
 				draw_line(Vector2(-half.x * 0.28, -278.0 + scale_index * 42.0), Vector2(half.x * 0.25, -265.0 + scale_index * 42.0), Color(0.25, 0.36, 0.22, 0.72), 5.0)
+
+
+func _draw_vault_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	var pulse := 0.62 + sin(vault_cycle_time * 16.0) * 0.16
+	var cue_alpha := pulse if vault_warning_active else (0.78 if vault_damage_active else 0.2)
+	if definition.hazard_kind == VaultHazardDataScript.HazardKind.DECK_SHIFT:
+		draw_rect(Rect2(-half.x, -half.y * 0.42, definition.size.x, half.y * 0.84), Color(0.08, 0.11, 0.15, 0.26))
+		draw_rect(Rect2(-half.x, -half.y * 0.42, definition.size.x, half.y * 0.84), Color(1.0, 0.58, 0.12, cue_alpha), false, 3.0)
+		var travel := fmod(vault_cycle_time * definition.move_speed, 64.0)
+		for index in range(8):
+			var arrow_x := -half.x + fmod(index * 70.0 + travel, definition.size.x)
+			draw_polyline(PackedVector2Array([Vector2(arrow_x - definition.initial_direction * 15.0, -10.0), Vector2(arrow_x, 0.0), Vector2(arrow_x - definition.initial_direction * 15.0, 10.0)]), Color(1.0, 0.66, 0.16, cue_alpha), 4.0)
+	elif definition.hazard_kind == VaultHazardDataScript.HazardKind.SECURITY_LASER:
+		draw_rect(Rect2(-half.x, -half.y, definition.size.x, definition.size.y), Color(0.12, 0.62, 0.82, cue_alpha * (0.24 if vault_damage_active else 0.08)))
+		for line_index in range(3):
+			var line_y: float = -half.y + (line_index + 1) * definition.size.y / 4.0
+			draw_line(Vector2(-half.x, line_y), Vector2(half.x, line_y), Color(0.28, 0.94, 1.0, cue_alpha), 6.0 if vault_damage_active else 3.0)
+		for side in [-1.0, 1.0]:
+			draw_rect(Rect2(side * half.x - 9.0, -half.y - 18.0, 18.0, definition.size.y + 36.0), Color("#323b45"))
+			draw_circle(Vector2(side * half.x, 0.0), 8.0, Color(1.0, 0.2, 0.08, cue_alpha))
+	else:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.46, Color(0.34, 0.82, 1.0, cue_alpha * 0.14))
+		draw_arc(Vector2.ZERO, half.x * 0.9, 0.0, TAU, 28, Color(0.5, 0.92, 1.0, cue_alpha), 3.0)
+		if vault_warning_active or vault_damage_active:
+			for index in range(10):
+				var rise := fmod(vault_cycle_time * (20.0 + index) + index * 17.0, maxf(definition.size.y, 1.0))
+				var center := Vector2(-half.x * 0.78 + index * half.x * 0.17 + sin(vault_cycle_time + index) * 7.0, half.y * 0.35 - rise)
+				draw_circle(center, 6.0 + index % 3 * 3.0, Color(0.62, 0.95, 1.0, 0.48 if vault_damage_active else 0.22))
 
 
 func _draw_hazard() -> void:

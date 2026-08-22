@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="VaultHazardData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/stages/vault_hazard_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+object_id = &"vault_hall_laser"
+kind = 8
+position = Vector2(1780, 570)
+size = Vector2(360, 132)
+contact_damage = 18
+hazard_kind = 1
+cycle_duration = 3.2
+warning_duration = 0.82
+active_duration = 0.42
+cycle_offset = 0.4

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/encounters/cryo_perimeter.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/encounters/seventh_lock.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/vault_hall_laser.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/objects/vault_hall_cryo_vent.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/cryogenic_vault_hall.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"cryogenic_vault_hall"
+display_name = "CRYOGENIC ARCHIVE"
+transition_subtitle = "SECURITY GRID HAS GONE LIVE"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"sealed_cryogenic_archive"
+visual_theme = 19
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

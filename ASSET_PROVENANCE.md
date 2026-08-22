@@ -496,3 +496,71 @@ Constraints: genuine transparent background mandatory; exactly one cart only; no
 Both initial sprite deliveries retained unusable dark backgrounds. Isolation edits preserved the authored figures but baked checkerboard pixels instead of real alpha. The deterministic builder removes only bright neutral checker regions, isolates the largest complete component in each fixed boss cell, uniformly normalizes eight poses onto exact transparent 320×320 cells, and normalizes the cart onto a transparent 256×160 canvas. Two procedural cart drafts were rejected during Web review; the accepted generated cart is the runtime asset.
 
 Verification: all three Stage 6 scene resources validate and reference unique original backgrounds. Titan Warden's accepted atlas retains alpha and divides into eight exact cells; the cart retains alpha and remains fully inside its runtime canvas. Exported 1280×720 environment and phase-two boss fixtures were inspected for gameplay-lane readability, cart scale/materials, silhouette scale, crop loss, footprint warnings, seismic-fracture sequencing, reinforcement visibility, and phase telegraphs. Accepted fixtures average 120.00 and 120.006 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
+
+## 2026-08-22 — Underground vault environments and Vault Sentinels
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_vault_sentinel_assets.gd` fixed-cell connected-component isolation, nearest-neighbor normalization, and exact transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/vault_elevator_descent.png`: 1672×941 RGB; SHA-256 `ee913514d5a86bea6c1731ae9bebaaba4404163918e99d66cc52ce21b38a6195`.
+- `assets/backgrounds/cryogenic_vault_hall.png`: 1672×941 RGB; SHA-256 `bcc72128430e770090db50d2aeb7acab95fa5e6863dad5fa487efbc6098b786a`.
+- `assets/backgrounds/twin_core_vault.png`: 1672×941 RGB; SHA-256 `1ee304444abc6597839ac69123df67b2ce49a68be4ec22943f3329b7cf4f12a6`.
+- Archived paired-boss source: `assets/sprites/vault_sentinels_source.png`; 1774×887 RGBA; SHA-256 `3ff05f5dd6bc8098e7f2225370ad47d5604a4ac30bc98cd16c12037f790df762`.
+- `assets/sprites/vault_sentinels_sheet.png`: 2560×640 RGBA, 8×2; SHA-256 `d53b24ea2410414817937780e8ed9aad51b2bb794622323a74390565d32552e6`.
+
+The archived source is excluded from Web and iOS runtime exports.
+
+Vault Elevator Descent generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 7, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the interior of a colossal armored freight elevator descending through a subterranean basalt shaft, thick side rails, huge counterweights, segmented blast doors, maintenance gantries and moving work lights only behind the combat platform; distant cyan mineral seams reveal great depth
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed steel elevator gameplay deck occupying lower 40%, three readable depth layers, horizon high; fighters stand between y=455 and 665; cables, machinery and gantries remain behind guardrails
+Lighting/mood: cold teal shaft shadows, amber maintenance lamps, restrained red descent warnings, strong readable silhouettes and a sense of vertical motion
+Constraints: environment only; no people, no fighters, no creatures, no active vehicle, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing-point corridor, no cables or machinery crossing the active combat lane, no foreground obstruction
+```
+
+Cryogenic Vault Hall generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 7, a serious 1990s 2.5D arcade beat-em-up
+Primary request: a sealed subterranean cryogenic vault transit hall built into ancient basalt, enormous original circular security doors, frost-covered specimen cylinders containing only abstract mineral samples, armored cargo rails, decontamination arches and dormant security emitters behind thick barriers
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed frost-dusted metal gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; vault machinery and cylinders remain in back and upper layers
+Lighting/mood: icy cyan and desaturated violet shadows, warm amber floor safety lights, restrained red security pulses, sterile and tense but highly readable
+Constraints: environment only; no people, no living creatures, no recognizable fossils, no characters, no text, no UI, no logos, no watermark, no copyrighted imagery, no central perspective corridor, no foreground glass or machinery obscuring fighters
+```
+
+Twin Core Vault generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production paired-boss arena background for Wildland Strike Stage 7, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the Twin Core Vault, an immense symmetrical underground security chamber around two original suspended reactor prisms, paired armored control thrones, interlocking circular blast-door mechanisms, segmented energy conduits and heavy elevator locks behind reinforced rails
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, premium grounded late-1990s belt-scrolling brawler environment, original clean-room identity and readable metal/crystal materials
+Composition/framing: wide 16:9 strict side view, horizontal symmetrical arena composition, broad unobstructed dark steel gameplay platform occupying lower 40%, three readable depth lanes; two bosses and fighters stand between y=455 and 665; all cores, doors and machinery remain behind or above the platform
+Lighting/mood: opposing cyan and amber reactor light, deep indigo shadows, restrained red lock alerts, climactic paired-duel atmosphere with clear floor readability
+Constraints: environment only; no people, no bosses, no characters, no creatures, no text, no UI, no logos, no watermark, no copyrighted imagery, no beam crossing the active floor, no central perspective corridor, no foreground obstruction
+```
+
+Vault Sentinels generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent paired-boss sprite action atlas for Wildland Strike Stage 7
+Primary request: exactly TWO ROWS of EIGHT isolated equal-width cells. ROW 1 shows the same original boss VAULT SENTINEL ORIN, a towering broad male security commander in graphite-and-brass powered armor with a large angular cyan barrier gauntlet, compact shoulder projector and shaved head, strict side profile facing LEFT. ROW 2 shows the same original boss VAULT SENTINEL NYX, a tall athletic female security commander in dark violet-and-silver segmented armor with twin short amber phase blades, braided high ponytail and compact hip emitters, strict side profile facing LEFT.
+Pose order in each row: 1 combat idle, 2 locomotion, 3 primary strike, 4 synchronized-attack telegraph, 5 energy attack, 6 charging heavy attack, 7 hurt stagger, 8 defeated collapse
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade beat-em-up pixel art, strong distinct silhouettes, detailed premium late-1990s sprite rendering, original clean-room designs
+Composition/framing: very wide two-row landscape atlas; exactly one complete full-body boss centered per cell; consistent individual scale, foot baseline, orientation, lighting, identity and costume within each row; generous genuinely transparent gutters; all limbs, weapons, shields and close effects remain within their own cell
+Constraints: genuine transparent background mandatory; exactly 8 cells per row and exactly 2 rows; no scenery, floor, labels, text, UI, logos, watermark, copyrighted designs, vehicles, creatures, detached distant effects, shadows crossing cells, cropped anatomy, extra characters
+```
+
+The first deterministic pass trimmed each row globally and then sliced it evenly; Web inspection rejected the result because pose widths were not mathematically uniform and neighboring fragments crossed cell boundaries. The accepted builder instead divides the source into sixteen fixed cells, retains only the largest connected opaque figure inside each cell, and uniformly centers it on a transparent 320×320 runtime cell. This intentionally removes detached distant effect fragments while preserving every complete character silhouette.
+
+Verification: all three Stage 7 scene resources validate and reference unique original backgrounds. The accepted paired-boss atlas retains alpha and divides into sixteen exact cells. Exported 1280×720 environment and paired-boss fixtures were inspected for active-lane readability, silhouette scale, crop loss, hazard occlusion, combined-HUD correctness, synchronized telegraphs, and dual-boss composition. A clipped Nyx placement and an overlapping cryogenic cue were rejected and corrected. Accepted fixtures average 120.1547 and 120.0881 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

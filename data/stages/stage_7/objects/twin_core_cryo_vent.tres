@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="VaultHazardData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/stages/vault_hazard_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+object_id = &"twin_core_cryo_vent"
+kind = 8
+position = Vector2(3010, 610)
+size = Vector2(190, 112)
+contact_damage = 9
+hazard_kind = 2
+cycle_duration = 4.4
+warning_duration = 0.75
+active_duration = 0.8
+cycle_offset = 2.2
+movement_scale = 0.56

@@ -11,6 +11,7 @@ const HighwayVehicleScript = preload("res://scripts/highway_vehicle.gd")
 const RoadMineScript = preload("res://scripts/road_mine.gd")
 const FurnaceWaveScript = preload("res://scripts/furnace_wave.gd")
 const SeismicFractureScript = preload("res://scripts/seismic_fracture.gd")
+const VaultEnergyLaneScript = preload("res://scripts/vault_energy_lane.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
@@ -22,7 +23,8 @@ const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
 const STAGE_4_DEFINITION = preload("res://data/stages/stage_4/stage_4.tres")
 const STAGE_5_DEFINITION = preload("res://data/stages/stage_5/stage_5.tres")
 const STAGE_6_DEFINITION = preload("res://data/stages/stage_6/stage_6.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION, STAGE_6_DEFINITION]
+const STAGE_7_DEFINITION = preload("res://data/stages/stage_7/stage_7.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION, STAGE_6_DEFINITION, STAGE_7_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -76,6 +78,8 @@ var last_hit_stop_duration := 0.0
 var last_haptic_duration_ms := 0
 var last_haptic_strength := 0.0
 var boss_phase_history: Array[StringName] = []
+var boss_health_ledger := {}
+var boss_node_ledger := {}
 var victory_phase := &"none"
 var victory_timer := 0.0
 var victory_time_bonus := 0
@@ -770,6 +774,30 @@ func spawn_seismic_fractures(source_actor: Node, damage: int, both_directions :=
 	return fractures
 
 
+func spawn_vault_energy_lanes(source_actor: Node, damage: int, crossfire := false) -> Array[Node]:
+	var lanes: Array[Node] = []
+	var lane_positions: Array[Vector2] = []
+	if crossfire:
+		var center_x: float = source_actor.position.x
+		for candidate in get_tree().get_nodes_in_group("enemies"):
+			if candidate != source_actor and is_instance_valid(candidate) and not candidate.is_defeated and String(candidate.definition.enemy_id).begins_with("vault_sentinel"):
+				center_x = (center_x + candidate.position.x) * 0.5
+				break
+		for lane_y in [492.0, 540.0, 588.0, 636.0]:
+			lane_positions.append(Vector2(center_x, lane_y))
+	else:
+		for lane_offset in [-54.0, 0.0, 54.0]:
+			lane_positions.append(source_actor.position + Vector2(source_actor.facing * 178.0, lane_offset))
+	var color := Color(1.0, 0.58, 0.12, 1.0) if "nyx" in String(source_actor.definition.enemy_id) else Color(0.28, 0.92, 1.0, 1.0)
+	for lane_position in lane_positions:
+		var lane := VaultEnergyLaneScript.new()
+		actors.add_child(lane)
+		lane.setup(self, source_actor, lane_position, damage, color)
+		lanes.append(lane)
+	play_sfx(&"boss_phase")
+	return lanes
+
+
 func _create_stage_objects() -> void:
 	for scene in active_stage_definition.scenes:
 		for object_definition in scene.environment_objects:
@@ -836,14 +864,27 @@ func weapon_changed(weapon_definition: Resource, ammo: int, source_player: Node 
 		return
 	hud.set_weapon(weapon_definition.display_name, ammo)
 
-func boss_health_changed(current: int, maximum: int) -> void:
-	hud.set_boss_health(current,maximum)
+func boss_health_changed(current: int, maximum: int, boss: Node = null) -> void:
+	if boss == null:
+		hud.set_boss_health(current, maximum)
+		return
+	var boss_id := boss.get_instance_id()
+	boss_health_ledger[boss_id] = {"current": maxi(current, 0), "maximum": maximum}
+	boss_node_ledger[boss_id] = boss
+	_sync_boss_health()
 
 
 func boss_spawned(boss: Node, phase: Resource) -> void:
-	boss_phase_history = [phase.phase_id]
-	hud.set_boss_identity(phase.dialogue_speaker, 1)
-	hud.set_boss_health(boss.health, boss.max_health)
+	_prune_boss_ledger()
+	if boss_health_ledger.is_empty():
+		boss_phase_history = [phase.phase_id]
+	else:
+		boss_phase_history.append(phase.phase_id)
+	var boss_id := boss.get_instance_id()
+	boss_health_ledger[boss_id] = {"current": boss.health, "maximum": boss.max_health}
+	boss_node_ledger[boss_id] = boss
+	_sync_boss_identity(1, phase.dialogue_speaker)
+	_sync_boss_health()
 	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
 	music_director.play_cue(MusicDirectorScript.Cue.BOSS)
 	play_sfx("boss_warning")
@@ -851,7 +892,7 @@ func boss_spawned(boss: Node, phase: Resource) -> void:
 
 func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
 	boss_phase_history.append(phase.phase_id)
-	hud.set_boss_identity(phase.dialogue_speaker, phase_index + 1)
+	_sync_boss_identity(phase_index + 1, phase.dialogue_speaker)
 	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
 	play_sfx("boss_phase")
 	if (
@@ -865,6 +906,28 @@ func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
 		var side := -1.0 if index % 2 == 0 else 1.0
 		var spawn_position: Vector2 = boss.position + Vector2(side * (180.0 + index * 45.0), -55.0 + index * 110.0)
 		spawn_enemy(spawn_position, String(phase.reinforcement_enemy_id))
+
+
+func _prune_boss_ledger() -> void:
+	for boss_id in boss_node_ledger.keys().duplicate():
+		var boss: Node = boss_node_ledger[boss_id]
+		if not is_instance_valid(boss):
+			boss_node_ledger.erase(boss_id)
+			boss_health_ledger.erase(boss_id)
+
+
+func _sync_boss_health() -> void:
+	var current_total := 0
+	var maximum_total := 0
+	for entry in boss_health_ledger.values():
+		current_total += int(entry.current)
+		maximum_total += int(entry.maximum)
+	hud.set_boss_health(current_total, maximum_total)
+
+
+func _sync_boss_identity(phase_number: int, fallback_name: String) -> void:
+	var identity := "VAULT SENTINELS" if boss_health_ledger.size() > 1 else fallback_name
+	hud.set_boss_identity(identity, phase_number)
 
 
 func _sync_hud_stage_progress() -> void:
@@ -1038,6 +1101,8 @@ func _advance_campaign_stage() -> void:
 		return
 	campaign_stage_index += 1
 	active_stage_definition = CAMPAIGN_STAGE_DEFINITIONS[campaign_stage_index]
+	boss_health_ledger.clear()
+	boss_node_ledger.clear()
 	if is_instance_valid(highway_vehicle):
 		highway_vehicle.release_players()
 	highway_vehicle = null

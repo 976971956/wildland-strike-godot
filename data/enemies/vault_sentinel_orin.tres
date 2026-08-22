@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/vault_orin_bash.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vault_sentinels_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/vault_barrier_pulse.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/vault_sync_crossfire.tres" id="6"]
+
+[sub_resource type="Resource" id="PhaseAegis"]
+script = ExtResource("4")
+phase_id = &"orin_aegis"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 11
+speed_scale = 0.94
+telegraph_duration = 0.58
+special_cooldown = 1.36
+special_min_distance = 90.0
+special_max_distance = 560.0
+recovery_duration = 0.62
+dialogue_speaker = "VAULT SENTINEL ORIN"
+dialogue_line = "The lower archive remains sealed."
+sprite_row_override = 0
+tint = Color(0.9, 0.98, 1, 1)
+
+[sub_resource type="Resource" id="PhaseLockstep"]
+script = ExtResource("4")
+phase_id = &"orin_lockstep"
+health_threshold_ratio = 0.48
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 12
+speed_scale = 1.16
+telegraph_duration = 0.42
+special_cooldown = 0.92
+special_min_distance = 70.0
+special_max_distance = 680.0
+recovery_duration = 0.46
+dialogue_speaker = "VAULT SENTINEL ORIN"
+dialogue_line = "Nyx. Lockstep pattern. No gaps."
+sprite_row_override = 0
+tint = Color(0.74, 0.94, 1, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"vault_sentinel_orin"
+is_boss = true
+rank = 2
+max_health = 310
+speed = 102.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 3000
+outgoing_damage_scale = 1.18
+stun_duration_scale = 0.5
+knockdown_armor = 3
+behavior_kind = 5
+attack_distance = 80.0
+lane_tolerance = 62.0
+vertical_approach_scale = 0.76
+boss_phases = Array[Resource]([SubResource("PhaseAegis"), SubResource("PhaseLockstep")])
+sprite_sheet = ExtResource("3")
+visual_kind = 3
+sprite_columns = 8
+sprite_rows = 2
+target_size = Vector2(250, 250)
+target_bottom_offset = 14.0
+actor_scale = Vector2(1.12, 1.12)
+shadow_half_extents = Vector2(57, 13)
+show_health_bar = true

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_7/waves/vault_lock.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"seventh_lock"
+trigger_x = 2360.0
+origin_x = 2440.0
+arena_left = 2180.0
+arena_right = 2750.0
+unlock_right = 2800.0
+banner_title = "SEVENTH LOCK"
+banner_subtitle = "BREAK THE SECURITY CORDON"
+reward_id = &"score_gem"
+waves = Array[Resource]([ExtResource("2")])

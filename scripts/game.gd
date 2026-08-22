@@ -9,6 +9,8 @@ const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
+const LocalPlayerRegistryScript = preload("res://core/input/local_player_registry.gd")
+const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -23,6 +25,8 @@ const HERO_DEFINITIONS := [
 @onready var world_art: Node2D = $WorldArt
 
 var player
+var players: Array[Node] = []
+var local_player_registry = LocalPlayerRegistryScript.new()
 var stage_limit := 1080.0
 var encounter_director: Node
 var music_director: Node
@@ -63,8 +67,18 @@ var victory_time_bonus := 0
 var victory_life_bonus := 0
 var victory_clear_bonus := 0
 var victory_bonus_applied := false
+var shared_camera_zoom := 1.0
+
+const PLAYER_SPAWN_OFFSETS := [
+	Vector2(0.0, 0.0),
+	Vector2(-72.0, -58.0),
+	Vector2(-72.0, 58.0),
+]
+const MIN_SAFE_SPAWN_DISTANCE := 70.0
+const MIN_SHARED_CAMERA_ZOOM := 0.72
 
 func _ready() -> void:
+	local_player_registry.reset_with_keyboard(selected_hero_index)
 	encounter_director = EncounterDirectorScript.new()
 	add_child(encounter_director)
 	encounter_director.configure(self, STAGE_1_DEFINITION)
@@ -84,6 +98,7 @@ func _ready() -> void:
 			sfx_voice_priorities.append(0)
 			sfx_voice_serials.append(0)
 	_create_player()
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_create_stage_objects()
 	stage_time_remaining = STAGE_1_DEFINITION.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
@@ -93,23 +108,37 @@ func _ready() -> void:
 	set_process(true)
 
 func _create_player() -> void:
-	player = PlayerScript.new()
-	actors.add_child(player)
-	player.position = Vector2(260,570)
-	player.setup(self, selected_hero())
-	player.health_changed.connect(_on_player_health)
-	player.defeated.connect(_on_player_defeated)
+	var primary_slot = local_player_registry.slot_at(0)
+	player = _create_local_player(primary_slot)
 	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
 	hud.set_player_health(player.health, player.max_health)
 
+
+func _create_local_player(slot) -> Node:
+	if slot == null:
+		return null
+	var fighter := PlayerScript.new()
+	actors.add_child(fighter)
+	fighter.position = _find_safe_player_spawn(slot.slot_index)
+	var source := DeviceInputSourceScript.new()
+	source.configure(slot.device_id, slot.device_id == -1 and DisplayServer.is_touchscreen_available())
+	var hero: Resource = HERO_DEFINITIONS[posmod(slot.hero_index, HERO_DEFINITIONS.size())]
+	fighter.setup(self, hero, slot.slot_index, slot.device_id, source)
+	fighter.health_changed.connect(_on_local_player_health.bind(fighter))
+	fighter.defeated.connect(_on_local_player_defeated.bind(fighter))
+	fighter.set_physics_process(state == "playing")
+	players.append(fighter)
+	players.sort_custom(func(a, b): return a.local_slot_index < b.local_slot_index)
+	return fighter
+
 func _process(delta: float) -> void:
 	if state == "title":
-		player.set_physics_process(false)
+		_set_local_players_physics(false)
 		if Input.is_action_just_pressed("start"):
 			_open_character_select()
 		return
 	if state == "select":
-		player.set_physics_process(false)
+		_set_local_players_physics(false)
 		if Input.is_action_just_pressed("move_left"):
 			shift_hero_selection(-1)
 		elif Input.is_action_just_pressed("move_right"):
@@ -126,29 +155,34 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("start"):
 			get_tree().reload_current_scene()
 		return
-	if not is_instance_valid(player):
+	var active_players := get_active_players()
+	if active_players.is_empty():
 		return
 	stage_time_remaining = maxf(0.0, stage_time_remaining - delta)
 	hud.set_stage_time(stage_time_remaining)
 	if stage_time_remaining <= 0.0:
 		_stage_timeout()
 		return
-	var half_view_width := get_viewport_rect().size.x * 0.5
-	var target_x: float = clampf(player.position.x + 280.0, half_view_width, 4200.0 - half_view_width)
-	camera.position.x = target_x
+	_update_shared_camera(delta)
 	if shake_time > 0.0:
 		shake_time -= delta
 		camera.offset = Vector2(randf_range(-shake_strength, shake_strength), randf_range(-shake_strength * 0.68, shake_strength * 0.68))
 	else:
 		camera.offset = camera.offset.move_toward(Vector2.ZERO,delta*80.0)
 		shake_strength = move_toward(shake_strength, 0.0, delta * 90.0)
-	encounter_director.tick(delta, player.position.x)
+	encounter_director.tick(delta, lead_player_x())
 	_sync_hud_stage_progress()
 
 func _start_game() -> void:
-	player.apply_hero_definition(selected_hero())
+	local_player_registry.set_hero(0, selected_hero_index)
+	for fighter in players:
+		if not is_instance_valid(fighter):
+			continue
+		var slot = local_player_registry.slot_at(fighter.local_slot_index)
+		if slot != null:
+			fighter.apply_hero_definition(HERO_DEFINITIONS[posmod(slot.hero_index, HERO_DEFINITIONS.size())])
 	state = "playing"
-	player.set_physics_process(true)
+	_set_local_players_physics(true)
 	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
 	hud.set_player_health(player.health, player.max_health)
 	hud.set_mode("playing")
@@ -170,6 +204,7 @@ func _open_character_select() -> void:
 
 func select_hero(index: int) -> void:
 	selected_hero_index = posmod(index, HERO_DEFINITIONS.size())
+	local_player_registry.set_hero(0, selected_hero_index)
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
 	play_sfx(&"ui_confirm")
 
@@ -182,6 +217,147 @@ func confirm_hero_selection() -> void:
 	if state != "select":
 		return
 	_start_game()
+
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventJoypadButton) or not event.pressed:
+		return
+	if event.button_index == JOY_BUTTON_START:
+		if local_player_registry.slot_for_device(event.device) == null:
+			join_local_player(event.device)
+	elif event.button_index == JOY_BUTTON_BACK:
+		leave_local_player(event.device)
+
+
+func join_local_player(device_id: int, hero_index := -1) -> Node:
+	if state not in ["title", "select", "playing"]:
+		return null
+	if device_id < 0 or local_player_registry.slot_for_device(device_id) != null:
+		return null
+	var resolved_hero_index := hero_index
+	if resolved_hero_index < 0:
+		resolved_hero_index = local_player_registry.slots.size() % HERO_DEFINITIONS.size()
+	var slot = local_player_registry.join_device(device_id, posmod(resolved_hero_index, HERO_DEFINITIONS.size()))
+	if slot == null:
+		return null
+	var fighter := _create_local_player(slot)
+	if fighter == null:
+		local_player_registry.leave_device(device_id)
+		return null
+	if state == "playing":
+		fighter.invulnerable = 2.2
+		hud.show_banner("PLAYER %d JOINED" % (slot.slot_index + 1), fighter.hero_display_name, 1.2)
+		play_sfx(&"ui_confirm")
+	return fighter
+
+
+func leave_local_player(device_id: int) -> bool:
+	var slot = local_player_registry.slot_for_device(device_id)
+	if slot == null or slot.slot_index == 0:
+		return false
+	var fighter := player_for_slot(slot.slot_index)
+	local_player_registry.leave_device(device_id)
+	if is_instance_valid(fighter):
+		players.erase(fighter)
+		fighter.prepare_local_leave()
+		fighter.queue_free()
+	return true
+
+
+func player_for_slot(slot_index: int) -> Node:
+	for fighter in players:
+		if is_instance_valid(fighter) and fighter.local_slot_index == slot_index:
+			return fighter
+	return null
+
+
+func get_local_players() -> Array[Node]:
+	var result: Array[Node] = []
+	for fighter in players:
+		if is_instance_valid(fighter):
+			result.append(fighter)
+	return result
+
+
+func get_active_players() -> Array[Node]:
+	var result: Array[Node] = []
+	for fighter in players:
+		if is_instance_valid(fighter) and not fighter.is_defeated:
+			result.append(fighter)
+	return result
+
+
+func lead_player_x() -> float:
+	var lead_x := 0.0
+	for fighter in get_active_players():
+		lead_x = maxf(lead_x, fighter.position.x)
+	return lead_x
+
+
+func shared_camera_frame() -> Dictionary:
+	var active_players := get_active_players()
+	var viewport_width := get_viewport_rect().size.x
+	if active_players.is_empty():
+		return {"position": camera.position, "zoom": shared_camera_zoom}
+	if active_players.size() == 1:
+		var half_view_width := viewport_width * 0.5
+		return {
+			"position": Vector2(clampf(active_players[0].position.x + 280.0, half_view_width, 4200.0 - half_view_width), 360.0),
+			"zoom": 1.0,
+		}
+	var minimum_x: float = active_players[0].position.x
+	var maximum_x := minimum_x
+	for fighter in active_players:
+		minimum_x = minf(minimum_x, fighter.position.x)
+		maximum_x = maxf(maximum_x, fighter.position.x)
+	var required_width := maximum_x - minimum_x + 520.0
+	var target_zoom := clampf(viewport_width / maxf(required_width, viewport_width), MIN_SHARED_CAMERA_ZOOM, 1.0)
+	var half_visible_width := viewport_width * 0.5 / target_zoom
+	var target_x := (minimum_x + maximum_x) * 0.5 + 180.0
+	target_x = clampf(target_x, half_visible_width, 4200.0 - half_visible_width)
+	return {"position": Vector2(target_x, 360.0), "zoom": target_zoom}
+
+
+func _update_shared_camera(delta: float) -> void:
+	var frame := shared_camera_frame()
+	shared_camera_zoom = lerpf(shared_camera_zoom, float(frame.zoom), minf(delta * 4.5, 1.0))
+	camera.position = frame.position
+	camera.zoom = Vector2.ONE * shared_camera_zoom
+
+
+func _find_safe_player_spawn(slot_index: int) -> Vector2:
+	var anchor: Vector2 = player.position if is_instance_valid(player) else Vector2(260.0, 570.0)
+	var preferred: Vector2 = anchor + PLAYER_SPAWN_OFFSETS[clampi(slot_index, 0, PLAYER_SPAWN_OFFSETS.size() - 1)]
+	var candidates := [
+		preferred,
+		preferred + Vector2(-90.0, 0.0),
+		preferred + Vector2(0.0, -68.0),
+		preferred + Vector2(0.0, 68.0),
+		preferred + Vector2(-90.0, -68.0),
+		preferred + Vector2(-90.0, 68.0),
+	]
+	for candidate: Vector2 in candidates:
+		candidate.x = clampf(candidate.x, 100.0, stage_limit - 60.0)
+		candidate.y = clampf(candidate.y, 475.0, 645.0)
+		var safe := true
+		for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("enemies"):
+			if is_instance_valid(actor) and candidate.distance_to(actor.position) < MIN_SAFE_SPAWN_DISTANCE:
+				safe = false
+				break
+		if safe:
+			return candidate
+	return Vector2(clampf(preferred.x, 100.0, stage_limit - 60.0), clampf(preferred.y, 475.0, 645.0))
+
+
+func _set_local_players_physics(enabled: bool) -> void:
+	for fighter in players:
+		if is_instance_valid(fighter):
+			fighter.set_physics_process(enabled and not fighter.is_defeated)
+
+
+func _on_joy_connection_changed(device_id: int, connected: bool) -> void:
+	if not connected:
+		leave_local_player(device_id)
 
 func spawn_enemy(pos: Vector2, type: String) -> void:
 	var enemy := EnemyScript.new()
@@ -251,7 +427,7 @@ func _stage_timeout() -> void:
 	stage_timed_out = true
 	state = "gameover"
 	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
-	player.set_physics_process(false)
+	_set_local_players_physics(false)
 	hud.set_mode("gameover")
 
 func add_score(amount: int) -> void:
@@ -259,7 +435,9 @@ func add_score(amount: int) -> void:
 	hud.set_score(score)
 
 
-func weapon_changed(weapon_definition: Resource, ammo: int) -> void:
+func weapon_changed(weapon_definition: Resource, ammo: int, source_player: Node = null) -> void:
+	if source_player != null and source_player != player:
+		return
 	if weapon_definition == null:
 		hud.set_weapon("", 0)
 		return
@@ -310,6 +488,12 @@ func _sync_hud_stage_progress() -> void:
 func _on_player_health(current: int, maximum: int) -> void:
 	hud.set_player_health(current,maximum)
 
+
+func _on_local_player_health(current: int, maximum: int, fighter: Node) -> void:
+	if fighter == player:
+		_on_player_health(current, maximum)
+
+
 func _on_player_defeated() -> void:
 	lives -= 1
 	hud.set_lives(lives)
@@ -320,8 +504,22 @@ func _on_player_defeated() -> void:
 	else:
 		state = "gameover"
 		music_director.play_cue(MusicDirectorScript.Cue.SILENT)
-		player.set_physics_process(false)
+		_set_local_players_physics(false)
 		hud.set_mode("gameover")
+
+
+func _on_local_player_defeated(fighter: Node) -> void:
+	if fighter == player:
+		_on_player_defeated()
+		return
+	fighter.set_physics_process(false)
+	if get_active_players().is_empty():
+		state = "gameover"
+		music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+		_set_local_players_physics(false)
+		hud.set_mode("gameover")
+	else:
+		hud.show_banner("PLAYER %d DOWN" % (fighter.local_slot_index + 1), "TEAMMATE REVIVE ARRIVES NEXT", 1.2)
 
 func _victory() -> void:
 	if state != "playing":
@@ -333,8 +531,9 @@ func _victory() -> void:
 	victory_life_bonus = maxi(lives, 0) * 1000
 	victory_clear_bonus = 5000
 	victory_bonus_applied = false
-	player.set_physics_process(false)
-	player.set_victory_pose(1)
+	_set_local_players_physics(false)
+	for fighter in get_local_players():
+		fighter.set_victory_pose(1)
 	hud.set_victory_summary(victory_time_bonus, victory_life_bonus, victory_clear_bonus, score)
 	hud.set_victory_phase(victory_phase)
 	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
@@ -356,7 +555,8 @@ func _tick_victory(delta: float) -> void:
 		play_sfx("bonus_tally")
 	elif victory_phase == &"bonus":
 		victory_phase = &"complete"
-		player.set_victory_pose(2)
+		for fighter in get_local_players():
+			fighter.set_victory_pose(2)
 		hud.set_victory_phase(victory_phase)
 
 func hit_confirm(

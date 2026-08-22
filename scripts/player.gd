@@ -57,6 +57,8 @@ var hero_display_name := "RANGER"
 var hero_sprite_sheet: Texture2D = SPRITE_SHEET
 var hero_sprite_columns := SPRITE_COLUMNS
 var hero_sprite_rows := SPRITE_ROWS
+var local_slot_index := 0
+var input_device_id := -1
 var facing := 1
 var z_height := 0.0
 var z_velocity := 0.0
@@ -109,8 +111,16 @@ var fighter_state: int:
 	get:
 		return state_machine.current_state
 
-func setup(p_game: Node, p_hero_definition: Resource = null) -> void:
+func setup(
+	p_game: Node,
+	p_hero_definition: Resource = null,
+	p_local_slot_index := 0,
+	p_input_device_id := -1,
+	p_input_source = null
+) -> void:
 	game = p_game
+	local_slot_index = p_local_slot_index
+	input_device_id = p_input_device_id
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	apply_hero_definition(p_hero_definition)
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
@@ -132,8 +142,9 @@ func setup(p_game: Node, p_hero_definition: Resource = null) -> void:
 	attack_hitbox = HitboxScript.new()
 	add_child(attack_hitbox)
 	attack_hitbox.setup(self)
-	input_source = ActionInputSourceScript.new()
-	add_child(input_source)
+	input_source = p_input_source if p_input_source != null else ActionInputSourceScript.new()
+	if input_source is Node and input_source.get_parent() == null:
+		add_child(input_source)
 
 
 func apply_hero_definition(value: Resource) -> void:
@@ -246,6 +257,16 @@ func _apply_intent(intent) -> void:
 
 func set_intent_source(source) -> void:
 	input_source = source
+
+
+func prepare_local_leave() -> void:
+	set_physics_process(false)
+	run_controller.cancel()
+	command_controller.cancel()
+	velocity = Vector2.ZERO
+	if is_instance_valid(grabbed_enemy):
+		_release_grabbed_enemy()
+	remove_from_group("player")
 
 
 func _handle_attack_intent() -> void:
@@ -667,7 +688,7 @@ func _fire_equipped_weapon() -> void:
 
 func _sync_weapon_hud() -> void:
 	if game != null and game.has_method("weapon_changed"):
-		game.weapon_changed(equipped_weapon, weapon_ammo)
+		game.weapon_changed(equipped_weapon, weapon_ammo, self)
 
 
 func _scaled_damage(amount: int) -> int:

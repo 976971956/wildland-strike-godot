@@ -17,7 +17,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "hero_animation_preview=" in query_string:
+		if "local_coop_preview=3" in query_string:
+			scenario = "local_coop_preview"
+			call_deferred("_start_local_coop_preview")
+		elif "hero_animation_preview=" in query_string:
 			scenario = "hero_animation_preview"
 			var hero_index := 1
 			if "hero_animation_preview=kestrel" in query_string:
@@ -113,6 +116,23 @@ func _start_hero_animation_preview(hero_index: int) -> void:
 	game.select_hero(hero_index)
 	game.hud.set_hero_animation_preview(game.selected_hero())
 	game.hud.set_mode("hero_animation")
+	game.set_process(false)
+
+
+func _start_local_coop_preview() -> void:
+	var game := get_parent()
+	var second: Node = game.join_local_player(0, 1)
+	var third: Node = game.join_local_player(1, 2)
+	if second == null or third == null:
+		scenario = "local_coop_setup_failed"
+		return
+	game._start_game()
+	var preview_players: Array[Node] = game.get_local_players()
+	for index in range(preview_players.size()):
+		preview_players[index].position = Vector2(460.0 + index * 230.0, 500.0 + index * 65.0)
+		preview_players[index].set_physics_process(false)
+	game._update_shared_camera(1.0)
+	game.hud.show_banner("3 PLAYER LOCAL CO-OP", "KEYBOARD + TWO GAMEPADS", 999.0)
 	game.set_process(false)
 
 

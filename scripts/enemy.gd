@@ -522,7 +522,10 @@ func _record_behavior_event(event: StringName) -> void:
 
 func _update_combat_target() -> void:
 	var candidates: Array[Node] = []
-	if is_instance_valid(player) and not player.is_defeated:
+	if game != null and game.has_method("get_active_players"):
+		for fighter in game.get_active_players():
+			candidates.append(fighter)
+	elif is_instance_valid(player) and not player.is_defeated:
 		candidates.append(player)
 	for other in get_tree().get_nodes_in_group("enemies"):
 		if (
@@ -552,7 +555,7 @@ func _update_combat_target() -> void:
 	if combat_target != best_target:
 		combat_target = best_target
 		_cancel_behavior()
-		_record_behavior_event(&"target_player" if best_target == player else &"target_enemy")
+		_record_behavior_event(&"target_player" if best_target.is_in_group("player") else &"target_enemy")
 
 func _enemy_separation() -> Vector2:
 	var separation := Vector2.ZERO
@@ -620,8 +623,8 @@ func _check_attack() -> void:
 			var resolved_knockback: Vector2 = CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
 			var stun_bonus: float = CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
 			var force_interrupt: bool = AttackPriorityRulesScript.interrupts_defender(priority_outcome)
-			if combat_target == player:
-				player.take_hit(
+			if combat_target.is_in_group("player"):
+				combat_target.take_hit(
 					resolved_damage,
 					resolved_knockback,
 					counter_hit,

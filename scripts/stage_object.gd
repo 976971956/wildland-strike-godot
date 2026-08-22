@@ -68,8 +68,11 @@ func take_stage_hit(amount: int, _impact_direction: int) -> bool:
 func _resolve_hazard_contact() -> void:
 	if contact_cooldown > 0.0:
 		return
-	if is_instance_valid(game.player) and not game.player.is_defeated and _overlaps_actor(game.player):
-		game.player.take_hit(
+	var local_players: Array[Node] = game.get_active_players() if game.has_method("get_active_players") else [game.player]
+	for fighter in local_players:
+		if not is_instance_valid(fighter) or fighter.is_defeated or not _overlaps_actor(fighter):
+			continue
+		fighter.take_hit(
 			definition.contact_damage,
 			Vector2(direction * 290.0, -35.0),
 			false,

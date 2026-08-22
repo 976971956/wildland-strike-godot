@@ -15,11 +15,21 @@ func setup(p_game, p_kind: String) -> void:
 func _process(delta: float) -> void:
 	life -= delta
 	phase += delta * 4.0
-	if is_instance_valid(game.player) and position.distance_to(game.player.position) < 42.0:
+	var collector: Node = null
+	var collector_distance := INF
+	var candidates: Array[Node] = game.get_active_players() if game.has_method("get_active_players") else [game.player]
+	for fighter in candidates:
+		if not is_instance_valid(fighter) or fighter.is_defeated:
+			continue
+		var distance := position.distance_to(fighter.position)
+		if distance < 42.0 and distance < collector_distance:
+			collector = fighter
+			collector_distance = distance
+	if collector != null:
 		if kind == "food":
-			game.player.heal(28)
+			collector.heal(28)
 		else:
-			game.player.give_weapon(kind)
+			collector.give_weapon(kind)
 		game.add_score(400)
 		queue_free()
 		return

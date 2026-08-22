@@ -63,9 +63,9 @@ func _resolve_direct_hit() -> bool:
 	if team == &"enemy":
 		if target_locked and not is_instance_valid(target_actor):
 			return false
-		var resolved_target: Node = target_actor if target_locked else game.player
+		var resolved_target: Node = target_actor if target_locked else _nearest_active_player()
 		if is_instance_valid(resolved_target) and not resolved_target.is_defeated and position.distance_to(resolved_target.position) < 34.0:
-			if resolved_target == game.player:
+			if resolved_target.is_in_group("player"):
 				resolved_target.take_hit(
 					definition.damage,
 					Vector2(direction * 250.0, 0.0),
@@ -111,6 +111,20 @@ func _resolve_direct_hit() -> bool:
 			game.hit_confirm(impact_position, 2, direction, true, definition.impact_profile)
 			return true
 	return false
+
+
+func _nearest_active_player() -> Node:
+	var candidates: Array[Node] = game.get_active_players() if game.has_method("get_active_players") else [game.player]
+	var nearest: Node = null
+	var nearest_distance := INF
+	for fighter in candidates:
+		if not is_instance_valid(fighter) or fighter.is_defeated:
+			continue
+		var distance := position.distance_to(fighter.position)
+		if distance < nearest_distance:
+			nearest = fighter
+			nearest_distance = distance
+	return nearest
 
 
 func _explode() -> void:

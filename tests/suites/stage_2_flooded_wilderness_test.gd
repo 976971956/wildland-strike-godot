@@ -59,6 +59,10 @@ func run(test) -> void:
 	game._advance_campaign_stage()
 	await test.tree.process_frame
 	test.check(game.campaign_stage_index == 1 and game.active_stage_definition == STAGE_2, "campaign did not advance from Stage 1 to Stage 2")
+	test.check(
+		game.actors.visible and game.get_local_players().all(func(fighter: Node): return fighter.is_visible_in_tree()),
+		"Stage 2 deployment left the shared actor container hidden after the campaign map"
+	)
 	test.check(game.score == 4321 and game.lives == 1, "campaign transition did not preserve score/lives")
 	test.check(game.get_local_players().size() == 3 and game.get_active_players().size() == 3, "Stage 2 transition did not preserve the full three-player roster")
 	test.check(second_player.hero_id == &"mara" and third_player.hero_id == &"kestrel", "Stage 2 transition changed joined-player hero assignments")

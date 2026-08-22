@@ -1550,6 +1550,7 @@ func _advance_campaign_stage() -> void:
 	stage_limit = 1080.0
 	encounter_director.configure(self, active_stage_definition)
 	world_art.configure(active_stage_definition)
+	actors.visible = true
 	for index in range(players.size()):
 		var fighter := players[index]
 		if not is_instance_valid(fighter):

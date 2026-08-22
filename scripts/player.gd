@@ -383,6 +383,7 @@ func _start_special() -> void:
 	attack_hit_done = true
 	invulnerable = current_attack.invulnerable_duration
 	game.play_sfx(current_attack.sound_event)
+	game.play_sfx(&"voice_hero")
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if is_instance_valid(enemy) and not enemy.is_defeated and position.distance_to(enemy.position) < current_attack.effect_radius:
 			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, enemy)
@@ -446,6 +447,7 @@ func begin_team_attack(attack_data: Resource) -> void:
 	attack_hit_done = true
 	invulnerable = maxf(invulnerable, attack_data.invulnerable_duration)
 	queue_redraw()
+	game.play_sfx(&"voice_hero")
 
 
 func apply_team_attack_cost(amount: int) -> void:

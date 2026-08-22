@@ -3,16 +3,21 @@ extends Node
 
 enum Cue {
 	SILENT,
+	TITLE,
 	STAGE,
 	BOSS,
 	VICTORY,
+	ENDING,
+	CREDITS,
 }
 
 const SAMPLE_RATE := 22050
 const BASE_VOLUME_DB := -12.0
 
 var current_cue := Cue.SILENT
+var current_variant := 0
 var cue_history: Array[int] = []
+var variant_history: Array[int] = []
 var stream_cache := {}
 var player: AudioStreamPlayer
 var duck_time_remaining := 0.0
@@ -63,39 +68,75 @@ func duck(amount_db: float, duration: float) -> void:
 		player.volume_db = minf(player.volume_db, _base_volume_db() + duck_volume_db)
 
 
-func play_cue(cue: int) -> void:
-	if cue == current_cue:
+func play_cue(cue: int, variant: int = 0) -> void:
+	var resolved_variant := posmod(variant, 8) if cue in [Cue.STAGE, Cue.BOSS] else 0
+	if cue == current_cue and resolved_variant == current_variant:
 		return
 	current_cue = cue
+	current_variant = resolved_variant
 	cue_history.append(cue)
+	variant_history.append(resolved_variant)
 	if cue_history.size() > 16:
 		cue_history.pop_front()
+		variant_history.pop_front()
 	if not is_instance_valid(player):
 		return
 	if cue == Cue.SILENT:
 		player.stop()
 		return
-	if not stream_cache.has(cue):
-		stream_cache[cue] = build_stream(cue)
-	player.stream = stream_cache[cue]
+	var cache_key := "%d:%d" % [cue, resolved_variant]
+	if not stream_cache.has(cache_key):
+		stream_cache[cache_key] = build_stream(cue, resolved_variant)
+	player.stream = stream_cache[cache_key]
 	player.play()
 
 
-static func build_stream(cue: int) -> AudioStreamWAV:
+static func build_stream(cue: int, variant: int = 0) -> AudioStreamWAV:
 	var bpm := 126.0
 	var melody := PackedInt32Array([64, 67, 71, 67, 62, 64, 67, -1, 64, 67, 74, 71, 67, 64, 62, -1, 59, 62, 67, 64, 59, 62, 64, -1, 57, 59, 62, 64, 67, 64, 62, -1])
 	var bass := PackedInt32Array([40, 40, 43, 43, 38, 38, 35, 35])
 	var looped := true
-	if cue == Cue.BOSS:
-		bpm = 148.0
+	var arrangement := posmod(variant, 8)
+	var duty := 0.34
+	var lead_gain := 0.34
+	if cue == Cue.TITLE:
+		bpm = 112.0
+		melody = PackedInt32Array([52, 55, 59, 64, 62, 59, 55, -1, 52, 55, 60, 64, 67, 64, 60, -1, 59, 62, 67, 71, 67, 64, 62, -1])
+		bass = PackedInt32Array([28, 35, 36, 31, 28, 35])
+		duty = 0.28
+	elif cue == Cue.STAGE:
+		var stage_transpositions := PackedInt32Array([0, 2, -2, 5, -5, 3, -3, 7])
+		melody = _arrange_sequence(melody, stage_transpositions[arrangement], arrangement * 3)
+		bass = _arrange_sequence(bass, stage_transpositions[arrangement], arrangement)
+		bpm = [126.0, 132.0, 118.0, 138.0, 124.0, 142.0, 130.0, 146.0][arrangement]
+		duty = 0.24 + arrangement * 0.025
+		lead_gain = 0.31 + (arrangement % 3) * 0.025
+	elif cue == Cue.BOSS:
+		bpm = [148.0, 154.0, 144.0, 160.0, 150.0, 164.0, 156.0, 168.0][arrangement]
 		melody = PackedInt32Array([52, -1, 52, 55, 58, 57, 55, -1, 52, 64, 63, 58, 57, 55, 52, -1, 50, -1, 50, 55, 58, 57, 53, -1, 50, 62, 61, 58, 57, 53, 50, -1])
 		bass = PackedInt32Array([28, 28, 31, 31, 26, 26, 25, 25])
+		var boss_transpositions := PackedInt32Array([0, 1, -2, 3, -4, 5, -5, 7])
+		melody = _arrange_sequence(melody, boss_transpositions[arrangement], arrangement * 2)
+		bass = _arrange_sequence(bass, boss_transpositions[arrangement], arrangement)
+		duty = 0.46 - arrangement * 0.02
+		lead_gain = 0.38
 	elif cue == Cue.VICTORY:
 		bpm = 132.0
 		melody = PackedInt32Array([60, 64, 67, 72, 67, 72, 76, 79, 76, 79, 84, 88, 84, 88, 91, 96])
 		bass = PackedInt32Array([36, 43, 48, 55])
 		looped = false
-	elif cue != Cue.STAGE:
+	elif cue == Cue.ENDING:
+		bpm = 96.0
+		melody = PackedInt32Array([55, 59, 62, 67, 71, 67, 64, 62, 59, 62, 67, 71, 74, 71, 67, 64, 62, 59, 55, -1, 60, 64, 67, 72])
+		bass = PackedInt32Array([31, 38, 36, 43, 31, 36])
+		looped = false
+		duty = 0.22
+	elif cue == Cue.CREDITS:
+		bpm = 108.0
+		melody = PackedInt32Array([60, 64, 67, 72, 71, 67, 64, -1, 57, 60, 64, 69, 67, 64, 60, -1, 55, 59, 62, 67, 64, 62, 59, -1])
+		bass = PackedInt32Array([36, 43, 33, 40, 31, 38])
+		duty = 0.30
+	elif cue != Cue.TITLE:
 		return _empty_stream()
 
 	var step_duration := 60.0 / bpm * 0.5
@@ -113,7 +154,7 @@ static func build_stream(cue: int) -> AudioStreamWAV:
 		var melody_note := melody[step]
 		if melody_note >= 0:
 			var melody_frequency := _midi_frequency(melody_note)
-			value += _pulse_wave(time, melody_frequency, 0.34) * envelope * 0.34
+			value += _pulse_wave(time, melody_frequency, duty) * envelope * lead_gain
 			value += sin(TAU * melody_frequency * 2.0 * time) * envelope * 0.08
 		var bass_note := bass[(step / 4) % bass.size()]
 		var bass_frequency := _midi_frequency(bass_note)
@@ -138,6 +179,15 @@ static func build_stream(cue: int) -> AudioStreamWAV:
 	stream.loop_begin = 0
 	stream.loop_end = sample_count
 	return stream
+
+
+static func _arrange_sequence(source: PackedInt32Array, transposition: int, rotation: int) -> PackedInt32Array:
+	var result := PackedInt32Array()
+	result.resize(source.size())
+	for index in range(source.size()):
+		var note := source[posmod(index + rotation, source.size())]
+		result[index] = note + transposition if note >= 0 else -1
+	return result
 
 
 static func _empty_stream() -> AudioStreamWAV:

@@ -310,6 +310,7 @@ func _wake_creature() -> void:
 	visual_clock = 0.0
 	_record_behavior_event(&"creature_woke")
 	game.play_sfx(&"dinosaur_wake")
+	game.play_sfx(&"voice_creature")
 	queue_redraw()
 
 
@@ -323,6 +324,7 @@ func _enrage_creature() -> void:
 	behavior_cooldown_timer = 0.0
 	_record_behavior_event(&"creature_enraged")
 	game.play_sfx(&"dinosaur_enrage")
+	game.play_sfx(&"voice_creature")
 	queue_redraw()
 
 

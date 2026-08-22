@@ -67,7 +67,7 @@ func run(test) -> void:
 	game.options_selected_index = 5
 	game._adjust_option(1)
 	test.check(not game.settings.screen_shake and game.hit_flash_enabled(), "screen-shake option did not toggle independently")
-	game.options_selected_index = 9
+	game.options_selected_index = 11
 	game._adjust_option(1)
 	test.check(game.state == "controls" and game.hud.mode == "controls", "options did not open the control-remapping screen")
 	game.control_selected_index = 4

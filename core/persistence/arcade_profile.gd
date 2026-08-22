@@ -1,7 +1,7 @@
 class_name ArcadeProfile
 extends RefCounted
 
-const CURRENT_VERSION := 2
+const CURRENT_VERSION := 3
 const MAX_HIGH_SCORES := 10
 const DEFAULT_PATH := "user://wildland_strike_profile.cfg"
 
@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS := {
 	"hit_flash": true,
 	"haptics": true,
 	"high_contrast_cues": true,
+	"subtitles": true,
 	"touch_scale": 1.0,
 	"touch_layout": "classic",
 	"ui_scale": 1.0,
@@ -142,6 +143,7 @@ func _normalize_settings() -> void:
 	settings.hit_flash = bool(settings.get("hit_flash", true))
 	settings.haptics = bool(settings.get("haptics", true))
 	settings.high_contrast_cues = bool(settings.get("high_contrast_cues", true))
+	settings.subtitles = bool(settings.get("subtitles", true))
 	settings.touch_scale = clampf(float(settings.get("touch_scale", 1.0)), 0.75, 1.35)
 	var touch_layout := String(settings.get("touch_layout", "classic")).to_lower()
 	settings.touch_layout = touch_layout if touch_layout in ["classic", "compact", "left_handed"] else "classic"

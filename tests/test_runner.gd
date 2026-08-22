@@ -50,6 +50,7 @@ const SUITES := [
 	{"name": "campaign_flow", "path": "res://tests/suites/campaign_flow_test.gd"},
 	{"name": "arcade_shell_persistence", "path": "res://tests/suites/arcade_shell_persistence_test.gd"},
 	{"name": "mobile_accessibility", "path": "res://tests/suites/mobile_accessibility_test.gd"},
+	{"name": "audio_localization", "path": "res://tests/suites/audio_localization_test.gd"},
 ]
 
 

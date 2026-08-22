@@ -129,7 +129,7 @@ const CONTINUE_RESPAWN_DELAY := 9.0
 const ATTRACT_DELAY := 10.0
 const TEAM_ATTACK_INPUT_WINDOW := 0.24
 const TEAM_ATTACK_LINK_DISTANCE := 190.0
-const OPTION_KEYS := ["music_volume", "sfx_volume", "touch_scale", "touch_layout", "ui_scale", "screen_shake", "hit_flash", "haptics", "high_contrast_cues", "controls"]
+const OPTION_KEYS := ["music_volume", "sfx_volume", "touch_scale", "touch_layout", "ui_scale", "screen_shake", "hit_flash", "haptics", "high_contrast_cues", "subtitles", "language", "controls"]
 const REBIND_ACTIONS := ["move_left", "move_right", "move_up", "move_down", "attack", "jump", "special", "pause"]
 
 func _ready() -> void:
@@ -170,6 +170,7 @@ func _ready() -> void:
 	_sync_selection_hud()
 	hud.set_mode("title")
 	_apply_settings()
+	music_director.play_cue(MusicDirectorScript.Cue.TITLE)
 	set_process(true)
 
 func _create_player() -> void:
@@ -324,7 +325,7 @@ func _start_game() -> void:
 	hud.set_player_health(player.health, player.max_health)
 	hud.set_mode("playing")
 	hud.show_banner("STAGE %d  READY" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.1)
-	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
+	music_director.play_cue(MusicDirectorScript.Cue.STAGE, campaign_stage_index)
 	play_sfx("start")
 
 
@@ -333,7 +334,7 @@ func _open_campaign_map(target_index: int = 0) -> void:
 	state = "campaign_map"
 	actors.visible = false
 	_set_local_players_physics(false)
-	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+	music_director.play_cue(MusicDirectorScript.Cue.TITLE)
 	hud.set_campaign_map(CAMPAIGN_STAGE_DEFINITIONS, campaign_map_target_index, completed_stage_count, score, lives)
 	play_sfx(&"ui_confirm")
 
@@ -359,7 +360,7 @@ func _return_to_title() -> void:
 	title_idle_time = 0.0
 	hud.set_arcade_profile(arcade_profile.high_scores, settings)
 	hud.set_mode("title")
-	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+	music_director.play_cue(MusicDirectorScript.Cue.TITLE)
 
 
 func _open_options(return_state: String) -> void:
@@ -406,6 +407,9 @@ func _adjust_option(direction: int) -> void:
 		settings[key] = layouts[posmod(layouts.find(String(settings[key])) + direction, layouts.size())]
 	elif key == "ui_scale":
 		settings[key] = clampf(snappedf(float(settings[key]) + direction * 0.05, 0.05), 0.85, 1.2)
+	elif key == "language":
+		var languages := ["en", "zh"]
+		settings[key] = languages[posmod(languages.find(String(settings[key])) + direction, languages.size())]
 	else:
 		settings[key] = not bool(settings[key])
 	arcade_profile.set_setting(key, settings[key])
@@ -1209,8 +1213,9 @@ func boss_spawned(boss: Node, phase: Resource) -> void:
 	_sync_boss_identity(1, phase.dialogue_speaker)
 	_sync_boss_health()
 	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
-	music_director.play_cue(MusicDirectorScript.Cue.BOSS)
+	music_director.play_cue(MusicDirectorScript.Cue.BOSS, campaign_stage_index)
 	play_sfx("boss_warning")
+	play_sfx(&"voice_boss")
 
 
 func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
@@ -1218,6 +1223,7 @@ func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
 	_sync_boss_identity(phase_index + 1, phase.dialogue_speaker)
 	hud.show_dialogue(phase.dialogue_speaker, phase.dialogue_line, 2.8)
 	play_sfx("boss_phase")
+	play_sfx(&"voice_boss")
 	if (
 		phase.reinforcement_count <= 0
 		or not encounter_director.active
@@ -1487,7 +1493,7 @@ func _advance_campaign_stage() -> void:
 	hud.set_mode("playing")
 	hud.show_banner("STAGE %d" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.4)
 	state = "playing"
-	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
+	music_director.play_cue(MusicDirectorScript.Cue.STAGE, campaign_stage_index)
 	play_sfx(&"start")
 	_sync_hud_stage_progress()
 
@@ -1500,7 +1506,7 @@ func _complete_first_half_campaign() -> void:
 		add_score(campaign_completion_bonus)
 	state = "ending"
 	_set_local_players_physics(false)
-	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
+	music_director.play_cue(MusicDirectorScript.Cue.ENDING)
 	hud.set_ending(score, lives)
 	play_sfx(&"victory")
 
@@ -1510,6 +1516,7 @@ func _open_credits() -> void:
 		return
 	state = "credits"
 	hud.set_credits(score)
+	music_director.play_cue(MusicDirectorScript.Cue.CREDITS)
 	play_sfx(&"ui_confirm")
 
 

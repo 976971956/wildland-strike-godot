@@ -48,7 +48,7 @@ func run(test) -> void:
 	Input.action_release("pause")
 
 	var initial_touch_scale := float(game.settings.touch_scale)
-	controls._handle_touch(_touch_event(91, Vector2(1000.0, 274.0), true))
+	controls._handle_touch(_touch_event(91, Vector2(1000.0, 234.0), true))
 	test.check(game.options_selected_index == 2 and float(game.settings.touch_scale) >= initial_touch_scale, "touch options did not select and adjust touch size")
 	test.check(is_equal_approx(game.hud.accessibility_ui_scale, float(game.settings.ui_scale)), "profile UI scale did not reach the HUD")
 	controls._handle_touch(_touch_event(92, Vector2(640.0, 690.0), true))

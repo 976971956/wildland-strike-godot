@@ -19,7 +19,13 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "mobile_accessibility_preview=1" in query_string:
+		if "audio_localization_preview=2" in query_string:
+			scenario = "chinese_boss_subtitle_preview"
+			call_deferred("_start_audio_localization_preview", true)
+		elif "audio_localization_preview=1" in query_string:
+			scenario = "chinese_options_preview"
+			call_deferred("_start_audio_localization_preview", false)
+		elif "mobile_accessibility_preview=1" in query_string:
 			scenario = "mobile_safe_area_preview"
 			call_deferred("_start_mobile_accessibility_preview")
 		elif "arcade_shell_preview=5" in query_string:
@@ -233,6 +239,22 @@ func _start_mobile_accessibility_preview() -> void:
 	game.player.set_physics_process(false)
 	game.hud.force_touch_layout = true
 	game.hud.show_dialogue("ACCESSIBILITY", "SAFE-AREA CONTROLS // PATTERNED WARNINGS // LARGE UI", 99.0)
+
+
+func _start_audio_localization_preview(show_subtitle: bool) -> void:
+	var game := get_parent()
+	game.settings.language = "zh"
+	game.settings.subtitles = true
+	game._apply_settings()
+	if show_subtitle:
+		game._start_game()
+		game.player.set_physics_process(false)
+		game.hud.show_dialogue("COMMANDER VOSS", "This district answers to me.", 99.0)
+	else:
+		game._open_options("title")
+		game.options_selected_index = 10
+		game.hud.set_options(game.settings, game.options_selected_index, false)
+	game.set_process(false)
 	var controls = game.touch_controls
 	controls.size = Vector2(1280.0, 720.0)
 	controls.enabled_for_device = true

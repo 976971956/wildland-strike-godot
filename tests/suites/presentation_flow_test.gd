@@ -34,7 +34,7 @@ func run(test) -> void:
 	var game: Node = await test.instantiate_main()
 	if game == null:
 		return
-	test.check(game.music_director.current_cue == MusicDirectorScript.Cue.SILENT, "title screen should begin silent")
+	test.check(game.music_director.current_cue == MusicDirectorScript.Cue.TITLE, "title screen did not begin its original theme")
 	game._start_game()
 	test.check(game.music_director.current_cue == MusicDirectorScript.Cue.STAGE, "starting Stage 1 did not begin stage music")
 	game.encounter_director.force_start_encounter(3)
@@ -60,5 +60,5 @@ func run(test) -> void:
 	test.check(game.score == 8340, "victory bonus was applied more than once")
 	game._tick_victory(1.9)
 	test.check(game.victory_phase == &"complete" and game.hud.victory_phase == &"complete", "victory flow did not reach restart-ready phase")
-	test.check(game.music_director.cue_history == [MusicDirectorScript.Cue.STAGE, MusicDirectorScript.Cue.BOSS, MusicDirectorScript.Cue.VICTORY], "campaign music transition history drifted")
+	test.check(game.music_director.cue_history == [MusicDirectorScript.Cue.TITLE, MusicDirectorScript.Cue.STAGE, MusicDirectorScript.Cue.BOSS, MusicDirectorScript.Cue.VICTORY], "campaign music transition history drifted")
 	await test.dispose(game)

@@ -159,7 +159,7 @@ func _handle_options_touch(point: Vector2) -> void:
 	if point.y >= size.y - 74.0:
 		game._close_options()
 		return
-	var option_index := clampi(int((point.y - 161.0) / 45.0), 0, game.OPTION_KEYS.size() - 1)
+	var option_index := clampi(int((point.y - 139.0) / 38.0), 0, game.OPTION_KEYS.size() - 1)
 	game.options_selected_index = option_index
 	game._adjust_option(-1 if point.x < size.x * 0.5 else 1)
 

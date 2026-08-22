@@ -4,7 +4,7 @@ Last updated: 2026-08-22
 
 Plan version: 1.0
 
-Current release state: eight-stage campaign with versioned arcade shell beta
+Current release state: M8 consumer build complete; M9 release qualification in progress
 
 Public delivery: Godot source, GitHub Pages Web build, signed iOS development build
 
@@ -257,16 +257,18 @@ Exit gate: the complete eight-stage campaign can be finished from a fresh start 
 
 ### M8 — Arcade shell, mobile polish, and accessibility
 
-Status: **in progress**
+Status: **complete**
 
 - [x] Attract/title flow, character select polish, continue countdown, local high scores, options, pause, and save settings.
-- [ ] Original full soundtrack, audio mixing, voice efforts, subtitles, and language-ready UI.
+- [x] Original full soundtrack, audio mixing, voice efforts, subtitles, and language-ready UI.
 - [x] Touch remapping/sizing, safe areas, haptics controls, pause/resume safety, and mobile performance tuning.
 - [x] Rebindable controls, screen shake/hit-flash controls, readable UI scale, and color-independent telegraphs.
 
 Evidence (2026-08-22, arcade-shell/persistence batch): the consumer flow now includes an idle attract/instructions screen, clean title and character-select transitions, a local top-ten table, a gameplay-safe pause/options screen, and a nine-second player-confirmable continue countdown instead of automatic resurrection. A versioned `ConfigFile` profile persists clamped audio, feedback, haptics, touch/UI scale, language, and ordered high-score data, migrates legacy version-zero keys, and records each final score at most once. Keyboard Escape/P and active-slot gamepad Start pause safely; music and effects volumes, shake, hit flash, and haptics apply immediately. Forty-seven deterministic suites pass 2854/2854 assertions. Accepted attract, pause/options, continue, and high-score Web fixtures render without browser warnings/errors; the performance fixtures average 120.55, 120.03, and 120.04 FPS with zero frames above 20 ms or 33 ms. Web release export passes. Detailed evidence is archived in `evidence/m8-arcade-shell.md`.
 
 Evidence (2026-08-22, mobile/accessibility batch): touch controls now resolve against the device safe area, scale from 0.75× to 1.35× without overlapping action hit targets, offer classic/compact/left-handed remapped layouts, expose a dedicated pause button, support touch-driven settings, and automatically pause on focus loss without auto-resuming. Touch dialogue wraps inside a control-safe panel. The version-two profile adds persistent eight-action keyboard bindings; rebinding swaps conflicts and applies through `InputMap` while preserving gamepad input. UI text scale, shake, hit flash, haptics, and always-on-by-default high-contrast hazard markers are independently configurable. Forty-eight deterministic suites pass 2883/2883 assertions. Accepted mobile safe-area and control-remap Web fixtures average 120.01 and 119.87 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings/errors. Detailed evidence is archived in `evidence/m8-mobile-accessibility.md`.
+
+Exit evidence (2026-08-22, audio/localization batch): a deterministic music director now supplies title, eight distinct stage arrangements, eight distinct boss arrangements, victory, ending, and credits cues with same-cue variant switching and mix ducking. Three original synthesized effort families layer hero, boss, and creature vocal force into specials, phase changes, and dinosaur state transitions. Profile schema version three persists subtitle and English/Chinese choices; every one of the campaign's 24 boss-phase lines has a Simplified Chinese subtitle, the consumer shell localizes its primary settings/high-score/continue/remap flow, and subtitles can be disabled independently. Web QA initially rejected the build because browser fallback fonts rendered Chinese as boxes; the accepted build bundles OFL-licensed Noto Sans SC and verifies both Chinese and Latin glyphs. Forty-nine deterministic suites pass 3065/3065 assertions. Accepted Chinese options and boss-subtitle fixtures have no browser warnings/errors; the subtitle fixture averages 120.02 FPS over 300 frames with zero frames above 20 ms or 33 ms. Web release export, iOS project export, and unsigned generic-device Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m8-audio-localization.md`.
 
 Exit gate: desktop, Web, and iOS behave like complete consumer builds rather than development demos.
 
@@ -286,8 +288,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M8 — Audio/localization shell:** complete original soundtrack coverage, mix controls, subtitles, concise voice efforts, and language-ready UI strings.
-2. **M9 — Balance and release QA:** execute the full solo/co-op balance matrix, compatibility/migration/performance gates, clean-checkout build, provenance/license audit, release notes, and `v1.0.0` publication.
+1. **M9 — Balance and release QA:** execute the full solo/co-op balance matrix, compatibility/migration/performance gates, clean-checkout build, provenance/license audit, release notes, and `v1.0.0` publication.
 
 ## Definition of done for every task
 
@@ -314,5 +315,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The reusable human/dinosaur roster is complete through M5; all eight stages now have unique boss encounters and original compositions, including the three-form final boss.
 - Stages 1–8, ending, credits, and final report are completed campaign content; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while completing the consumer arcade shell.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, eight-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Version-two local settings/high scores, legacy migration, keyboard rebinding, UI scaling, and classic/compact/left-handed mobile layouts are complete; full language coverage remains M8 work. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, Stage 6 spore/cart/stomp hazards, Stage 7 deck/laser/cryo hazards, Stage 8 arc/mutagen/core hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, eight-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until the M9 balance pass. Version-three local settings/high scores, legacy migration, keyboard rebinding, UI scaling, classic/compact/left-handed mobile layouts, a language-ready consumer shell, and all 24 Chinese boss subtitles are complete. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, Stage 6 spore/cart/stomp hazards, Stage 7 deck/laser/cryo hazards, Stage 8 arc/mutagen/core hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
 - The current development provisioning profile is invalid; every stage passes an unsigned generic-device arm64 build, but a fresh signed iOS install requires renewed signing access and an available paired device.

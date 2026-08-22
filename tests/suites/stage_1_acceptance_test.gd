@@ -1,6 +1,7 @@
 extends RefCounted
 
 const STAGE_1 = preload("res://data/stages/stage_1/stage_1.tres")
+const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const ENEMY_RESOURCES := {
 	&"grunt": preload("res://data/enemies/grunt.tres"),
 	&"brute": preload("res://data/enemies/brute.tres"),
@@ -99,7 +100,7 @@ func run(test) -> void:
 	test.check(game.score == 7500, "sequential combat score drifted before bonuses")
 	test.check(test.tree.get_nodes_in_group("pickups").size() == 3, "encounter rewards did not survive the full run")
 	test.check(game.boss_phase_history == [&"command", &"overdrive"], "full run skipped a boss phase")
-	test.check(game.music_director.cue_history == [1, 2, 3], "full run music did not transition stage→boss→victory")
+	test.check(game.music_director.cue_history == [MusicDirectorScript.Cue.TITLE, MusicDirectorScript.Cue.STAGE, MusicDirectorScript.Cue.BOSS, MusicDirectorScript.Cue.VICTORY], "full run music did not transition title→stage→boss→victory")
 
 	game._tick_victory(1.6)
 	game._tick_victory(2.4)

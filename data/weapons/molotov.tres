@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/weapons/weapon_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/special.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+weapon_id = &"molotov"
+display_name = "MOLOTOV"
+behavior_id = &"lingering_fire"
+kind = 1
+capacity = 3
+damage = 18
+projectile_speed = 330.0
+projectile_lifetime = 1.2
+projectile_deceleration = 150.0
+fuse_duration = 0.62
+explosion_radius = 82.0
+lingering_duration = 2.4
+lingering_tick_interval = 0.4
+lingering_damage = 5
+impact_profile = ExtResource("2")
+fire_sfx = &"molotov_throw"
+blast_sfx = &"fire_burst"
+color = Color(0.95, 0.42, 0.12, 1)

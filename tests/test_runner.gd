@@ -36,6 +36,7 @@ const SUITES := [
 	{"name": "coop_revive", "path": "res://tests/suites/coop_revive_test.gd"},
 	{"name": "team_attack", "path": "res://tests/suites/team_attack_test.gd"},
 	{"name": "m4_roster_acceptance", "path": "res://tests/suites/m4_roster_acceptance_test.gd"},
+	{"name": "weapon_sandbox", "path": "res://tests/suites/weapon_sandbox_test.gd"},
 ]
 
 

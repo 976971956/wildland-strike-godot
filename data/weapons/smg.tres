@@ -5,12 +5,17 @@
 
 [resource]
 script = ExtResource("1")
-weapon_id = &"machete"
-display_name = "MACHETE"
-behavior_id = &"balanced_blade"
-kind = 0
-capacity = 12
-melee_bonus_damage = 7
+weapon_id = &"smg"
+display_name = "BURST SMG"
+behavior_id = &"three_round_burst"
+kind = 2
+capacity = 10
+damage = 7
+projectile_speed = 900.0
+projectile_lifetime = 0.78
+shots_per_use = 3
+spread_depth = 8.0
+penetration_count = 1
 impact_profile = ExtResource("2")
-fire_sfx = &"swing"
-color = Color(0.82, 0.9, 0.84, 1)
+fire_sfx = &"smg_burst"
+color = Color(0.25, 0.29, 0.32, 1)

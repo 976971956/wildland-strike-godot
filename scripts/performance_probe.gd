@@ -1,6 +1,7 @@
 class_name RuntimePerformanceProbe
 extends Node
 
+const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const WARMUP_FRAMES := 60
 const SAMPLE_FRAMES := 300
 const LOG_PREFIX := "WEB_PERFORMANCE_BASELINE "
@@ -17,7 +18,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "local_coop_preview=3" in query_string:
+		if "weapon_sandbox_preview=1" in query_string:
+			scenario = "weapon_sandbox_preview"
+			call_deferred("_start_weapon_sandbox_preview")
+		elif "local_coop_preview=3" in query_string:
 			scenario = "local_coop_preview"
 			call_deferred("_start_local_coop_preview")
 		elif "local_coop_select=3" in query_string:
@@ -201,6 +205,27 @@ func _start_team_attack_preview() -> void:
 	game.player._request_special()
 	second._request_special()
 	game.hud.show_banner("TEAM ATTACK!", "P1 + P2 LINK // 3 TARGETS", 999.0)
+	game.set_process(false)
+
+
+func _start_weapon_sandbox_preview() -> void:
+	var game := get_parent()
+	game._start_game()
+	game.encounter_director.completed = true
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_process(false)
+		stage_object.set_physics_process(false)
+	game.player.position = Vector2(145.0, 555.0)
+	game.player.set_physics_process(false)
+	var pickup_ids := WeaponCatalogScript.explicit_pickup_ids()
+	for index in range(pickup_ids.size()):
+		var column := index % 6
+		var row := index / 6
+		game.spawn_pickup(Vector2(310.0 + column * 170.0, 500.0 + row * 132.0), pickup_ids[index])
+		var pickup: Node = get_tree().get_nodes_in_group("pickups").back()
+		pickup.set_process(false)
+	game.hud.show_banner("12-WEAPON SANDBOX", "MELEE // FIREARMS // EXPLOSIVES", 999.0)
 	game.set_process(false)
 
 

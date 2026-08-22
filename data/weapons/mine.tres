@@ -5,17 +5,20 @@
 
 [resource]
 script = ExtResource("1")
-weapon_id = &"grenade"
-display_name = "GRENADE"
-behavior_id = &"timed_frag"
+weapon_id = &"mine"
+display_name = "PROX MINE"
+behavior_id = &"armed_proximity"
 kind = 1
 capacity = 3
-damage = 34
-projectile_speed = 360.0
-projectile_lifetime = 1.4
-fuse_duration = 0.72
-explosion_radius = 112.0
-projectile_deceleration = 180.0
+damage = 30
+projectile_speed = 0.0
+projectile_lifetime = 6.0
+fuse_duration = 6.0
+explosion_radius = 105.0
+stationary = true
+arm_delay = 0.4
+trigger_radius = 100.0
 impact_profile = ExtResource("2")
-fire_sfx = &"throw"
-color = Color(0.25, 0.45, 0.24, 1)
+fire_sfx = &"mine_drop"
+blast_sfx = &"explosion"
+color = Color(0.72, 0.62, 0.2, 1)

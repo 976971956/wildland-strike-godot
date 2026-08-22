@@ -200,14 +200,16 @@ Exit evidence (2026-08-22): the deterministic M4 matrix completes Stage 1 with a
 
 ### M5 — Weapon sandbox and dinosaur ecology
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] At least twelve distinct weapon behaviors plus ammo/durability/drop rules.
+- [x] At least twelve distinct weapon behaviors plus ammo/durability/drop rules.
 - [ ] Breakables, carry/throw props, rolling hazards, food tiers, and score tiers.
 - [ ] Four dinosaur archetypes with neutral, sleeping, enraged, and cross-faction targeting states.
 - [ ] Full enemy standard/elite roster and reusable encounter recipes.
 
 Exit gate: weapons and dinosaurs create systemic interactions rather than scripted visual cameos.
+
+Evidence (2026-08-22, weapon-sandbox batch): a typed catalog now owns twelve unique weapon resources and explicit pickup/drop IDs, split evenly across melee, firearms, and explosives. Machete is the durable baseline; steel pipe trades durability for heavy forced launch; field whip scales the real hitbox for reach; shock baton adds stun and one-target chaining. Pistol remains the direct sidearm; shotgun fans five projectiles across depth lanes; burst SMG emits three rounds per ammo unit; rifle penetrates three unique actors or breakables. Grenade retains its timed blast; Molotov creates a later ticking fire field; rocket detonates on contact; proximity mine remains stationary, arms after a delay, and scans an opposing-faction trigger radius. Ammo/durability is capacity- and hero-efficiency-driven, decrements once per use, and safely preserves the final-use resource through hit resolution. Projectiles, explosions, lingering fields, and mines all reuse explicit combat ownership so co-op friendly fire remains impossible while human-versus-neutral ecology stays valid. Each behavior has a distinct held/drop silhouette and mixed use cue. Thirty-five suites pass 1867/1867 assertions. The exported twelve-item Web fixture was visually accepted at 120.00 FPS over 300 frames with no frame above 20 ms or 33 ms and zero browser warnings/errors. Web export, iOS project export, and unsigned Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m5-weapon-sandbox.md`.
 
 ### M6 — Stages 2–4 and vehicle set piece
 
@@ -258,7 +260,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M5 — Weapon sandbox foundation:** expand the three Stage 1 weapon families into at least twelve distinct typed behaviors with explicit ammo/durability/drop rules and systemic cross-faction interactions.
+1. **M5 — Props, pickups, and scoring:** add carry/throw props, extend breakables and rolling hazards, and implement typed food/score tiers that interact with the twelve-weapon sandbox.
 
 ## Definition of done for every task
 
@@ -285,5 +287,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The enemy roster still lacks explosive specialists, knife specialists, elites, additional dinosaur archetypes, and the remaining seven unique campaign boss state machines.
 - Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet; the procedural Stage 1 score and three-family weapon set are foundations for the final soundtrack and the next M5 weapon sandbox rather than complete campaign coverage.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog is complete, while Stage 1 still authors only the original three generic family drops until the remaining M5 prop/item placement pass.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

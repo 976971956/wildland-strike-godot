@@ -5,17 +5,18 @@
 
 [resource]
 script = ExtResource("1")
-weapon_id = &"grenade"
-display_name = "GRENADE"
-behavior_id = &"timed_frag"
+weapon_id = &"rocket"
+display_name = "ROCKET"
+behavior_id = &"impact_rocket"
 kind = 1
 capacity = 3
-damage = 34
-projectile_speed = 360.0
+damage = 42
+projectile_speed = 620.0
 projectile_lifetime = 1.4
-fuse_duration = 0.72
-explosion_radius = 112.0
-projectile_deceleration = 180.0
+fuse_duration = 1.4
+explosion_radius = 104.0
+detonate_on_contact = true
 impact_profile = ExtResource("2")
-fire_sfx = &"throw"
-color = Color(0.25, 0.45, 0.24, 1)
+fire_sfx = &"rocket_launch"
+blast_sfx = &"explosion"
+color = Color(0.82, 0.22, 0.16, 1)

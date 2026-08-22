@@ -7,11 +7,14 @@
 script = ExtResource("1")
 weapon_id = &"pistol"
 display_name = "PISTOL"
+behavior_id = &"direct_round"
 kind = 2
 capacity = 12
 damage = 15
 projectile_speed = 860.0
 projectile_lifetime = 0.9
+shots_per_use = 1
+penetration_count = 1
 impact_profile = ExtResource("2")
 fire_sfx = &"gunshot"
 color = Color(0.78, 0.84, 0.88, 1)

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/weapons/weapon_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/heavy.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+weapon_id = &"pipe"
+display_name = "STEEL PIPE"
+behavior_id = &"heavy_launcher"
+kind = 0
+capacity = 6
+melee_bonus_damage = 12
+melee_reach_scale = 1.05
+melee_knockback_scale = 1.55
+melee_force_launch = true
+impact_profile = ExtResource("2")
+fire_sfx = &"heavy_swing"
+color = Color(0.55, 0.62, 0.66, 1)

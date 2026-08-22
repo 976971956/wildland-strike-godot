@@ -631,11 +631,13 @@ func spawn_weapon_projectile(
 	team: StringName,
 	spawn_position: Vector2,
 	direction: int,
-	target_actor: Node = null
+	target_actor: Node = null,
+	shot_index := 0,
+	shot_count := 1
 ) -> Node:
 	var projectile := WeaponProjectileScript.new()
 	actors.add_child(projectile)
-	projectile.setup(self, source_actor, weapon_definition, team, spawn_position, direction, target_actor)
+	projectile.setup(self, source_actor, weapon_definition, team, spawn_position, direction, target_actor, shot_index, shot_count)
 	return projectile
 
 

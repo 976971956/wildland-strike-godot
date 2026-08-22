@@ -19,6 +19,7 @@ const ActionInputSourceScript = preload("res://core/input/action_input_source.gd
 const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
 const CommandMoveControllerScript = preload("res://actors/fighters/command_move_controller.gd")
 const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
+const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
 const RUN_ATTACK = preload("res://data/attacks/player_run.tres")
 const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
@@ -31,15 +32,10 @@ const BACK_THROW_ATTACK = preload("res://data/attacks/player_back_throw.tres")
 const COMBO_THROW_ATTACK = preload("res://data/attacks/player_combo_throw.tres")
 const SPECIAL_ATTACK = preload("res://data/attacks/player_special.tres")
 const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
-const MACHETE_WEAPON = preload("res://data/weapons/machete.tres")
-const GRENADE_WEAPON = preload("res://data/weapons/grenade.tres")
-const PISTOL_WEAPON = preload("res://data/weapons/pistol.tres")
-const WEAPON_PICKUPS := {
-	"weapon": MACHETE_WEAPON,
-	"weapon_melee": MACHETE_WEAPON,
-	"weapon_explosive": GRENADE_WEAPON,
-	"weapon_firearm": PISTOL_WEAPON,
-}
+const MACHETE_WEAPON = WeaponCatalogScript.MACHETE
+const GRENADE_WEAPON = WeaponCatalogScript.GRENADE
+const PISTOL_WEAPON = WeaponCatalogScript.PISTOL
+const WEAPON_PICKUPS = WeaponCatalogScript.PICKUP_MAP
 const RUN_SPEED_MULTIPLIER := 1.65
 const MAX_GRAB_STRIKES := 3
 const GRAB_HOLD_DURATION := 2.0
@@ -331,7 +327,7 @@ func _start_attack() -> void:
 		combo_window = current_attack.combo_window
 	attack_lunge = current_attack.lunge_speed
 	_configure_attack_hitbox()
-	game.play_sfx(current_attack.sound_event)
+	game.play_sfx(equipped_weapon.fire_sfx if _has_melee_weapon() else current_attack.sound_event)
 
 
 func _aerial_attack_for_velocity():
@@ -480,9 +476,10 @@ func _check_attack_hit() -> void:
 	if best:
 		if best.is_in_group("breakables"):
 			var used_weapon := weapon_hits > 0
+			var used_weapon_definition: Resource = equipped_weapon if used_weapon else null
 			var damage: int = current_attack.damage
 			if used_weapon:
-				damage += current_attack.weapon_bonus_damage
+				damage += used_weapon_definition.melee_bonus_damage
 				weapon_hits -= 1
 			damage = _scaled_damage(damage)
 			var impact_position: Vector2 = best.position - Vector2(0.0, best.definition.size.y * 0.45)
@@ -492,8 +489,9 @@ func _check_attack_hit() -> void:
 					if used_weapon and current_attack.weapon_impact_strength > 0
 					else current_attack.impact_strength
 				)
-				game.hit_confirm(impact_position, impact_strength, facing, true, current_attack.impact_profile)
-				_apply_attacker_recoil(current_attack.impact_profile)
+				var impact_profile: Resource = used_weapon_definition.impact_profile if used_weapon else current_attack.impact_profile
+				game.hit_confirm(impact_position, impact_strength, facing, true, impact_profile)
+				_apply_attacker_recoil(impact_profile)
 			_finish_attack_pulse()
 			return
 		var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, best)
@@ -513,12 +511,18 @@ func _check_attack_hit() -> void:
 		)
 		var damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
 		var used_weapon := weapon_hits > 0
+		var used_weapon_definition: Resource = equipped_weapon if used_weapon else null
 		if used_weapon:
-			damage += current_attack.weapon_bonus_damage
+			damage += used_weapon_definition.melee_bonus_damage
 			weapon_hits -= 1
 		damage = _scaled_damage(damage)
 		var launch: bool = CounterHitRulesScript.launch_for(current_attack, counter_hit)
 		var resolved_knockback := CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
+		var resolved_stun_bonus: float = CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
+		if used_weapon:
+			resolved_knockback *= used_weapon_definition.melee_knockback_scale
+			launch = launch or used_weapon_definition.melee_force_launch
+			resolved_stun_bonus += used_weapon_definition.melee_stun_bonus
 		var final_pulse: bool = attack_hits_resolved + 1 >= current_attack.max_hits
 		if current_attack.max_hits > 1 and not final_pulse:
 			launch = false
@@ -529,7 +533,7 @@ func _check_attack_hit() -> void:
 			resolved_knockback,
 			launch,
 			counter_hit,
-			CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit),
+			resolved_stun_bonus,
 			AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 		)
 		if best.health >= best_health_before:
@@ -540,8 +544,11 @@ func _check_attack_hit() -> void:
 			if used_weapon and current_attack.weapon_impact_strength > 0
 			else current_attack.impact_strength
 		)
-		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing, true, current_attack.impact_profile)
-		_apply_attacker_recoil(current_attack.impact_profile)
+		var impact_profile: Resource = used_weapon_definition.impact_profile if used_weapon else current_attack.impact_profile
+		game.hit_confirm(best.position - Vector2(0, 50), impact_strength, facing, true, impact_profile)
+		_apply_attacker_recoil(impact_profile)
+		if used_weapon:
+			_resolve_melee_secondary_effect(best, used_weapon_definition)
 		if will_grab and is_instance_valid(best) and not best.is_defeated:
 			grabbed_enemy = best
 			best.grabbed_by(self)
@@ -628,6 +635,9 @@ func _configure_attack_hitbox() -> void:
 		return
 	if current_attack.hitbox_shape == AttackFrameDataScript.HitboxShape.BOX:
 		var geometry: Array[Vector2] = current_attack.box_geometry(weapon_hits > 0)
+		if _has_melee_weapon():
+			geometry[0].x *= equipped_weapon.melee_reach_scale
+			geometry[1].x *= equipped_weapon.melee_reach_scale
 		attack_hitbox.configure_box(geometry[0], geometry[1], facing)
 	elif current_attack.hitbox_shape == AttackFrameDataScript.HitboxShape.CIRCLE:
 		attack_hitbox.configure_circle(current_attack.circle_radius, facing)
@@ -704,10 +714,18 @@ func heal(amount: int) -> void:
 	game.play_sfx("pickup")
 
 func give_weapon(pickup_id: String = "weapon_melee") -> void:
-	equipped_weapon = WEAPON_PICKUPS.get(pickup_id, MACHETE_WEAPON)
+	equipped_weapon = WeaponCatalogScript.from_pickup_id(pickup_id)
 	weapon_hits = maxi(1, roundi(equipped_weapon.capacity * item_efficiency))
 	game.play_sfx("pickup")
 	queue_redraw()
+
+
+func _has_melee_weapon() -> bool:
+	return (
+		equipped_weapon != null
+		and weapon_ammo > 0
+		and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE
+	)
 
 
 func _has_projectile_weapon() -> bool:
@@ -721,13 +739,17 @@ func _has_projectile_weapon() -> bool:
 func _fire_equipped_weapon() -> void:
 	if not _has_projectile_weapon():
 		return
-	game.spawn_weapon_projectile(
-		self,
-		equipped_weapon,
-		&"player",
-		position + Vector2(facing * 36.0, 0.0),
-		facing
-	)
+	for shot_index in range(equipped_weapon.shots_per_use):
+		game.spawn_weapon_projectile(
+			self,
+			equipped_weapon,
+			&"player",
+			position + Vector2(facing * (36.0 + shot_index * 7.0), 0.0),
+			facing,
+			null,
+			shot_index,
+			equipped_weapon.shots_per_use
+		)
 	game.play_sfx(equipped_weapon.fire_sfx)
 	weapon_hits -= 1
 	# A firearm/explosive consumes exactly one round per attack even when the
@@ -736,6 +758,35 @@ func _fire_equipped_weapon() -> void:
 	attack_hit_done = true
 	attack_hitbox.deactivate()
 	queue_redraw()
+
+
+func _resolve_melee_secondary_effect(primary_target: Node, weapon_definition: Resource) -> void:
+	if weapon_definition == null or weapon_definition.chain_radius <= 0.0 or weapon_definition.chain_damage <= 0:
+		return
+	var chained_target: Node = null
+	var nearest_distance: float = weapon_definition.chain_radius + 1.0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy == primary_target or not is_instance_valid(enemy) or enemy.is_defeated or enemy.invulnerable > 0.0:
+			continue
+		var distance: float = primary_target.position.distance_to(enemy.position)
+		if distance <= weapon_definition.chain_radius and distance < nearest_distance:
+			chained_target = enemy
+			nearest_distance = distance
+	if chained_target == null:
+		return
+	var health_before: int = chained_target.health
+	var chain_direction := 1 if chained_target.position.x >= primary_target.position.x else -1
+	chained_target.take_hit(
+		_scaled_damage(weapon_definition.chain_damage),
+		Vector2(chain_direction * 170.0, 0.0),
+		false,
+		false,
+		weapon_definition.melee_stun_bonus,
+		true
+	)
+	if chained_target.health < health_before:
+		game.hit_confirm(chained_target.position - Vector2(0.0, 48.0), 2, chain_direction, false, weapon_definition.impact_profile)
+		game.play_sfx(&"shock")
 
 
 func _sync_weapon_hud() -> void:
@@ -814,13 +865,27 @@ func _draw() -> void:
 	draw_texture_rect_region(hero_sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
-		draw_line(jump_offset + Vector2(22*facing,-62), jump_offset + Vector2(63*facing,-73), Color("#e8eee4"), 8)
-		draw_line(jump_offset + Vector2(56*facing,-71), jump_offset + Vector2(69*facing,-82), Color("#7c382c"), 6)
+		var held_length: float = 41.0 * equipped_weapon.melee_reach_scale
+		var held_start: Vector2 = jump_offset + Vector2(22.0 * facing, -62.0)
+		var held_end: Vector2 = held_start + Vector2(held_length * facing, -11.0)
+		if equipped_weapon.behavior_id == &"extended_reach":
+			draw_polyline(PackedVector2Array([held_start, held_start + Vector2(24.0 * facing, -6.0), held_end + Vector2(8.0 * facing, 7.0)]), equipped_weapon.color, 5.0)
+		else:
+			draw_line(held_start, held_end, equipped_weapon.color.lightened(0.25), 11.0 if equipped_weapon.melee_force_launch else 8.0)
+		if equipped_weapon.chain_radius > 0.0:
+			draw_arc(held_end, 12.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
 	elif weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-		draw_line(jump_offset + Vector2(18*facing,-61), jump_offset + Vector2(47*facing,-61), Color("#c6d0d5"), 10)
+		var gun_length: float = 39.0 if equipped_weapon.penetration_count > 1 else 29.0
+		draw_line(jump_offset + Vector2(18*facing,-61), jump_offset + Vector2((18.0 + gun_length)*facing,-61), equipped_weapon.color.lightened(0.25), 12.0 if equipped_weapon.shots_per_use >= 5 else 10.0)
 		draw_line(jump_offset + Vector2(24*facing,-58), jump_offset + Vector2(20*facing,-47), Color("#6b4637"), 7)
 	elif weapon_hits > 0 and equipped_weapon != null:
-		draw_circle(jump_offset + Vector2(26*facing,-57), 9.0, equipped_weapon.color)
+		var explosive_position: Vector2 = jump_offset + Vector2(26*facing,-57)
+		if equipped_weapon.stationary:
+			draw_rect(Rect2(explosive_position - Vector2(12.0, 5.0), Vector2(24.0, 10.0)), equipped_weapon.color)
+		elif equipped_weapon.detonate_on_contact:
+			draw_rect(Rect2(explosive_position - Vector2(15.0, 5.0), Vector2(30.0, 10.0)), equipped_weapon.color)
+		else:
+			draw_circle(explosive_position, 9.0, equipped_weapon.color)
 	if special_timer > 0.0:
 		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)

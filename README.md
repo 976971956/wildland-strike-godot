@@ -60,3 +60,7 @@
 ```sh
 godot --headless --log-file /tmp/wildland-tests.log --path . --script res://tests/test_runner.gd
 ```
+
+## 许可证与来源
+
+代码、数据、测试、工具和文档采用 MIT License；项目原创美术与音频资产采用 CC BY 4.0；Noto Sans SC 保持 SIL OFL 1.1。详见 `LICENSE`、`THIRD_PARTY_NOTICES.md` 与逐文件生成记录 `ASSET_PROVENANCE.md`。本项目是原创 IP 的 clean-room 实现，不分发 ROM、抓取精灵、受保护名称、原作音乐或对话。

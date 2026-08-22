@@ -54,6 +54,7 @@ const SUITES := [
 	{"name": "release_balance_matrix", "path": "res://tests/suites/release_balance_matrix_test.gd"},
 	{"name": "release_stage_smoke", "path": "res://tests/suites/release_stage_smoke_test.gd"},
 	{"name": "release_compatibility", "path": "res://tests/suites/release_compatibility_test.gd"},
+	{"name": "release_content_audit", "path": "res://tests/suites/release_content_audit_test.gd"},
 ]
 
 

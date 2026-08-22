@@ -65,6 +65,14 @@ func run(test) -> void:
 	model_player.walk_phase = 0.0
 	var moving_origin: Vector2 = model_player.held_weapon_pose().get("origin", Vector2.ZERO)
 	test.check(idle_origin.distance_to(moving_origin) > 8.0, "held weapon stays at the idle waist coordinate while the walking hand moves")
+	var moving_rotation: float = model_player.held_weapon_pose().get("rotation", 0.0)
+	model_player.walk_phase = 0.5
+	var subframe_pose: Dictionary = model_player.held_weapon_pose()
+	test.check(
+		moving_origin.distance_to(subframe_pose.get("origin", moving_origin)) > 1.0
+		and absf(moving_rotation - float(subframe_pose.get("rotation", moving_rotation))) > 0.01,
+		"player-held weapon remains rigid between locomotion sprite changes instead of following a continuous hand arc"
+	)
 	if model_player.has_method("held_weapon_grip_cover"):
 		var grip_cover: Dictionary = model_player.held_weapon_grip_cover()
 		var cover_target: Rect2 = grip_cover.get("target_rect", Rect2())

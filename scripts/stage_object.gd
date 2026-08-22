@@ -8,6 +8,7 @@ const DisasterHazardDataScript = preload("res://core/stages/disaster_hazard_data
 const JungleHazardDataScript = preload("res://core/stages/jungle_hazard_data.gd")
 const VaultHazardDataScript = preload("res://core/stages/vault_hazard_data.gd")
 const LabHazardDataScript = preload("res://core/stages/lab_hazard_data.gd")
+const HeldItemMotionScript = preload("res://core/presentation/held_item_motion.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -21,6 +22,7 @@ var is_defeated := false
 var hurtbox
 var carrier: Node
 var carried := false
+var carried_visual_rotation := 0.0
 var thrown := false
 var throw_owner: Node
 var throw_velocity := Vector2.ZERO
@@ -86,7 +88,15 @@ func _physics_process(delta: float) -> void:
 		if not is_instance_valid(carrier) or carrier.is_defeated:
 			drop_from_carrier()
 		else:
-			position = carrier.position + Vector2(0.0, -118.0 - carrier.z_height)
+			var carry_pose := {
+				"offset": Vector2(0.0, -118.0 - carrier.z_height),
+				"rotation": 0.0,
+			}
+			if carrier.has_method("carried_prop_pose"):
+				carry_pose = carrier.carried_prop_pose()
+			var follow_weight := HeldItemMotionScript.smoothing_weight(22.0, delta)
+			position = position.lerp(carrier.position + Vector2(carry_pose.offset), follow_weight)
+			carried_visual_rotation = lerp_angle(carried_visual_rotation, float(carry_pose.rotation), follow_weight)
 			z_index = int(carrier.position.y) + 8
 			queue_redraw()
 			return
@@ -173,6 +183,7 @@ func pick_up_by(fighter: Node) -> bool:
 		return false
 	carrier = fighter
 	carried = true
+	carried_visual_rotation = 0.0
 	throw_owner = null
 	throw_velocity = Vector2.ZERO
 	_unregister_breakable_groups()
@@ -845,7 +856,8 @@ func _draw_hazard() -> void:
 func _draw_carryable() -> void:
 	var half: Vector2 = definition.size * 0.5
 	_draw_oval(Vector2(0.0, 5.0), half.x * 0.8, 7.0, Color(0.02, 0.03, 0.04, 0.4))
-	draw_set_transform(Vector2(0.0, -half.y), throw_spin if thrown else 0.0, Vector2.ONE)
+	var visual_rotation := throw_spin if thrown else (carried_visual_rotation if carried else 0.0)
+	draw_set_transform(Vector2(0.0, -half.y), visual_rotation, Vector2.ONE)
 	if "tire" in String(definition.object_id):
 		draw_circle(Vector2.ZERO, half.x, Color("#202429"))
 		draw_arc(Vector2.ZERO, half.x - 4.0, 0.0, TAU, 28, definition.color, 6.0)

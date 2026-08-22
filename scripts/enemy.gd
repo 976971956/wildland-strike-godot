@@ -8,6 +8,20 @@ const CounterHitRulesScript = preload("res://core/combat/counter_hit_rules.gd")
 const AttackPriorityRulesScript = preload("res://core/combat/attack_priority_rules.gd")
 const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
 const BossPhaseDataScript = preload("res://core/combat/boss_phase_data.gd")
+const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
+const HeldItemMotionScript = preload("res://core/presentation/held_item_motion.gd")
+const WEAPON_PICKUP_ATLAS: Texture2D = preload("res://assets/sprites/weapon_pickups_atlas.png")
+const WEAPON_ATLAS_CELL_SIZE := Vector2(160.0, 160.0)
+const WEAPON_ATLAS_COLUMNS := 4
+const RANGED_HAND_ANCHORS := {
+	0: Vector2(38.0, -61.0),
+	1: Vector2(40.0, -61.0),
+	2: Vector2(35.0, -66.0),
+	3: Vector2(41.0, -70.0),
+	4: Vector2(31.0, -73.0),
+	5: Vector2(49.0, -66.0),
+	6: Vector2(28.0, -58.0),
+}
 const MAX_CHAIN_HITS := 6
 const CHAIN_RESET_DURATION := 0.85
 const FORMATION_LANES := [0.0, -1.0, 1.0, -2.0, 2.0, -3.0, 3.0]
@@ -1205,18 +1219,93 @@ func _draw() -> void:
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED and not is_defeated:
-		if definition.ranged_weapon.kind == 1:
-			draw_circle(Vector2(facing * 39.0, -54.0), 9.0, definition.ranged_weapon.color)
-			draw_line(Vector2(facing * 38.0, -65.0), Vector2(facing * 45.0, -73.0), Color("#f0b55a"), 3.0)
-		else:
-			draw_line(Vector2(facing * 15.0, -57.0), Vector2(facing * 44.0, -57.0), Color("#b9c6ca"), 9.0)
-			draw_line(Vector2(facing * 20.0, -53.0), Vector2(facing * 17.0, -44.0), Color("#624438"), 6.0)
+		_draw_held_ranged_weapon(tint_color)
 	elif definition.is_boss and not is_defeated:
 		_draw_boss_overlay()
 	if definition.show_health_bar and health > 0:
 		draw_rect(Rect2(-31,-170,62,6), Color("#351f28"))
 		draw_rect(Rect2(-31,-170,62.0*health/max_health,6), Color("#f06454"))
 	_draw_guard_cue()
+
+
+func held_weapon_visual() -> Dictionary:
+	if definition == null or definition.behavior_kind != EnemyDefinitionScript.BehaviorKind.RANGED or definition.ranged_weapon == null:
+		return {}
+	var weapon: Resource = definition.ranged_weapon
+	var atlas_index := WeaponCatalogScript.atlas_index_for_weapon(weapon)
+	if atlas_index < 0:
+		return {}
+	var cell_position := Vector2(atlas_index % WEAPON_ATLAS_COLUMNS, atlas_index / WEAPON_ATLAS_COLUMNS) * WEAPON_ATLAS_CELL_SIZE
+	var source_rect := Rect2(cell_position + weapon.held_crop.position, weapon.held_crop.size)
+	var enemy_held_scale: float = weapon.held_scale * 0.76
+	var target_size: Vector2 = weapon.held_crop.size * enemy_held_scale
+	return {
+		"atlas": WEAPON_PICKUP_ATLAS,
+		"source_rect": source_rect,
+		"target_rect": Rect2(-weapon.held_grip * enemy_held_scale, target_size),
+		"asset_facing": weapon.held_asset_facing,
+	}
+
+
+func held_weapon_pose() -> Dictionary:
+	if held_weapon_visual().is_empty():
+		return {}
+	var column := _visual_column()
+	var origin: Vector2 = RANGED_HAND_ANCHORS.get(column, Vector2(38.0, -61.0))
+	var weapon: Resource = definition.ranged_weapon
+	var rotation: float = weapon.held_idle_rotation
+	var movement_weight := clampf(velocity.length() / maxf(speed, 1.0), 0.0, 1.0)
+	var motion := HeldItemMotionScript.locomotion_pose(walk_phase, movement_weight, Vector2(2.8, 2.4), 0.085)
+	if movement_weight <= 0.05:
+		motion = HeldItemMotionScript.breathing_pose(visual_clock, Vector2(0.8, 1.2), 0.02)
+	origin += Vector2(motion.offset)
+	rotation += float(motion.rotation)
+	if behavior_phase == BehaviorPhase.TELEGRAPH:
+		var windup := 1.0 - clampf(behavior_timer / maxf(definition.telegraph_duration, 0.001), 0.0, 1.0)
+		origin += Vector2(-4.0, -8.0) * smoothstep(0.0, 1.0, windup)
+		rotation = lerpf(rotation, weapon.held_contact_rotation * 0.55, windup)
+	elif behavior_phase == BehaviorPhase.RECOVER:
+		var recovery := 1.0 - clampf(behavior_timer / maxf(definition.recovery_duration, 0.001), 0.0, 1.0)
+		var recoil := 1.0 - smoothstep(0.0, 1.0, recovery)
+		origin.x -= recoil * 7.0
+		rotation = lerpf(weapon.held_contact_rotation, rotation, smoothstep(0.0, 1.0, recovery))
+	return {"origin": origin, "rotation": rotation}
+
+
+func _draw_held_ranged_weapon(tint_color: Color) -> void:
+	var visual := held_weapon_visual()
+	var pose := held_weapon_pose()
+	if visual.is_empty() or pose.is_empty():
+		return
+	var origin: Vector2 = pose.origin
+	draw_set_transform(
+		Vector2(recoil_offset + origin.x * facing, impact_squash * 18.0 + origin.y),
+		float(pose.rotation) * facing,
+		Vector2(facing * int(visual.asset_facing), 1.0)
+	)
+	draw_texture_rect_region(visual.atlas, visual.target_rect, visual.source_rect)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_enemy_grip_cover(origin, tint_color)
+
+
+func _draw_enemy_grip_cover(origin: Vector2, tint_color: Color) -> void:
+	var column := _visual_column()
+	var cell := Vector2(
+		definition.sprite_sheet.get_width() / float(definition.sprite_columns),
+		definition.sprite_sheet.get_height() / float(definition.sprite_rows)
+	)
+	var target_size: Vector2 = definition.target_size * definition.body_scale
+	var body_target := Rect2(-target_size.x * 0.5, -target_size.y + definition.target_bottom_offset, target_size.x, target_size.y)
+	var source_hand_origin := Vector2(-origin.x, origin.y)
+	var hand_size: Vector2 = Vector2(20.0, 18.0) * float(definition.body_scale)
+	var hand_target := Rect2(source_hand_origin - hand_size * 0.5, hand_size)
+	var normalized_position := (hand_target.position - body_target.position) / body_target.size
+	var normalized_size := hand_target.size / body_target.size
+	var frame_origin := Vector2(column, _visual_sprite_row()) * cell
+	var hand_source := Rect2(frame_origin + normalized_position * cell, normalized_size * cell)
+	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
+	draw_texture_rect_region(definition.sprite_sheet, hand_target, hand_source, tint_color)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _draw_rank_cue() -> void:

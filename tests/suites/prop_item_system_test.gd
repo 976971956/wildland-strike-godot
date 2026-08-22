@@ -80,7 +80,22 @@ func run(test) -> void:
 		test.check(game.player.carried_prop == tire and tire.carried, "attack near a carryable did not pick it up")
 		test.check(not tire.is_in_group("carryables") and not tire.is_in_group("breakables"), "carried prop remained targetable in the world")
 		tire._physics_process(0.0)
-		test.check(tire.position.y < game.player.position.y - 90.0, "carried prop did not follow above the fighter")
+		var carry_height: float = game.player.position.y - tire.position.y
+		test.check(carry_height > 70.0 and carry_height < 100.0, "carried prop did not settle into the fighter's shoulder/hand region")
+		test.check(game.player.has_method("carried_prop_pose"), "carried props still use a fixed overhead coordinate instead of the fighter's animated carry pose")
+		if game.player.has_method("carried_prop_pose"):
+			game.player.velocity = Vector2(100.0, 0.0)
+			game.player.walk_phase = 0.0
+			var carry_pose_a: Dictionary = game.player.carried_prop_pose()
+			game.player.walk_phase = 0.5
+			var carry_pose_b: Dictionary = game.player.carried_prop_pose()
+			test.check(
+				Vector2(carry_pose_a.get("offset", Vector2.ZERO)).distance_to(carry_pose_b.get("offset", Vector2.ZERO)) > 1.0
+				and absf(float(carry_pose_a.get("rotation", 0.0)) - float(carry_pose_b.get("rotation", 0.0))) > 0.01,
+				"carried prop stays rigid while the carrier walks"
+			)
+			tire._physics_process(0.1)
+			test.check(absf(tire.carried_visual_rotation) > 0.001, "carried prop does not ease toward the carrier's authored tilt")
 
 		game.spawn_enemy(game.player.position + Vector2(115.0, 0.0), "grunt")
 		var target: Node = test.tree.get_nodes_in_group("enemies").back()

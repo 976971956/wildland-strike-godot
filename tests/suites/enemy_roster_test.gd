@@ -89,6 +89,37 @@ func run(test) -> void:
 	game.player.position = Vector2(500.0, 540.0)
 	for existing in test.tree.get_nodes_in_group("enemies"):
 		existing.set_physics_process(false)
+	var hunter: Node = _spawn_frozen(game, Vector2(680.0, 540.0), "hunter")
+	test.check(hunter.has_method("held_weapon_visual") and hunter.has_method("held_weapon_pose"), "ranged enemy still draws a rigid primitive instead of the shared held-weapon model")
+	if hunter.has_method("held_weapon_visual") and hunter.has_method("held_weapon_pose"):
+		test.check(not hunter.held_weapon_visual().is_empty(), "ranged enemy held-weapon model is missing")
+		hunter.velocity = Vector2(100.0, 0.0)
+		hunter.walk_phase = 0.0
+		var hunter_pose_a: Dictionary = hunter.held_weapon_pose()
+		hunter.walk_phase = 0.5
+		var hunter_pose_b: Dictionary = hunter.held_weapon_pose()
+		test.check(
+			Vector2(hunter_pose_a.get("origin", Vector2.ZERO)).distance_to(hunter_pose_b.get("origin", Vector2.ZERO)) > 1.0
+			and absf(float(hunter_pose_a.get("rotation", 0.0)) - float(hunter_pose_b.get("rotation", 0.0))) > 0.01,
+			"enemy-held weapon remains rigid during locomotion"
+		)
+		hunter.velocity = Vector2.ZERO
+		hunter.behavior_phase = hunter.BehaviorPhase.TELEGRAPH
+		hunter.behavior_timer = hunter.definition.telegraph_duration
+		var aim_start: Dictionary = hunter.held_weapon_pose()
+		hunter.behavior_timer = 0.0
+		var aim_contact: Dictionary = hunter.held_weapon_pose()
+		test.check(
+			Vector2(aim_start.get("origin", Vector2.ZERO)).distance_to(aim_contact.get("origin", Vector2.ZERO)) > 5.0
+			and absf(float(aim_start.get("rotation", 0.0)) - float(aim_contact.get("rotation", 0.0))) > 0.05,
+			"enemy weapon does not raise through telegraph into its firing pose"
+		)
+		hunter.behavior_phase = hunter.BehaviorPhase.RECOVER
+		hunter.behavior_timer = hunter.definition.recovery_duration
+		var recoil_pose: Dictionary = hunter.held_weapon_pose()
+		hunter.behavior_phase = hunter.BehaviorPhase.NEUTRAL
+		var recovered_pose: Dictionary = hunter.held_weapon_pose()
+		test.check(Vector2(recoil_pose.get("origin", Vector2.ZERO)).x < Vector2(recovered_pose.get("origin", Vector2.ZERO)).x - 5.0, "enemy weapon has no authored firing recoil")
 
 	var knife: Node = _spawn_frozen(game, Vector2(760.0, 540.0), "knife_raider")
 	knife._think(1.0 / 60.0)
@@ -151,6 +182,7 @@ func run(test) -> void:
 	test.check(director_source.contains("resolved_spawns"), "encounter director bypasses reusable recipe expansion")
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
 	test.check(probe_source.contains("enemy_roster_preview=2"), "full enemy roster Web fixture is missing")
+	test.check(probe_source.contains("held_item_motion_preview=1") and probe_source.contains("_animate_held_item_preview"), "animated player/enemy/prop held-item Web fixture is missing")
 	await test.dispose(game)
 
 

@@ -12,6 +12,9 @@ const FORMATION_LOG_PREFIX := "WEB_FORMATION_ACCEPTANCE "
 var warmup_frames := 0
 var frame_times_ms := PackedFloat64Array()
 var scenario := "title"
+var held_motion_actors: Array[Node] = []
+var held_motion_prop: Node
+var held_motion_phase := 0.0
 
 
 func _ready() -> void:
@@ -94,6 +97,9 @@ func _ready() -> void:
 		elif "dinosaur_ecosystem_preview=1" in query_string:
 			scenario = "dinosaur_ecosystem_preview"
 			call_deferred("_start_dinosaur_ecosystem_preview")
+		elif "held_item_motion_preview=1" in query_string:
+			scenario = "held_item_motion_preview"
+			call_deferred("_start_held_item_motion_preview")
 		elif "prop_item_preview=1" in query_string:
 			scenario = "prop_item_preview"
 			call_deferred("_start_prop_item_preview")
@@ -185,6 +191,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_animate_held_item_preview(delta)
 	if warmup_frames < WARMUP_FRAMES:
 		warmup_frames += 1
 		return
@@ -201,6 +208,65 @@ func _process(delta: float) -> void:
 		var browser_document: JavaScriptObject = JavaScriptBridge.get_interface("document")
 		browser_document.body.setAttribute("data-wildland-performance", result_json)
 	set_process(false)
+
+
+func _animate_held_item_preview(delta: float) -> void:
+	if scenario != "held_item_motion_preview":
+		return
+	held_motion_phase += delta * 3.1
+	for actor in held_motion_actors:
+		if not is_instance_valid(actor):
+			continue
+		actor.walk_phase = held_motion_phase
+		actor.visual_clock += delta
+		actor.queue_redraw()
+	if is_instance_valid(held_motion_prop):
+		held_motion_prop._physics_process(delta)
+
+
+func _start_held_item_motion_preview() -> void:
+	var game := get_parent()
+	var carrier: Node = game.join_local_player(0, 1)
+	game._start_game()
+	game.encounter_director.completed = true
+	for existing_enemy in get_tree().get_nodes_in_group("enemies"):
+		existing_enemy.remove_from_group("enemies")
+		existing_enemy.visible = false
+		existing_enemy.set_physics_process(false)
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_process(false)
+		stage_object.set_physics_process(false)
+	game.player.position = Vector2(280.0, 555.0)
+	game.player.give_weapon("weapon_shotgun")
+	game.player.velocity = Vector2(145.0, 0.0)
+	game.player.set_physics_process(false)
+	held_motion_actors.append(game.player)
+	if carrier != null:
+		carrier.position = Vector2(520.0, 555.0)
+		carrier.velocity = Vector2(125.0, 0.0)
+		carrier.set_physics_process(false)
+		held_motion_actors.append(carrier)
+		var carryables := get_tree().get_nodes_in_group("carryables")
+		if not carryables.is_empty():
+			held_motion_prop = carryables[0]
+			held_motion_prop.visible = true
+			held_motion_prop.pick_up_by(carrier)
+			carrier.carried_prop = held_motion_prop
+			held_motion_prop._physics_process(0.0)
+			held_motion_prop.set_physics_process(false)
+	for preview in [
+		{"type": "hunter", "position": Vector2(785.0, 555.0)},
+		{"type": "demolitionist", "position": Vector2(1035.0, 555.0)},
+	]:
+		game.spawn_enemy(preview.position, preview.type)
+		var enemy: Node = get_tree().get_nodes_in_group("enemies").back()
+		enemy.velocity = Vector2(-105.0, 0.0)
+		enemy.facing = -1
+		enemy.set_physics_process(false)
+		held_motion_actors.append(enemy)
+	game.hud.show_banner("NATURAL HELD ITEMS", "PLAYER WEAPON // CARRIED PROP // ENEMY WEAPONS", 999.0)
+	game.set_process(false)
 
 
 func _start_combat_benchmark() -> void:

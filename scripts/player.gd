@@ -45,6 +45,7 @@ const RunControllerScript = preload("res://actors/fighters/run_controller.gd")
 const CommandMoveControllerScript = preload("res://actors/fighters/command_move_controller.gd")
 const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
+const HeldItemMotionScript = preload("res://core/presentation/held_item_motion.gd")
 const COMBO_DEFINITION = preload("res://data/fighters/ranger_combo.tres")
 const RUN_ATTACK = preload("res://data/attacks/player_run.tres")
 const JUMP_ATTACK = preload("res://data/attacks/player_air.tres")
@@ -1021,6 +1022,19 @@ func held_weapon_pose() -> Dictionary:
 		return {}
 	var origin := _held_hand_anchor(_visual_frame())
 	var rotation: float = equipped_weapon.held_idle_rotation
+	var movement_weight := clampf(velocity.length() / maxf(move_speed, 1.0), 0.0, 1.0)
+	var secondary_motion: Dictionary
+	if movement_weight > 0.05 and attack_timer <= 0.0:
+		secondary_motion = HeldItemMotionScript.locomotion_pose(
+			walk_phase,
+			movement_weight,
+			Vector2(2.6, 2.2),
+			0.075
+		)
+	else:
+		secondary_motion = HeldItemMotionScript.breathing_pose(visual_clock)
+	origin += Vector2(secondary_motion.offset)
+	rotation += float(secondary_motion.rotation)
 	if attack_timer > 0.0 and current_attack != null and current_attack.duration > 0.0:
 		var progress := clampf(1.0 - attack_timer / current_attack.duration, 0.0, 1.0)
 		var contact_progress := clampf(
@@ -1071,7 +1085,32 @@ func held_weapon_grip_cover() -> Dictionary:
 
 
 func _held_hand_anchor(frame: Vector2i) -> Vector2:
+	if frame.y == 0 and velocity.length() > 20.0:
+		var phase_floor := floori(walk_phase)
+		var current_column := 2 + posmod(phase_floor, 4)
+		var next_column := 2 + posmod(phase_floor + 1, 4)
+		var blend := smoothstep(0.0, 1.0, walk_phase - floorf(walk_phase))
+		var current_anchor: Vector2 = HELD_HAND_ANCHORS.get(Vector2i(current_column, 0), Vector2(43.0, -70.0))
+		var next_anchor: Vector2 = HELD_HAND_ANCHORS.get(Vector2i(next_column, 0), current_anchor)
+		return current_anchor.lerp(next_anchor, blend)
 	return HELD_HAND_ANCHORS.get(frame, Vector2(43.0, -70.0))
+
+
+func carried_prop_pose() -> Dictionary:
+	var movement_weight := clampf(velocity.length() / maxf(move_speed, 1.0), 0.0, 1.0)
+	var motion := HeldItemMotionScript.locomotion_pose(
+		walk_phase,
+		movement_weight,
+		Vector2(5.5, 4.0),
+		0.1
+	)
+	if movement_weight <= 0.05:
+		motion = HeldItemMotionScript.breathing_pose(visual_clock, Vector2(1.2, 1.8), 0.025)
+	var local_offset := Vector2(24.0, -82.0 - z_height) + Vector2(motion.offset)
+	return {
+		"offset": Vector2(local_offset.x * facing, local_offset.y),
+		"rotation": float(motion.rotation) * facing,
+	}
 
 
 func _hero_target_rect() -> Rect2:

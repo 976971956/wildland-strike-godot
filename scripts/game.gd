@@ -18,6 +18,7 @@ const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const LocalPlayerRegistryScript = preload("res://core/input/local_player_registry.gd")
 const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
+const ArcadeProfileScript = preload("res://core/persistence/arcade_profile.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
 const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
@@ -46,6 +47,8 @@ var local_player_registry = LocalPlayerRegistryScript.new()
 var stage_limit := 1080.0
 var encounter_director: Node
 var music_director: Node
+var arcade_profile
+var settings: Dictionary = ArcadeProfileScript.DEFAULT_SETTINGS.duplicate(true)
 var stage_index: int:
 	get:
 		return encounter_director.current_encounter_index if is_instance_valid(encounter_director) else 0
@@ -100,6 +103,11 @@ var team_attack_requests := {}
 var team_attack_count := 0
 var last_team_attack_participants: Array[int] = []
 var last_team_attack_hits := 0
+var title_idle_time := 0.0
+var options_selected_index := 0
+var options_return_state := "title"
+var final_score_recorded := false
+var final_score_rank := -1
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -113,7 +121,8 @@ const COOP_ENEMY_DAMAGE_SCALES := [1.0, 1.08, 1.16]
 const TEAMMATE_REVIVE_WINDOW := 8.0
 const TEAMMATE_REVIVE_DISTANCE := 96.0
 const TEAMMATE_REVIVE_HEALTH_RATIO := 0.35
-const CONTINUE_RESPAWN_DELAY := 1.1
+const CONTINUE_RESPAWN_DELAY := 9.0
+const ATTRACT_DELAY := 10.0
 const TEAM_ATTACK_INPUT_WINDOW := 0.24
 const TEAM_ATTACK_LINK_DISTANCE := 190.0
 
@@ -129,6 +138,9 @@ func _ready() -> void:
 	encounter_director.stage_completed.connect(_victory)
 	music_director = MusicDirectorScript.new()
 	add_child(music_director)
+	arcade_profile = ArcadeProfileScript.new("" if DisplayServer.get_name() == "headless" else ArcadeProfileScript.DEFAULT_PATH)
+	arcade_profile.load_profile()
+	settings = arcade_profile.settings.duplicate(true)
 	world_art.configure(active_stage_definition)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
@@ -142,12 +154,15 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_create_stage_objects()
 	_create_vehicle_sequence()
+	actors.visible = false
 	stage_time_remaining = active_stage_definition.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
 	_sync_hud_stage_progress()
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	hud.set_arcade_profile(arcade_profile.high_scores, settings)
 	_sync_selection_hud()
 	hud.set_mode("title")
+	_apply_settings()
 	set_process(true)
 
 func _create_player() -> void:
@@ -178,8 +193,38 @@ func _create_local_player(slot) -> Node:
 func _process(delta: float) -> void:
 	if state == "title":
 		_set_local_players_physics(false)
+		title_idle_time += delta
 		if Input.is_action_just_pressed("start"):
 			_open_character_select()
+		elif Input.is_action_just_pressed("jump"):
+			_open_high_scores()
+		elif Input.is_action_just_pressed("special"):
+			_open_options("title")
+		elif title_idle_time >= ATTRACT_DELAY:
+			_open_attract()
+		return
+	if state == "attract":
+		title_idle_time += delta
+		if Input.is_action_just_pressed("start") or Input.is_action_just_pressed("attack"):
+			_open_character_select()
+		elif title_idle_time >= ATTRACT_DELAY:
+			_return_to_title()
+		return
+	if state == "high_scores":
+		if Input.is_action_just_pressed("start") or Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("pause"):
+			_return_to_title()
+		return
+	if state == "options":
+		if Input.is_action_just_pressed("move_up"):
+			_shift_option_selection(-1)
+		elif Input.is_action_just_pressed("move_down"):
+			_shift_option_selection(1)
+		elif Input.is_action_just_pressed("move_left"):
+			_adjust_option(-1)
+		elif Input.is_action_just_pressed("move_right"):
+			_adjust_option(1)
+		if Input.is_action_just_pressed("start") or Input.is_action_just_pressed("pause"):
+			_close_options()
 		return
 	if state == "select":
 		_set_local_players_physics(false)
@@ -219,6 +264,12 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("start"):
 			get_tree().reload_current_scene()
 		return
+	if state == "playing" and Input.is_action_just_pressed("pause"):
+		_open_options("playing")
+		return
+	if state == "playing" and not continue_respawn_time.is_empty() and (Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("start")):
+		_confirm_continue_for_slot(int(continue_respawn_time.keys()[0]))
+		return
 	_tick_downed_players(delta)
 	_tick_team_attack_requests(delta)
 	var active_players := get_active_players()
@@ -240,6 +291,7 @@ func _process(delta: float) -> void:
 	_sync_hud_stage_progress()
 
 func _start_game() -> void:
+	actors.visible = true
 	for fighter in players:
 		if not is_instance_valid(fighter):
 			continue
@@ -260,10 +312,101 @@ func _start_game() -> void:
 func _open_campaign_map(target_index: int = 0) -> void:
 	campaign_map_target_index = clampi(target_index, 0, CAMPAIGN_STAGE_DEFINITIONS.size() - 1)
 	state = "campaign_map"
+	actors.visible = false
 	_set_local_players_physics(false)
 	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
 	hud.set_campaign_map(CAMPAIGN_STAGE_DEFINITIONS, campaign_map_target_index, completed_stage_count, score, lives)
 	play_sfx(&"ui_confirm")
+
+
+func _open_attract() -> void:
+	state = "attract"
+	title_idle_time = 0.0
+	hud.set_mode("attract")
+
+
+func _open_high_scores() -> void:
+	state = "high_scores"
+	title_idle_time = 0.0
+	hud.set_arcade_profile(arcade_profile.high_scores, settings)
+	hud.set_mode("high_scores")
+	play_sfx(&"ui_confirm")
+
+
+func _return_to_title() -> void:
+	get_tree().paused = false
+	state = "title"
+	actors.visible = false
+	title_idle_time = 0.0
+	hud.set_arcade_profile(arcade_profile.high_scores, settings)
+	hud.set_mode("title")
+	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+
+
+func _open_options(return_state: String) -> void:
+	if return_state not in ["title", "playing"]:
+		return
+	options_return_state = return_state
+	state = "options"
+	_set_local_players_physics(false)
+	if return_state == "playing":
+		get_tree().paused = true
+	hud.set_options(settings, options_selected_index, return_state == "playing")
+	play_sfx(&"ui_confirm")
+
+
+func _close_options() -> void:
+	_save_profile()
+	get_tree().paused = false
+	state = options_return_state
+	if state == "playing":
+		_set_local_players_physics(true)
+		hud.set_mode("playing")
+	else:
+		_return_to_title()
+	play_sfx(&"ui_confirm")
+
+
+func _shift_option_selection(direction: int) -> void:
+	options_selected_index = posmod(options_selected_index + direction, 5)
+	hud.set_options(settings, options_selected_index, options_return_state == "playing")
+	play_sfx(&"ui_confirm")
+
+
+func _adjust_option(direction: int) -> void:
+	var keys := ["music_volume", "sfx_volume", "screen_shake", "hit_flash", "haptics"]
+	var key: String = keys[options_selected_index]
+	if key in ["music_volume", "sfx_volume"]:
+		settings[key] = clampf(snappedf(float(settings[key]) + direction * 0.1, 0.1), 0.0, 1.0)
+	else:
+		settings[key] = not bool(settings[key])
+	arcade_profile.set_setting(key, settings[key])
+	_apply_settings()
+	hud.set_options(settings, options_selected_index, options_return_state == "playing")
+	play_sfx(&"ui_confirm")
+
+
+func _apply_settings() -> void:
+	if is_instance_valid(music_director):
+		music_director.set_master_volume_ratio(float(settings.get("music_volume", 0.8)))
+	if not bool(settings.get("screen_shake", true)):
+		shake_time = 0.0
+		shake_strength = 0.0
+		camera.offset = Vector2.ZERO
+	if is_instance_valid(hud) and arcade_profile != null:
+		hud.set_arcade_profile(arcade_profile.high_scores, settings)
+
+
+func _save_profile() -> void:
+	if arcade_profile == null:
+		return
+	arcade_profile.settings = settings.duplicate(true)
+	arcade_profile.save_profile()
+	hud.set_arcade_profile(arcade_profile.high_scores, settings)
+
+
+func hit_flash_enabled() -> bool:
+	return bool(settings.get("hit_flash", true))
 
 
 func _deploy_campaign_stage() -> void:
@@ -281,6 +424,11 @@ func selected_hero() -> Resource:
 
 func _open_character_select() -> void:
 	state = "select"
+	actors.visible = false
+	title_idle_time = 0.0
+	final_score_recorded = false
+	final_score_rank = -1
+	hud.set_final_score_rank(-1)
 	local_player_registry.reset_ready()
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
 	_sync_selection_hud()
@@ -377,6 +525,12 @@ func _input(event: InputEvent) -> void:
 	if not (event is InputEventJoypadButton) or not event.pressed:
 		return
 	var slot = local_player_registry.slot_for_device(event.device)
+	if state == "playing" and slot != null and continue_respawn_time.has(slot.slot_index) and event.button_index in [JOY_BUTTON_START, JOY_BUTTON_A]:
+		_confirm_continue_for_slot(slot.slot_index)
+		return
+	if state == "playing" and slot != null and event.button_index == JOY_BUTTON_START:
+		_open_options("playing")
+		return
 	if event.button_index == JOY_BUTTON_START:
 		if slot == null:
 			join_local_player(event.device)
@@ -1055,17 +1209,10 @@ func try_revive_teammate(rescuer: Node) -> bool:
 func _tick_downed_players(delta: float) -> void:
 	for slot_index in continue_respawn_time.keys().duplicate():
 		continue_respawn_time[slot_index] = maxf(0.0, float(continue_respawn_time[slot_index]) - delta)
+		hud.set_continue_offer(int(slot_index), float(continue_respawn_time[slot_index]))
 		if float(continue_respawn_time[slot_index]) > 0.0:
 			continue
-		continue_respawn_time.erase(slot_index)
-		var fighter := player_for_slot(int(slot_index))
-		if not is_instance_valid(fighter):
-			continue
-		fighter.revive(_find_safe_revive_position(fighter))
-		fighter.set_physics_process(true)
-		_sync_local_player_hud(fighter)
-		hud.set_local_player_down_timer(int(slot_index), -1.0)
-		hud.show_banner("PLAYER %d CONTINUE!" % (int(slot_index) + 1), "TEMPORARY INVINCIBILITY", 1.2)
+		_decline_continue(int(slot_index))
 	for slot_index in downed_time_remaining.keys().duplicate():
 		var fighter := player_for_slot(int(slot_index))
 		if not is_instance_valid(fighter) or not fighter.is_defeated:
@@ -1093,10 +1240,45 @@ func _consume_player_continue(fighter: Node) -> void:
 	_sync_local_player_hud(fighter)
 	if slot.remaining_lives >= 0:
 		continue_respawn_time[fighter.local_slot_index] = CONTINUE_RESPAWN_DELAY
-		hud.set_local_player_down_timer(fighter.local_slot_index, 0.0)
+		hud.set_continue_offer(fighter.local_slot_index, CONTINUE_RESPAWN_DELAY)
+		hud.set_local_player_down_timer(fighter.local_slot_index, CONTINUE_RESPAWN_DELAY)
 	else:
 		hud.set_local_player_down_timer(fighter.local_slot_index, -2.0)
 		hud.show_banner("PLAYER %d OUT" % (fighter.local_slot_index + 1), "NO CONTINUES REMAIN", 1.2)
+
+
+func _confirm_continue_for_slot(slot_index: int) -> bool:
+	if not continue_respawn_time.has(slot_index):
+		return false
+	continue_respawn_time.erase(slot_index)
+	hud.set_continue_offer(slot_index, -1.0)
+	var fighter := player_for_slot(slot_index)
+	if not is_instance_valid(fighter):
+		return false
+	fighter.revive(_find_safe_revive_position(fighter))
+	fighter.set_physics_process(not get_tree().paused)
+	_sync_local_player_hud(fighter)
+	hud.set_local_player_down_timer(slot_index, -1.0)
+	hud.show_banner("PLAYER %d CONTINUE!" % (slot_index + 1), "TEMPORARY INVINCIBILITY", 1.2)
+	play_sfx(&"start")
+	return true
+
+
+func _decline_continue(slot_index: int) -> void:
+	continue_respawn_time.erase(slot_index)
+	hud.set_continue_offer(slot_index, -1.0)
+	var slot = local_player_registry.slot_at(slot_index)
+	if slot != null:
+		slot.remaining_lives = -1
+		if slot_index == 0:
+			lives = -1
+			hud.set_lives(lives)
+	var fighter := player_for_slot(slot_index)
+	if is_instance_valid(fighter):
+		_sync_local_player_hud(fighter)
+	hud.set_local_player_down_timer(slot_index, -2.0)
+	hud.show_banner("PLAYER %d OUT" % (slot_index + 1), "CONTINUE TIME EXPIRED", 1.2)
+	_resolve_team_gameover()
 
 
 func _find_safe_revive_position(fighter: Node) -> Vector2:
@@ -1124,6 +1306,7 @@ func _resolve_team_gameover() -> void:
 	state = "gameover"
 	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
 	_set_local_players_physics(false)
+	_record_final_score()
 	hud.set_mode("gameover")
 
 func _victory() -> void:
@@ -1216,7 +1399,9 @@ func _open_campaign_report() -> void:
 	if state != "credits":
 		return
 	state = "campaign_complete"
+	_record_final_score()
 	hud.set_campaign_complete(score, campaign_completion_bonus, lives)
+	hud.set_final_score_rank(final_score_rank)
 	play_sfx(&"ui_confirm")
 
 
@@ -1268,14 +1453,15 @@ func hit_confirm(
 		haptic_duration_ms = impact_profile.haptic_duration_ms
 		haptic_strength = impact_profile.haptic_strength
 		last_impact_profile_id = impact_profile.profile_id
-	shake_time = maxf(shake_time, shake_duration)
-	shake_strength = maxf(shake_strength, resolved_shake_strength)
+	if bool(settings.get("screen_shake", true)):
+		shake_time = maxf(shake_time, shake_duration)
+		shake_strength = maxf(shake_strength, resolved_shake_strength)
 	play_sfx(primary_sfx)
 	if not layer_sfx.is_empty():
 		play_sfx(layer_sfx)
 	last_haptic_duration_ms = haptic_duration_ms
 	last_haptic_strength = haptic_strength
-	if DisplayServer.is_touchscreen_available():
+	if bool(settings.get("haptics", true)) and DisplayServer.is_touchscreen_available():
 		Input.vibrate_handheld(haptic_duration_ms, haptic_strength)
 	if freeze:
 		_hit_stop(hit_stop_duration)
@@ -1293,6 +1479,7 @@ func _hit_stop(duration: float) -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	get_tree().paused = false
 
 func play_sfx(kind: StringName) -> void:
 	sfx_event_history.append(kind)
@@ -1314,8 +1501,19 @@ func play_sfx(kind: StringName) -> void:
 	sfx_voice_priorities[voice_index] = cfg.priority
 	sfx_voice_serials[voice_index] = sfx_voice_serial
 	audio.stream = sfx_stream_cache[cfg.event]
-	audio.volume_db = cfg.volume_db
+	var sfx_ratio := clampf(float(settings.get("sfx_volume", 0.9)), 0.0, 1.0)
+	audio.volume_db = -80.0 if sfx_ratio <= 0.0 else cfg.volume_db + linear_to_db(sfx_ratio)
 	audio.play()
+
+
+func _record_final_score() -> void:
+	if final_score_recorded or arcade_profile == null:
+		return
+	final_score_recorded = true
+	var operative_name: String = player.hero_display_name if is_instance_valid(player) else "RANGER"
+	final_score_rank = arcade_profile.record_score(score, maxi(completed_stage_count, campaign_stage_index + 1), coop_player_count(), operative_name)
+	_save_profile()
+	hud.set_final_score_rank(final_score_rank)
 
 
 func _select_sfx_voice(priority: int) -> int:

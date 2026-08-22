@@ -1196,7 +1196,8 @@ func _draw() -> void:
 	)
 	var source_rect := Rect2(column * cell.x, _visual_sprite_row() * cell.y, cell.x, cell.y)
 	var base_tint: Color = current_boss_phase.tint if definition.is_boss and current_boss_phase != null else definition.tint
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
+	var flash_visible: bool = flash_timer > 0.0 and (game == null or not game.has_method("hit_flash_enabled") or game.hit_flash_enabled())
+	var tint_color: Color = Color.WHITE if flash_visible else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
 	# Enemy source art faces left, opposite to the player sheet.
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
@@ -1411,7 +1412,8 @@ func _draw_raptor() -> void:
 	var base_tint: Color = definition.tint
 	if creature_state == CreatureState.ENRAGED:
 		base_tint = base_tint.lerp(Color(1.0, 0.4, 0.3, 1.0), 0.2)
-	var tint_color: Color = Color.WHITE if flash_timer > 0.0 else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
+	var flash_visible: bool = flash_timer > 0.0 and (game == null or not game.has_method("hit_flash_enabled") or game.hit_flash_enabled())
+	var tint_color: Color = Color.WHITE if flash_visible else (definition.hurt_tint if hurt_timer > 0.0 else base_tint)
 	draw_set_transform(Vector2(recoil_offset, impact_squash * 18.0), 0.0, Vector2(-facing * (1.0 + impact_squash), 1.0 - impact_squash))
 	draw_texture_rect_region(definition.sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

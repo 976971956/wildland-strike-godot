@@ -19,13 +19,14 @@ var duck_time_remaining := 0.0
 var duck_volume_db := 0.0
 var last_duck_db := 0.0
 var last_duck_duration := 0.0
+var master_volume_ratio := 0.8
 
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	player = AudioStreamPlayer.new()
-	player.volume_db = BASE_VOLUME_DB
+	player.volume_db = _base_volume_db()
 	add_child(player)
 	set_process(true)
 
@@ -35,10 +36,20 @@ func _process(delta: float) -> void:
 		return
 	duck_time_remaining = maxf(0.0, duck_time_remaining - delta)
 	if duck_time_remaining > 0.0:
-		player.volume_db = minf(player.volume_db, BASE_VOLUME_DB + duck_volume_db)
+		player.volume_db = minf(player.volume_db, _base_volume_db() + duck_volume_db)
 	else:
 		duck_volume_db = move_toward(duck_volume_db, 0.0, delta * 24.0)
-		player.volume_db = move_toward(player.volume_db, BASE_VOLUME_DB + duck_volume_db, delta * 30.0)
+		player.volume_db = move_toward(player.volume_db, _base_volume_db() + duck_volume_db, delta * 30.0)
+
+
+func set_master_volume_ratio(value: float) -> void:
+	master_volume_ratio = clampf(value, 0.0, 1.0)
+	if is_instance_valid(player):
+		player.volume_db = _base_volume_db() + duck_volume_db
+
+
+func _base_volume_db() -> float:
+	return -80.0 if master_volume_ratio <= 0.0 else BASE_VOLUME_DB + linear_to_db(master_volume_ratio)
 
 
 func duck(amount_db: float, duration: float) -> void:
@@ -49,7 +60,7 @@ func duck(amount_db: float, duration: float) -> void:
 	duck_volume_db = minf(duck_volume_db, amount_db)
 	duck_time_remaining = maxf(duck_time_remaining, duration)
 	if is_instance_valid(player):
-		player.volume_db = minf(player.volume_db, BASE_VOLUME_DB + duck_volume_db)
+		player.volume_db = minf(player.volume_db, _base_volume_db() + duck_volume_db)
 
 
 func play_cue(cue: int) -> void:

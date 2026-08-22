@@ -19,7 +19,19 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "enemy_roster_preview=2" in query_string:
+		if "arcade_shell_preview=4" in query_string:
+			scenario = "continue_countdown_preview"
+			call_deferred("_start_arcade_shell_preview", 4)
+		elif "arcade_shell_preview=3" in query_string:
+			scenario = "pause_options_preview"
+			call_deferred("_start_arcade_shell_preview", 3)
+		elif "arcade_shell_preview=2" in query_string:
+			scenario = "local_high_scores_preview"
+			call_deferred("_start_arcade_shell_preview", 2)
+		elif "arcade_shell_preview=1" in query_string:
+			scenario = "attract_screen_preview"
+			call_deferred("_start_arcade_shell_preview", 1)
+		elif "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
 		elif "stage8_preview=2" in query_string:
@@ -173,6 +185,29 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_arcade_shell_preview(preview_kind: int) -> void:
+	var game := get_parent()
+	var preview_scores: Array[Dictionary] = [
+		{"name": "RANGER", "score": 136500, "stage": 8, "players": 1, "date": "2026-08-22"},
+		{"name": "KESTREL", "score": 121250, "stage": 8, "players": 3, "date": "2026-08-22"},
+		{"name": "ATLAS", "score": 98400, "stage": 7, "players": 2, "date": "2026-08-22"},
+	]
+	game.arcade_profile.high_scores.assign(preview_scores)
+	game.hud.set_arcade_profile(preview_scores, game.settings)
+	if preview_kind == 1:
+		game._open_attract()
+	elif preview_kind == 2:
+		game._open_high_scores()
+	elif preview_kind == 3:
+		game._start_game()
+		game._open_options("playing")
+	else:
+		game._start_game()
+		game.player.set_physics_process(false)
+		game.hud.set_continue_offer(0, 7.4)
+	game.set_process(false)
 
 
 func _start_hero_select_preview() -> void:

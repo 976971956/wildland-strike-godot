@@ -32,6 +32,7 @@ func run(test) -> void:
 	test.check(probe_source.contains("stage4_preview=2") and probe_source.contains("_start_stage_4_preview"), "reproducible Stage 4 industrial preview is missing")
 	test.check(probe_source.contains("stage8_preview=2") and probe_source.contains("_start_stage_8_preview"), "reproducible Stage 8 final-boss preview is missing")
 	test.check(probe_source.contains("ending_preview=1") and probe_source.contains("credits_preview=1"), "reproducible campaign ending/credits previews are missing")
+	test.check(probe_source.contains("arcade_shell_preview=4") and probe_source.contains("_start_arcade_shell_preview"), "reproducible arcade-shell previews are missing")
 	test.check(probe_source.contains("roster_preview=1"), "reproducible enemy-roster preview is missing")
 	test.check(probe_source.contains("hud_preview=1") and probe_source.contains("hud_preview=2"), "desktop/touch HUD previews are missing")
 	test.check(probe_source.contains("stage_acceptance=1"), "reproducible Web Stage 1 acceptance entry is missing")

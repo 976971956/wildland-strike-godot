@@ -4,7 +4,7 @@ Last updated: 2026-08-22
 
 Plan version: 1.0
 
-Current release state: complete eight-stage campaign alpha
+Current release state: eight-stage campaign with versioned arcade shell beta
 
 Public delivery: Godot source, GitHub Pages Web build, signed iOS development build
 
@@ -257,12 +257,14 @@ Exit gate: the complete eight-stage campaign can be finished from a fresh start 
 
 ### M8 — Arcade shell, mobile polish, and accessibility
 
-Status: **not started**
+Status: **in progress**
 
-- [ ] Attract/title flow, character select polish, continue countdown, local high scores, options, pause, and save settings.
+- [x] Attract/title flow, character select polish, continue countdown, local high scores, options, pause, and save settings.
 - [ ] Original full soundtrack, audio mixing, voice efforts, subtitles, and language-ready UI.
 - [ ] Touch remapping/sizing, safe areas, haptics controls, pause/resume safety, and mobile performance tuning.
 - [ ] Rebindable controls, screen shake/hit-flash controls, readable UI scale, and color-independent telegraphs.
+
+Evidence (2026-08-22, arcade-shell/persistence batch): the consumer flow now includes an idle attract/instructions screen, clean title and character-select transitions, a local top-ten table, a gameplay-safe pause/options screen, and a nine-second player-confirmable continue countdown instead of automatic resurrection. A versioned `ConfigFile` profile persists clamped audio, feedback, haptics, touch/UI scale, language, and ordered high-score data, migrates legacy version-zero keys, and records each final score at most once. Keyboard Escape/P and active-slot gamepad Start pause safely; music and effects volumes, shake, hit flash, and haptics apply immediately. Forty-seven deterministic suites pass 2854/2854 assertions. Accepted attract, pause/options, continue, and high-score Web fixtures render without browser warnings/errors; the performance fixtures average 120.55, 120.03, and 120.04 FPS with zero frames above 20 ms or 33 ms. Web release export passes. Detailed evidence is archived in `evidence/m8-arcade-shell.md`.
 
 Exit gate: desktop, Web, and iOS behave like complete consumer builds rather than development demos.
 
@@ -282,9 +284,9 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M8 — Arcade shell and persistence:** implement the complete attract/title flow, pause/options screens, continue countdown, local high-score table, and versioned settings/save data while preserving the completed eight-stage campaign.
-2. **M8 — Mobile/accessibility polish:** add touch remapping/sizing, safe-area controls, haptics controls, readable UI scaling, rebindable controls, and color-independent telegraphs.
-3. **M8 — Audio/localization shell:** complete original soundtrack coverage, mix controls, subtitles, concise voice efforts, and language-ready UI strings.
+1. **M8 — Mobile/accessibility polish:** add touch remapping/sizing, safe-area controls, haptics controls, readable UI scaling, rebindable controls, and color-independent telegraphs.
+2. **M8 — Audio/localization shell:** complete original soundtrack coverage, mix controls, subtitles, concise voice efforts, and language-ready UI strings.
+3. **M9 — Balance and release QA:** execute the full solo/co-op balance matrix, compatibility/migration/performance gates, clean-checkout build, provenance/license audit, release notes, and `v1.0.0` publication.
 
 ## Definition of done for every task
 
@@ -311,5 +313,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The reusable human/dinosaur roster is complete through M5; all eight stages now have unique boss encounters and original compositions, including the three-form final boss.
 - Stages 1–8, ending, credits, and final report are completed campaign content; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while completing the consumer arcade shell.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, eight-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Local high-score and settings persistence do not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, Stage 6 spore/cart/stomp hazards, Stage 7 deck/laser/cryo hazards, Stage 8 arc/mutagen/core hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, eight-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Version-one local settings and high-score persistence now exist with legacy migration; control rebinding, full language coverage, UI scaling controls, and mobile layout editing remain M8 work. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, Stage 6 spore/cart/stomp hazards, Stage 7 deck/laser/cryo hazards, Stage 8 arc/mutagen/core hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
 - The current development provisioning profile is invalid; every stage passes an unsigned generic-device arm64 build, but a fresh signed iOS install requires renewed signing access and an available paired device.

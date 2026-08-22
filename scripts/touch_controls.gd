@@ -4,6 +4,7 @@ const JOYSTICK_RADIUS := 78.0
 const KNOB_RADIUS := 32.0
 const BUTTON_RADIUS := 54.0
 const EDGE_PADDING := 22.0
+const JOYSTICK_DEADZONE := 0.12
 
 var game
 var enabled_for_device := false
@@ -103,18 +104,37 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 
 func _update_joystick(value: Vector2) -> void:
 	_release_directions()
-	if value.x < -0.18:
-		Input.action_press("move_left", absf(value.x))
-	elif value.x > 0.18:
-		Input.action_press("move_right", absf(value.x))
-	if value.y < -0.18:
-		Input.action_press("move_up", absf(value.y))
-	elif value.y > 0.18:
-		Input.action_press("move_down", absf(value.y))
+	var resolved := _smooth_joystick_value(value)
+	_set_virtual_move(resolved)
+	if resolved.x < 0.0:
+		Input.action_press("move_left", absf(resolved.x))
+	elif resolved.x > 0.0:
+		Input.action_press("move_right", absf(resolved.x))
+	if resolved.y < 0.0:
+		Input.action_press("move_up", absf(resolved.y))
+	elif resolved.y > 0.0:
+		Input.action_press("move_down", absf(resolved.y))
+
+
+func _smooth_joystick_value(value: Vector2) -> Vector2:
+	var magnitude := minf(value.length(), 1.0)
+	if magnitude <= JOYSTICK_DEADZONE:
+		return Vector2.ZERO
+	var strength := inverse_lerp(JOYSTICK_DEADZONE, 1.0, magnitude)
+	return value.normalized() * strength
+
+
+func _set_virtual_move(value: Vector2) -> void:
+	if not is_instance_valid(game) or not is_instance_valid(game.player):
+		return
+	var source = game.player.input_source
+	if source != null and source.has_method("set_virtual_move"):
+		source.set_virtual_move(value)
 
 func _release_directions() -> void:
 	for action in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)
+	_set_virtual_move(Vector2.ZERO)
 
 func _button_at(point: Vector2) -> String:
 	var centers := _button_centers()

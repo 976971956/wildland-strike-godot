@@ -20,25 +20,6 @@ const ITEM_ATLAS_INDEX := {
 	"score_relic": 6,
 	"score_intel": 7,
 }
-const WEAPON_ATLAS_INDEX := {
-	"weapon": 0,
-	"weapon_melee": 0,
-	"weapon_firearm": 4,
-	"weapon_explosive": 8,
-	"weapon_machete": 0,
-	"weapon_pipe": 1,
-	"weapon_whip": 2,
-	"weapon_shock_baton": 3,
-	"weapon_pistol": 4,
-	"weapon_shotgun": 5,
-	"weapon_rifle": 6,
-	"weapon_smg": 7,
-	"weapon_grenade": 8,
-	"weapon_molotov": 9,
-	"weapon_rocket": 10,
-	"weapon_mine": 11,
-}
-
 var kind := "food"
 var game
 var life := 18.0
@@ -134,4 +115,4 @@ static func item_atlas_index(pickup_id: String) -> int:
 
 
 static func weapon_atlas_index(pickup_id: String) -> int:
-	return WEAPON_ATLAS_INDEX.get(pickup_id, -1)
+	return WeaponCatalogScript.atlas_index_for_pickup_id(pickup_id)

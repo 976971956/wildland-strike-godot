@@ -13,12 +13,15 @@ func run(test) -> void:
 
 func _test_platform_contract(test) -> void:
 	var project_source := FileAccess.get_file_as_string("res://project.godot")
+	var main_scene_source := FileAccess.get_file_as_string("res://main.tscn")
 	var export_source := FileAccess.get_file_as_string("res://export_presets.cfg")
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
 	test.check(project_source.contains('renderer/rendering_method="gl_compatibility"'), "desktop/Web renderer is not the broad-compatibility backend")
 	test.check(project_source.contains('renderer/rendering_method.mobile="gl_compatibility"'), "mobile renderer drifted from the compatibility backend")
 	test.check(project_source.contains('window/stretch/mode="canvas_items"') and project_source.contains('window/stretch/aspect="expand"'), "responsive viewport/stretch contract is incomplete")
 	test.check(project_source.contains('window/handheld/orientation=4'), "mobile orientation must follow the sensor across both landscape directions")
+	test.check(project_source.contains('[physics]') and project_source.contains('common/physics_interpolation=true'), "high-refresh mobile rendering must interpolate 60 Hz fighter motion")
+	test.check(main_scene_source.contains('process_callback = 0'), "camera must sample interpolated motion on the physics timeline")
 	test.check(export_source.contains('variant/thread_support=false'), "Web release unexpectedly requires cross-origin-isolated threads")
 	test.check(export_source.contains('html/canvas_resize_policy=2') and export_source.contains('html/focus_canvas_on_start=true'), "Web canvas resize/focus contract drifted")
 	test.check(export_source.contains('application/min_ios_version="15.0"') and export_source.contains('architectures/arm64=true'), "iOS 15+/arm64 release floor drifted")

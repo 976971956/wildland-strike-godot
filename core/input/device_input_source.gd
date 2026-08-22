@@ -7,6 +7,7 @@ const STICK_DEADZONE := 0.24
 
 var device_id := KEYBOARD_DEVICE
 var virtual_actions_enabled := false
+var virtual_move := Vector2.ZERO
 var previous_jump_down := false
 var previous_attack_down := false
 var previous_special_down := false
@@ -22,7 +23,7 @@ func sample_intent():
 	if device_id == KEYBOARD_DEVICE:
 		if virtual_actions_enabled:
 			return FighterIntentScript.new(
-				Input.get_vector("move_left", "move_right", "move_up", "move_down"),
+				virtual_move if virtual_move != Vector2.ZERO else Input.get_vector("move_left", "move_right", "move_up", "move_down"),
 				Input.is_action_just_pressed("jump"),
 				Input.is_action_just_pressed("attack"),
 				Input.is_action_just_pressed("special")
@@ -72,7 +73,12 @@ func sample_from_state(move: Vector2, jump_down: bool, attack_down: bool, specia
 	return intent
 
 
+func set_virtual_move(value: Vector2) -> void:
+	virtual_move = value.limit_length(1.0) if virtual_actions_enabled else Vector2.ZERO
+
+
 func reset_edges() -> void:
+	virtual_move = Vector2.ZERO
 	previous_jump_down = false
 	previous_attack_down = false
 	previous_special_down = false

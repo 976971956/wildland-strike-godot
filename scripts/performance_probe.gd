@@ -377,6 +377,7 @@ func _start_weapon_sandbox_preview() -> void:
 		stage_object.set_process(false)
 		stage_object.set_physics_process(false)
 	game.player.position = Vector2(145.0, 555.0)
+	game.player.give_weapon("weapon_machete")
 	game.player.set_physics_process(false)
 	var pickup_ids := WeaponCatalogScript.explicit_pickup_ids()
 	for index in range(pickup_ids.size()):

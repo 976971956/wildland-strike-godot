@@ -276,6 +276,8 @@ Post-release evidence (2026-08-22, complete Simplified Chinese batch): the exist
 
 Post-release evidence (2026-08-22, sensor-landscape maintenance): mobile orientation now uses Godot's sensor-landscape mode, allowing automatic rotation between landscape left and landscape right while deliberately excluding portrait layouts. The release compatibility regression locks the project setting; 53 suites pass 3,985 assertions. Fresh iOS export inspection confirms both landscape orientations for iPhone and iPad, and the signed arm64 build installs, launches, and remains running on the paired iPhone 14 Pro. This native-only maintenance change does not alter the Web build.
 
+Post-release evidence (2026-08-22, held-weapon/mobile-motion maintenance): the reported white strip was reproduced as the primitive line fallback used for equipped melee and firearm visuals even though pickups already had production art. All twelve held weapons now resolve through the same unique pixel-art atlas cells as their ground pickups, with kind-specific scale, grip alignment, and facing; the accepted Web fixture shows the machete model correctly seated in Ranger's hand. Mobile walking now uses a radial 0.12 touch deadzone with continuous low-to-full analog intent, and global physics interpolation plus a physics-timeline camera removes 60 Hz transform stepping on high-refresh displays. Fifty-three suites pass 4,014 assertions. The accepted weapon fixture sustains 120.0 FPS over 300 frames with zero frames above 20/33 ms and no browser warnings/errors. Web and iOS exports pass; the signed arm64 build installs, launches, and remains running on the paired iPhone 14 Pro.
+
 Exit gate: desktop, Web, and iOS behave like complete consumer builds rather than development demos.
 
 ### M9 — Balance, QA, and 1.0 release
@@ -324,6 +326,7 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - **2026-08-22 — Continuous delivery:** every completed mutation is tested, documented, committed, pushed to `main`, and redeployed when Web-visible.
 - **2026-08-22 — Reproducible Web performance probe:** a query-gated four-enemy scenario prints one local console summary after fixed warm-up/sample counts, giving future milestones a comparable render baseline without changing ordinary gameplay.
 - **2026-08-22 — Mobile orientation:** native mobile builds follow the device sensor across both landscape directions but do not enter portrait, preserving the 16:9 combat and touch-control layout.
+- **2026-08-22 — Mobile motion and held items:** touch movement keeps analog magnitude outside a small radial deadzone, high-refresh rendering interpolates the fixed 60 Hz simulation, and equipped weapons reuse the production pickup atlas instead of primitive follower geometry.
 
 ## Known baseline limitations
 

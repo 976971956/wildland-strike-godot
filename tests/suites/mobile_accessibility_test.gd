@@ -20,6 +20,7 @@ func run(test) -> void:
 	controls.size = Vector2(1280.0, 720.0)
 	controls.enabled_for_device = true
 	controls.visible = true
+	game.player.input_source.virtual_actions_enabled = true
 	controls.safe_area_override = Rect2(72.0, 34.0, 1136.0, 642.0)
 	game.settings.touch_scale = 1.35
 	controls._reset_joystick()
@@ -40,6 +41,14 @@ func run(test) -> void:
 	controls._reset_joystick()
 
 	game._start_game()
+	controls._update_joystick(Vector2(0.24, 0.0))
+	var gentle_move: float = game.player.input_source.sample_intent().move.x
+	controls._update_joystick(Vector2(0.58, 0.0))
+	var medium_move: float = game.player.input_source.sample_intent().move.x
+	controls._update_joystick(Vector2(1.0, 0.0))
+	var full_move: float = game.player.input_source.sample_intent().move.x
+	test.check(gentle_move > 0.0 and gentle_move < medium_move and medium_move < full_move, "touch joystick has a dead jump instead of smooth low-to-full walking input: %.3f / %.3f / %.3f" % [gentle_move, medium_move, full_move])
+	controls._release_directions()
 	Input.action_release("pause")
 	controls._handle_touch(_touch_event(90, controls._pause_center(), true))
 	test.check(Input.is_action_pressed("pause"), "touch pause button did not reach the shared action map")

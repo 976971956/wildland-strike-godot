@@ -4,6 +4,7 @@ const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd"
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const PickupScript = preload("res://scripts/pickup.gd")
+const PlayerScript = preload("res://scripts/player.gd")
 
 
 func run(test) -> void:
@@ -38,12 +39,23 @@ func run(test) -> void:
 	test.check(PickupScript.WEAPON_PICKUP_ATLAS.get_width() == 640 and PickupScript.WEAPON_PICKUP_ATLAS.get_height() == 480, "weapon pickup atlas grid drifted")
 	test.check(PickupScript.weapon_atlas_index("weapon") == 0 and PickupScript.weapon_atlas_index("weapon_melee") == 0, "legacy melee drop aliases lost their model")
 	test.check(PickupScript.weapon_atlas_index("weapon_firearm") == 4 and PickupScript.weapon_atlas_index("weapon_explosive") == 8, "legacy ranged drop aliases lost their models")
+	test.check(PickupScript.weapon_atlas_index("unknown_weapon") == -1, "unknown pickup incorrectly borrowed a production weapon model")
+	var model_player := PlayerScript.new()
+	test.check(model_player.has_method("held_weapon_visual"), "held weapons still fall back to primitive follower lines instead of production models")
+	if model_player.has_method("held_weapon_visual"):
+		for weapon: Resource in WeaponCatalogScript.ALL:
+			model_player.equipped_weapon = weapon
+			model_player.weapon_ammo = 1
+			var visual: Dictionary = model_player.held_weapon_visual()
+			test.check(int(visual.get("atlas_index", -1)) == PickupScript.weapon_atlas_index("weapon_%s" % weapon.weapon_id), "%s held model does not match its pickup artwork" % weapon.display_name)
+			test.check(visual.get("atlas") == PickupScript.WEAPON_PICKUP_ATLAS, "%s held model does not reuse the production weapon atlas" % weapon.display_name)
+	model_player.free()
 
 	await _verify_melee_behaviors(test)
 	await _verify_firearm_behaviors(test)
 	await _verify_explosive_behaviors(test)
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
-	test.check(probe_source.contains("weapon_sandbox_preview=1"), "reproducible twelve-weapon Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=1") and probe_source.contains('game.player.give_weapon("weapon_machete")'), "reproducible held/pickup weapon Web preview is missing")
 
 
 func _verify_melee_behaviors(test) -> void:

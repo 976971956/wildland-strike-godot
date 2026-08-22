@@ -39,9 +39,36 @@ const PICKUP_MAP := {
 	"weapon_mine": MINE,
 }
 
+const ATLAS_INDEX_BY_WEAPON_ID := {
+	&"machete": 0,
+	&"pipe": 1,
+	&"whip": 2,
+	&"shock_baton": 3,
+	&"pistol": 4,
+	&"shotgun": 5,
+	&"rifle": 6,
+	&"smg": 7,
+	&"grenade": 8,
+	&"molotov": 9,
+	&"rocket": 10,
+	&"mine": 11,
+}
+
 
 static func from_pickup_id(pickup_id: String) -> Resource:
 	return PICKUP_MAP.get(pickup_id, MACHETE)
+
+
+static func atlas_index_for_weapon(weapon: Resource) -> int:
+	if weapon == null:
+		return -1
+	return int(ATLAS_INDEX_BY_WEAPON_ID.get(weapon.weapon_id, -1))
+
+
+static func atlas_index_for_pickup_id(pickup_id: String) -> int:
+	if not PICKUP_MAP.has(pickup_id):
+		return -1
+	return atlas_index_for_weapon(PICKUP_MAP[pickup_id])
 
 
 static func explicit_pickup_ids() -> PackedStringArray:

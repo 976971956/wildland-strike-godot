@@ -7,6 +7,9 @@ signal defeated
 const SPEED := 255.0
 const MAX_HEALTH := 120
 const SPRITE_SHEET: Texture2D = preload("res://assets/sprites/ranger_sheet_v2.png")
+const WEAPON_PICKUP_ATLAS: Texture2D = preload("res://assets/sprites/weapon_pickups_atlas.png")
+const WEAPON_ATLAS_CELL_SIZE := Vector2(160.0, 160.0)
+const WEAPON_ATLAS_COLUMNS := 4
 const SPRITE_COLUMNS := 6
 const SPRITE_ROWS := 4
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
@@ -931,33 +934,42 @@ func _draw() -> void:
 	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
 	draw_texture_rect_region(hero_sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
-		var held_length: float = 41.0 * equipped_weapon.melee_reach_scale
-		var held_start: Vector2 = jump_offset + Vector2(22.0 * facing, -62.0)
-		var held_end: Vector2 = held_start + Vector2(held_length * facing, -11.0)
-		if equipped_weapon.behavior_id == &"extended_reach":
-			draw_polyline(PackedVector2Array([held_start, held_start + Vector2(24.0 * facing, -6.0), held_end + Vector2(8.0 * facing, 7.0)]), equipped_weapon.color, 5.0)
-		else:
-			draw_line(held_start, held_end, equipped_weapon.color.lightened(0.25), 11.0 if equipped_weapon.melee_force_launch else 8.0)
+	var held_visual := held_weapon_visual()
+	if not held_visual.is_empty():
+		var model_facing: float = -facing if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM else facing
+		draw_set_transform(jump_offset + Vector2(20.0 * facing, -61.0), 0.0, Vector2(model_facing, 1.0))
+		draw_texture_rect_region(held_visual.atlas, held_visual.target_rect, held_visual.source_rect)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		if equipped_weapon.chain_radius > 0.0:
-			draw_arc(held_end, 12.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
-	elif weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-		var gun_length: float = 39.0 if equipped_weapon.penetration_count > 1 else 29.0
-		draw_line(jump_offset + Vector2(18*facing,-61), jump_offset + Vector2((18.0 + gun_length)*facing,-61), equipped_weapon.color.lightened(0.25), 12.0 if equipped_weapon.shots_per_use >= 5 else 10.0)
-		draw_line(jump_offset + Vector2(24*facing,-58), jump_offset + Vector2(20*facing,-47), Color("#6b4637"), 7)
-	elif weapon_hits > 0 and equipped_weapon != null:
-		var explosive_position: Vector2 = jump_offset + Vector2(26*facing,-57)
-		if equipped_weapon.stationary:
-			draw_rect(Rect2(explosive_position - Vector2(12.0, 5.0), Vector2(24.0, 10.0)), equipped_weapon.color)
-		elif equipped_weapon.detonate_on_contact:
-			draw_rect(Rect2(explosive_position - Vector2(15.0, 5.0), Vector2(30.0, 10.0)), equipped_weapon.color)
-		else:
-			draw_circle(explosive_position, 9.0, equipped_weapon.color)
+			draw_arc(jump_offset + Vector2(55.0 * facing, -80.0), 12.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
 	if special_timer > 0.0:
 		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)
 	elif team_attack_charge_timer > 0.0:
 		draw_arc(jump_offset + Vector2(0, -64), 64, -PI * 0.5, PI * 1.5, 32, Color("#82e8ff"), 4)
+
+
+func held_weapon_visual() -> Dictionary:
+	if weapon_hits <= 0 or equipped_weapon == null:
+		return {}
+	var atlas_index := WeaponCatalogScript.atlas_index_for_weapon(equipped_weapon)
+	if atlas_index < 0:
+		return {}
+	var source_position := Vector2(atlas_index % WEAPON_ATLAS_COLUMNS, atlas_index / WEAPON_ATLAS_COLUMNS) * WEAPON_ATLAS_CELL_SIZE
+	var model_size := 92.0
+	var target_position := Vector2(-13.0, -68.0)
+	if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+		model_size = 84.0
+		target_position = Vector2(-36.0, -55.0)
+	elif equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.EXPLOSIVE:
+		model_size = 76.0
+		target_position = Vector2(-38.0, -49.0)
+	return {
+		"atlas": WEAPON_PICKUP_ATLAS,
+		"atlas_index": atlas_index,
+		"source_rect": Rect2(source_position, WEAPON_ATLAS_CELL_SIZE),
+		"target_rect": Rect2(target_position, Vector2.ONE * model_size),
+	}
 
 func _visual_frame() -> Vector2i:
 	if victory_pose_phase > 0:

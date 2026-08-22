@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"motor_pool_engine_block"
+kind = 2
+position = Vector2(1160, 540)
+size = Vector2(58, 52)
+health = 42
+drop_id = &"score_badge"
+defeat_score = 220
+throw_damage = 30
+throw_speed = 560.0
+throw_lifetime = 0.85
+break_on_throw_hit = true
+color = Color(0.36, 0.42, 0.45, 1)

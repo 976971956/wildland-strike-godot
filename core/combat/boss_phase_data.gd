@@ -7,6 +7,8 @@ enum SpecialKind {
 	TIDAL_WAVE,
 	ROAD_RAM,
 	MINE_DROP,
+	MAGNET_PULL,
+	FURNACE_BLAST,
 }
 
 @export var phase_id: StringName

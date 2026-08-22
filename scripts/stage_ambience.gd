@@ -53,6 +53,12 @@ func _draw() -> void:
 				_draw_highway_checkpoint(scene)
 			8:
 				_draw_highway_overpass(scene)
+			9:
+				_draw_industrial_motor_pool(scene)
+			10:
+				_draw_industrial_assembly(scene)
+			11:
+				_draw_industrial_crucible(scene)
 
 
 func _draw_ruins(scene: Resource) -> void:
@@ -159,6 +165,34 @@ func _draw_highway_overpass(scene: Resource) -> void:
 	for index in range(6):
 		var drift := fmod(animation_time * 30.0 + index * 24.0, 88.0)
 		draw_polyline(_ellipse_points(Vector2(scene.start_x + 160.0 + index * 220.0, 616.0), 12.0 + drift, 3.0 + drift * 0.08), Color(0.48, 0.7, 0.94, 0.17 * (1.0 - drift / 92.0)), 2.0)
+
+
+func _draw_industrial_motor_pool(scene: Resource) -> void:
+	for index in range(6):
+		var pulse := (sin(animation_time * 5.6 + index * 0.7) + 1.0) * 0.5
+		draw_circle(Vector2(scene.start_x + 140.0 + index * 224.0, 414.0), 4.0 + pulse * 2.0, Color(1.0, 0.16, 0.06, 0.24 + pulse * 0.42))
+	for index in range(5):
+		var spark_y := 420.0 + fmod(animation_time * 72.0 + index * 21.0, 82.0)
+		var spark_x: float = scene.start_x + 210.0 + index * 246.0
+		draw_line(Vector2(spark_x, spark_y), Vector2(spark_x + 8.0, spark_y + 13.0), Color(1.0, 0.7, 0.18, 0.38), 2.0)
+
+
+func _draw_industrial_assembly(scene: Resource) -> void:
+	for index in range(7):
+		var travel := fmod(animation_time * 64.0 + index * 117.0, scene.end_x - scene.start_x)
+		draw_line(Vector2(scene.start_x + travel, 642.0), Vector2(scene.start_x + travel + 28.0, 642.0), Color(0.92, 0.58, 0.12, 0.2), 4.0)
+	for index in range(4):
+		var flare := maxf(0.0, sin(animation_time * 7.4 + index * 1.6))
+		draw_circle(Vector2(scene.start_x + 180.0 + index * 338.0, 405.0), 5.0 + flare * 8.0, Color(1.0, 0.62, 0.16, flare * 0.52))
+
+
+func _draw_industrial_crucible(scene: Resource) -> void:
+	var furnace_pulse := (sin(animation_time * 3.8) + 1.0) * 0.5
+	draw_circle(Vector2((scene.start_x + scene.end_x) * 0.5, 425.0), 52.0 + furnace_pulse * 10.0, Color(1.0, 0.25, 0.04, 0.08 + furnace_pulse * 0.08))
+	for index in range(10):
+		var rise := fmod(animation_time * (36.0 + index) + index * 19.0, 118.0)
+		var ember_x: float = scene.start_x + 120.0 + fmod(index * 173.0, scene.end_x - scene.start_x - 240.0)
+		draw_rect(Rect2(ember_x + sin(animation_time + index) * 10.0, 492.0 - rise, 3.0, 3.0), Color(1.0, 0.54, 0.1, 0.42 * (1.0 - rise / 124.0)))
 
 
 func _ellipse_points(center: Vector2, radius_x: float, radius_y: float) -> PackedVector2Array:

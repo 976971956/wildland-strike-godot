@@ -1,0 +1,92 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/forge_regent_hammer.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/forge_regent_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/forge_regent_magnet.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/forge_regent_furnace.tres" id="6"]
+
+[sub_resource type="Resource" id="PhaseSmelter"]
+script = ExtResource("4")
+phase_id = &"smelter"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 6
+speed_scale = 0.94
+telegraph_duration = 0.64
+special_cooldown = 1.5
+special_min_distance = 120.0
+special_max_distance = 520.0
+recovery_duration = 0.7
+dialogue_speaker = "FORGE REGENT VOLKR"
+dialogue_line = "Every road ends in my furnace."
+tint = Color(1, 0.94, 0.86, 1)
+
+[sub_resource type="Resource" id="PhasePolarity"]
+script = ExtResource("4")
+phase_id = &"polarity"
+health_threshold_ratio = 0.62
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 5
+speed_scale = 1.1
+telegraph_duration = 0.46
+special_cooldown = 1.05
+special_min_distance = 95.0
+special_max_distance = 610.0
+recovery_duration = 0.52
+dialogue_speaker = "FORGE REGENT VOLKR"
+dialogue_line = "Steel answers when I call."
+reinforcement_enemy_id = &"shield_guard"
+reinforcement_count = 2
+tint = Color(0.82, 0.96, 1, 1)
+
+[sub_resource type="Resource" id="PhaseOverdrive"]
+script = ExtResource("4")
+phase_id = &"overdrive"
+health_threshold_ratio = 0.28
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 6
+speed_scale = 1.3
+telegraph_duration = 0.3
+special_cooldown = 0.7
+special_min_distance = 75.0
+special_max_distance = 690.0
+recovery_duration = 0.36
+dialogue_speaker = "FORGE REGENT VOLKR"
+dialogue_line = "Overdrive. Melt with the rest!"
+reinforcement_enemy_id = &"elite_bulwark"
+reinforcement_count = 1
+tint = Color(1, 0.72, 0.54, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"forge_regent"
+is_boss = true
+rank = 2
+max_health = 430
+speed = 104.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 3600
+outgoing_damage_scale = 1.15
+stun_duration_scale = 0.52
+knockdown_armor = 4
+behavior_kind = 5
+attack_distance = 82.0
+lane_tolerance = 58.0
+vertical_approach_scale = 0.76
+boss_phases = Array[Resource]([SubResource("PhaseSmelter"), SubResource("PhasePolarity"), SubResource("PhaseOverdrive")])
+sprite_sheet = ExtResource("3")
+visual_kind = 3
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(260, 260)
+target_bottom_offset = 16.0
+actor_scale = Vector2(1.16, 1.16)
+shadow_half_extents = Vector2(58, 13)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

@@ -277,3 +277,71 @@ Create an original clean-room arcade pixel-art vehicle sprite sheet for Wildland
 The first integrated player vehicle was a procedural placeholder. Exported-browser inspection rejected it as toy-like and also caught standing player sprites clipping through the roof. The final Desert Interceptor atlas replaced that placeholder, and vehicle mounting now hides on-foot silhouettes while preserving each player's independent mounted-fire ownership. Both generated vehicle sources arrived with nonuniform pose spacing, so the retained builders detect the largest complete opaque components, sort them by x position, apply one uniform nearest-neighbor scale, and center each vehicle on a fixed transparent baseline.
 
 Verification: every Stage 3 scene resource validates its original background and the typed vehicle sequence validates speed, lane, hull, collision, ram, and mounted-weapon parameters. Both accepted vehicle sheets retain alpha and divide into exact state cells. The exported 1280×720 canyon, checkpoint, overpass, and three-phase boss fixtures were inspected for lane readability, silhouette scale, crop loss, mounting, depth order, collision cues, and telegraph clarity. The initial oversized circular boss cue was rejected and replaced with road-aligned chevrons. Accepted canyon and boss samples average 119.60 and 120.00 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
+
+## 2026-08-22 — Industrial foundry environments and Forge Regent Volkr
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_industrial_assets.gd` connected-component isolation, nearest-neighbor normalization, and transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, vehicle, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/industrial_motor_pool.png`: 1672×941 RGB; SHA-256 `7c05a40f1bd259a4720011dae90b52656a8411e49929d925c24f9edc7cb5244a`.
+- `assets/backgrounds/industrial_assembly_floor.png`: 1672×941 RGB; SHA-256 `dd679fd18d3f7d60b48ff285a0064be0ff637e9ea2d8e275ad921c918c24cb88`.
+- `assets/backgrounds/industrial_crucible_lift.png`: 1672×941 RGB; SHA-256 `0ac3590935e3892e1c4112e7a5bee5b227ef58f610fc042c376a83d63b28d8da`.
+- Archived Forge Regent source: `assets/sprites/forge_regent_source.png`; 2079×756 RGBA; SHA-256 `3ab3137802c9e734ea51b143d5e594474fbd0bba59badc8a6c15048620a5c06c`.
+- `assets/sprites/forge_regent_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `a31203b18734779e48c2d4d7ba56bec81ae975fa5dbf0e69bdee6d0d3a0a663f`.
+
+The archived boss source is excluded from Web and iOS runtime exports.
+
+Motor-pool generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 4, a serious 1990s 2.5D arcade beat-em-up
+Primary request: a vast fortified desert motor-pool garage breached at night, with armored repair bays, suspended engines, tool gantries, welding sparks, partly opened blast doors and distant storm-lit canyon visible only behind the combat floor
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded industrial detail, consistent with a premium late-1990s belt-scrolling brawler
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed concrete gameplay lane occupying the lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; machinery and vehicles remain behind safety rails and never block the active floor
+Lighting/mood: cold cyan moonlight, warm amber work lamps, restrained red emergency lights, serious tense atmosphere
+Constraints: environment only; no people, no dinosaurs, no active vehicles in the combat lane, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing-point road, no foreground obstruction
+```
+
+Assembly-floor generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 4, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the interior of a colossal armored assembly foundry, with overhead chain hoists, robotic welding arms, piston presses, moving conveyor machinery and half-built original industrial vehicles kept behind guardrails; molten sparks but no open lava on the combat floor
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail industrial environment, premium late-1990s belt-scrolling brawler quality
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed steel-plate gameplay lane occupying lower 40%, three readable depth lanes, horizon high; fighters stand between y=455 and 665; all large machinery remains in back and upper layers
+Lighting/mood: hot amber welding light against deep teal steel shadows, rhythmic red warning lamps, escalating mechanical danger
+Constraints: environment only; no people, no dinosaurs, no active vehicle in gameplay lane, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing point, no foreground machinery covering fighters
+```
+
+Crucible-lift generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production boss-arena background for Wildland Strike Stage 4, a serious 1990s 2.5D arcade beat-em-up
+Primary request: an immense circular crucible lift deep inside an armored foundry, stopped beside a glowing smelter chamber; towering pistons, furnace mouths, cooling pipes, suspended magnetic crane and molten-metal channels are safely behind thick rails, creating a dramatic industrial boss arena
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, premium late-1990s belt-scrolling brawler environment, grounded materials and readable silhouettes
+Composition/framing: wide 16:9 strict side view, horizontal arena composition, broad unobstructed circular steel gameplay platform occupying lower 40%, three readable depth lanes and symmetrical boss framing; fighters stand between y=455 and 665; no foreground objects obscure combat
+Lighting/mood: fierce orange furnace glow, deep cobalt steel shadows, white-hot sparks and red alarm accents, climactic but visually readable
+Constraints: environment only; no people, no dinosaurs, no boss, no text, no UI, no logos, no watermark, no copyrighted imagery, no open molten metal crossing the active floor, no central perspective corridor, no foreground obstruction
+```
+
+Forge Regent generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent boss sprite action atlas for Wildland Strike Stage 4
+Primary request: one horizontal strip of EXACTLY EIGHT isolated equal-width cells showing the same original industrial boss, FORGE REGENT VOLKR: a towering broad human foundry commander inside a compact charcoal-and-copper powered exoskeleton, asymmetrical magnetic grappler gauntlet on the left arm, heavy piston hammer on the right arm, heat-shield apron plates, glowing cyan power coils and small amber furnace vents; strict side profile facing LEFT
+Pose order: 1 armored idle with vent pulse, 2 heavy walk, 3 piston-hammer strike, 4 magnetic-hook telegraph with coil glow, 5 magnetic pull recoil, 6 furnace ground-slam with sparks, 7 hurt stagger with cracked armor, 8 defeated kneeling collapse
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade beat-em-up pixel art, strong readable silhouette, detailed late-1990s sprite rendering, original clean-room design
+Composition/framing: very wide landscape atlas; exactly one complete full-body boss centered per cell; same scale, foot baseline, orientation, lighting, proportions and costume in every frame; generous genuinely transparent separation; all limbs, hammer, grappler and effects remain within their own cell
+Constraints: transparent background mandatory; exactly 8 cells in one row; no scenery, floor, labels, text, UI, logos, watermark, copyrighted designs, vehicles, detached distant effects, shadows crossing cell boundaries, cropped anatomy, extra characters
+```
+
+The environment outputs already matched the established 1672×941 runtime contract and were retained directly. The Forge Regent service output retained real alpha but delivered irregular pose spacing and a non-runtime canvas. The deterministic builder discovers the eight largest complete opaque components, sorts them by x position, scales each silhouette uniformly with nearest-neighbor interpolation, and centers every pose on an exact transparent 320×320 cell without carrying detached effects across boundaries.
+
+Verification: all three Stage 4 scene resources validate and reference unique original backgrounds. The accepted boss sheet retains alpha and divides into eight exact cells. Exported 1280×720 environment and boss fixtures were inspected for gameplay-lane readability, press/vent silhouette identity, actor occlusion, boss scale, crop loss, phase cues, and telegraph clarity. Abstract floating press outlines and an oversized circular boss cue were rejected and replaced before acceptance. Final fixtures sustain approximately 120 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

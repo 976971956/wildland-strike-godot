@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/waves/assembly_opening.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"assembly_line_lock"
+trigger_x = 1540.0
+origin_x = 1680.0
+arena_right = 2080.0
+unlock_right = 2200.0
+banner_title = "ASSEMBLY LINE"
+banner_subtitle = "THE FLOOR IS MOVING"
+reward_id = &"weapon_shotgun"
+waves = Array[Resource]([ExtResource("2")])

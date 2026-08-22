@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="IndustrialHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/industrial_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"crucible_furnace_vent"
+kind = 5
+position = Vector2(3530, 625)
+size = Vector2(180, 92)
+contact_damage = 17
+initial_direction = -1
+color = Color(1, 0.3, 0.05, 1)
+hazard_kind = 2
+cycle_duration = 3.0
+warning_duration = 0.7
+active_duration = 0.58
+cycle_offset = 1.6

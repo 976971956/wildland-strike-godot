@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="IndustrialHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/industrial_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"lift_furnace_vent"
+kind = 5
+position = Vector2(3180, 592)
+size = Vector2(190, 96)
+contact_damage = 16
+initial_direction = 1
+color = Color(1, 0.3, 0.05, 1)
+hazard_kind = 2
+cycle_duration = 3.2
+warning_duration = 0.78
+active_duration = 0.62
+cycle_offset = 0.5

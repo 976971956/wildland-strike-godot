@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/scenes/motor_pool_breach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/scenes/assembly_floor.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/scenes/crucible_lift.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_4"
+stage_number = 4
+display_name = "THE IRON FOUNDRY"
+time_limit_seconds = 270.0
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

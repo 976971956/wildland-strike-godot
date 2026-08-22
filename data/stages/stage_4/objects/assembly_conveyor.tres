@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="IndustrialHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/industrial_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"assembly_conveyor"
+kind = 5
+position = Vector2(1780, 594)
+size = Vector2(360, 78)
+move_speed = 118.0
+initial_direction = -1
+color = Color(0.3, 0.38, 0.42, 1)
+hazard_kind = 0
+cycle_duration = 2.4

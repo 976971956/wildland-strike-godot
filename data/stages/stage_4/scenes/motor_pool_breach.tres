@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/encounters/motor_pool_breach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/objects/motor_pool_crate.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/objects/motor_pool_engine_block.tres" id="4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/industrial_motor_pool.png" id="5"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"motor_pool_breach"
+display_name = "ARMORED MOTOR POOL"
+transition_subtitle = "THE CONVOY'S FOUNDRY IS STILL RUNNING"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"fortified_motor_pool"
+visual_theme = 9
+background_texture = ExtResource("5")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("4")])

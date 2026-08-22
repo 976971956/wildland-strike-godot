@@ -22,6 +22,12 @@ func _ready() -> void:
 		if "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
+		elif "stage4_preview=2" in query_string:
+			scenario = "stage_4_foundry_boss_preview"
+			call_deferred("_start_stage_4_preview", true)
+		elif "stage4_preview=1" in query_string:
+			scenario = "stage_4_industrial_preview"
+			call_deferred("_start_stage_4_preview", false)
 		elif "stage3_preview=2" in query_string:
 			scenario = "stage_3_vehicle_boss_preview"
 			call_deferred("_start_stage_3_preview", true)
@@ -682,6 +688,39 @@ func _start_stage_3_preview(show_boss: bool) -> void:
 		game.camera.position.x = 700.0
 		game.encounter_director.completed = true
 		game.encounter_director._update_scene(vehicle.position.x)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	game.set_process(false)
+
+
+func _start_stage_4_preview(show_boss: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_advance_campaign_stage"):
+		scenario = "stage_4_preview_setup_failed"
+		return
+	for _stage in range(3):
+		game._advance_campaign_stage()
+	if game.active_stage_definition.stage_id != &"stage_4":
+		scenario = "stage_4_preview_setup_failed"
+		return
+	if show_boss:
+		game.player.position = Vector2(3540.0, 590.0)
+		game.camera.position.x = 3600.0
+		game.encounter_director._update_scene(game.player.position.x)
+		game.encounter_director.force_start_encounter(4)
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			enemy.set_physics_process(false)
+			enemy.facing = -1
+			enemy.invulnerable = 999.0
+			enemy.behavior_phase = enemy.BehaviorPhase.TELEGRAPH
+			enemy.behavior_timer = 999.0
+			enemy.queue_redraw()
+	else:
+		game.player.position = Vector2(2360.0, 585.0)
+		game.camera.position.x = 2240.0
+		game.encounter_director.completed = true
+		game.encounter_director._update_scene(game.player.position.x)
+	game.player.set_physics_process(false)
 	game.hud.banner_time = 0.0
 	game.hud.dialogue_time = 0.0
 	game.set_process(false)

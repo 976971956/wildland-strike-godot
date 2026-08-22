@@ -33,6 +33,7 @@ const ENEMY_DEFINITIONS := {
 	"boss": preload("res://data/enemies/boss.tres"),
 	"mirewarden": preload("res://data/enemies/mirewarden.tres"),
 	"iron_vulture": preload("res://data/enemies/iron_vulture.tres"),
+	"forge_regent": preload("res://data/enemies/forge_regent.tres"),
 }
 
 enum BehaviorPhase {
@@ -112,6 +113,8 @@ var current_attack
 var boss_phase_index := -1
 var current_boss_phase: Resource = null
 var boss_transition_timer := 0.0
+var boss_special_pose_timer := 0.0
+var boss_special_pose_column := -1
 var fighter_state: int:
 	get:
 		return state_machine.current_state
@@ -189,6 +192,7 @@ func _physics_process(delta: float) -> void:
 			return
 	attack_timer = maxf(0.0, attack_timer - delta)
 	boss_transition_timer = maxf(0.0, boss_transition_timer - delta)
+	boss_special_pose_timer = maxf(0.0, boss_special_pose_timer - delta)
 	hurt_timer = maxf(0.0, hurt_timer - delta)
 	stun_timer = maxf(0.0, stun_timer - delta)
 	invulnerable = maxf(0.0, invulnerable - delta)
@@ -619,6 +623,20 @@ func _execute_boss_special() -> void:
 		game.spawn_road_mine(self, current_attack.damage)
 		game.play_sfx(&"mine_drop")
 		_record_behavior_event(&"boss_mine_drop")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.MAGNET_PULL:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.apply_magnetic_pull(self, current_attack.damage, current_boss_phase.special_max_distance)
+		_record_behavior_event(&"boss_magnet_pull")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.FURNACE_BLAST:
+		boss_special_pose_column = 5
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_furnace_blast(self, current_attack.damage)
+		_record_behavior_event(&"boss_furnace_blast")
 		_begin_recovery()
 		return
 	_start_attack()
@@ -1180,6 +1198,21 @@ func _draw_behavior_cue() -> void:
 					Vector2(chevron_x, -10.0),
 					Vector2(chevron_x - facing * 16.0, 8.0),
 				]), cue_color, 5.0)
+		elif definition.visual_kind == EnemyDefinitionScript.VisualKind.EXOSUIT:
+			if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.MAGNET_PULL:
+				draw_line(Vector2(facing * 42.0, -74.0), Vector2(facing * 224.0, -74.0), Color(0.18, 0.9, 1.0, pulse), 5.0)
+				for index in range(4):
+					draw_arc(Vector2(facing * (74.0 + index * 42.0), -74.0), 11.0, -PI * 0.6, PI * 0.6, 12, Color(0.38, 0.95, 1.0, pulse), 3.0)
+			else:
+				for side in [-1.0, 1.0]:
+					draw_line(Vector2(side * 48.0, 2.0), Vector2(side * 205.0, 2.0), cue_color, 5.0)
+					for index in range(3):
+						var flame_x: float = side * (86.0 + index * 46.0)
+						draw_colored_polygon(PackedVector2Array([
+							Vector2(flame_x - 12.0, 2.0),
+							Vector2(flame_x, -22.0 - index * 3.0),
+							Vector2(flame_x + 12.0, 2.0),
+						]), Color(1.0, 0.42, 0.06, pulse * 0.72))
 		else:
 			draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
 
@@ -1205,6 +1238,12 @@ func _draw_boss_overlay() -> void:
 			draw_line(spark_origin, spark_origin + Vector2(18.0 + index * 4.0, 4.0), Color(1.0, 0.44, 0.08, exhaust_pulse), 4.0)
 		if boss_phase_index >= 2:
 			draw_arc(Vector2(0.0, -62.0), 116.0, -PI * 0.9, -PI * 0.1, 28, Color(1.0, 0.16, 0.04, 0.46), 7.0)
+		return
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.EXOSUIT:
+		var coil_alpha := 0.36 + sin(Time.get_ticks_msec() * 0.02) * 0.12
+		draw_arc(Vector2(facing * 43.0, -82.0), 22.0, 0.0, TAU, 22, Color(0.15, 0.9, 1.0, coil_alpha), 5.0)
+		if boss_phase_index >= 2:
+			draw_arc(Vector2(0.0, -92.0), 74.0, -PI, 0.0, 28, Color(1.0, 0.38, 0.06, 0.42), 7.0)
 		return
 	if boss_phase_index >= 1:
 		var aura_alpha := 0.22 + sin(Time.get_ticks_msec() * 0.018) * 0.08
@@ -1261,6 +1300,16 @@ func _visual_column() -> int:
 		return 7
 	if hurt_timer > 0.0 or stun_timer > 0.0 or boss_transition_timer > 0.0 or grabbed:
 		return 6
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.EXOSUIT:
+		if boss_special_pose_timer > 0.0 and boss_special_pose_column >= 0:
+			return boss_special_pose_column
+		if attack_timer > 0.0:
+			return 2
+		if behavior_phase == BehaviorPhase.TELEGRAPH:
+			return 3 if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.MAGNET_PULL else 5
+		if velocity.length() > 10.0:
+			return 1
+		return 0
 	if attack_timer > 0.0:
 		if current_attack != null and attack_timer > current_attack.hit_trigger_remaining:
 			return 4

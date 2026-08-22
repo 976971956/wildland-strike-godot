@@ -5,6 +5,7 @@ enum VisualKind {
 	HUMANOID,
 	RAPTOR,
 	VEHICLE,
+	EXOSUIT,
 }
 
 enum BehaviorKind {

@@ -3,6 +3,7 @@ extends Node2D
 
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const EnvironmentObjectDataScript = preload("res://core/stages/environment_object_data.gd")
+const IndustrialHazardDataScript = preload("res://core/stages/industrial_hazard_data.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -22,6 +23,10 @@ var throw_velocity := Vector2.ZERO
 var throw_timer := 0.0
 var throw_spin := 0.0
 var throw_damage_snapshot := 0
+var industrial_cycle_time := 0.0
+var industrial_warning_active := false
+var industrial_damage_active := false
+var hazard_actor_cooldowns := {}
 
 
 func setup(p_game: Node, p_definition: Resource) -> void:
@@ -40,6 +45,9 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		add_to_group("stage_hazards")
 		if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
 			add_to_group("road_hazards")
+		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
+			add_to_group("industrial_hazards")
+			industrial_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -72,6 +80,10 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
+		_tick_industrial_hazard(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -293,6 +305,54 @@ func _overlaps_actor(actor: Node) -> bool:
 	)
 
 
+func _tick_industrial_hazard(delta: float) -> void:
+	for actor_id in hazard_actor_cooldowns.keys().duplicate():
+		var remaining := maxf(0.0, float(hazard_actor_cooldowns[actor_id]) - delta)
+		if remaining <= 0.0:
+			hazard_actor_cooldowns.erase(actor_id)
+		else:
+			hazard_actor_cooldowns[actor_id] = remaining
+	industrial_cycle_time = fmod(industrial_cycle_time + delta, definition.cycle_duration)
+	if definition.hazard_kind == IndustrialHazardDataScript.HazardKind.CONVEYOR:
+		industrial_warning_active = false
+		industrial_damage_active = false
+		for actor in _industrial_targets():
+			if _overlaps_actor(actor):
+				actor.position.x += definition.initial_direction * definition.move_speed * delta
+		return
+	var active_start: float = definition.cycle_duration - definition.active_duration
+	industrial_warning_active = (
+		industrial_cycle_time >= active_start - definition.warning_duration
+		and industrial_cycle_time < active_start
+	)
+	industrial_damage_active = industrial_cycle_time >= active_start
+	if not industrial_damage_active:
+		return
+	for actor in _industrial_targets():
+		if not _overlaps_actor(actor) or hazard_actor_cooldowns.has(actor.get_instance_id()):
+			continue
+		var knockback_direction: int = definition.initial_direction if definition.initial_direction != 0 else 1
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, Vector2(knockback_direction * 190.0, -38.0), false, 0.0, true, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, Vector2(knockback_direction * 220.0, -38.0), true, false, 0.0, true)
+		hazard_actor_cooldowns[actor.get_instance_id()] = 0.8
+		if game.has_method("play_sfx"):
+			game.play_sfx(&"industrial_impact")
+
+
+func _industrial_targets() -> Array[Node]:
+	var result: Array[Node] = []
+	if game.has_method("get_active_players"):
+		result.append_array(game.get_active_players())
+	elif game.get("player") != null:
+		result.append(game.player)
+	for actor in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(actor) and not actor.is_defeated:
+			result.append(actor)
+	return result
+
+
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
@@ -300,6 +360,8 @@ func _draw() -> void:
 		_draw_water_current()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
 		_draw_road_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD:
+		_draw_industrial_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -335,6 +397,63 @@ func _draw_road_hazard() -> void:
 			Vector2(stripe_x + definition.size.x * 0.13, 0.0),
 		]), Color("#f2c43d"))
 	draw_rect(Rect2(-half.x, -definition.size.y, definition.size.x, definition.size.y), Color("#3b3126"), false, 4.0)
+
+
+func _draw_industrial_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	if definition.hazard_kind == IndustrialHazardDataScript.HazardKind.CONVEYOR:
+		draw_rect(Rect2(-half.x, -half.y, definition.size.x, definition.size.y), Color(0.08, 0.11, 0.14, 0.72))
+		var travel := fmod(industrial_cycle_time * definition.move_speed, 56.0)
+		for index in range(7):
+			var arrow_x: float = -half.x + fmod(index * 58.0 + travel, definition.size.x)
+			draw_polyline(PackedVector2Array([
+				Vector2(arrow_x - definition.initial_direction * 13.0, 9.0),
+				Vector2(arrow_x, 0.0),
+				Vector2(arrow_x - definition.initial_direction * 13.0, -9.0),
+			]), Color(0.92, 0.62, 0.16, 0.78), 4.0)
+		draw_rect(Rect2(-half.x, -half.y, definition.size.x, definition.size.y), Color("#5d6971"), false, 4.0)
+		return
+	var floor_rect := Rect2(-half.x, -half.y * 0.32, definition.size.x, half.y * 0.64)
+	draw_rect(floor_rect, Color(0.08, 0.1, 0.12, 0.82))
+	draw_rect(floor_rect, Color(0.8, 0.47, 0.1, 0.52 if industrial_warning_active else 0.24), false, 3.0)
+	if industrial_warning_active or industrial_damage_active:
+		for index in range(5):
+			var stripe_x: float = -half.x + index * definition.size.x * 0.24
+			draw_line(Vector2(stripe_x, half.y * 0.27), Vector2(stripe_x + 22.0, -half.y * 0.27), Color(1.0, 0.66, 0.12, 0.58), 5.0)
+	if definition.hazard_kind == IndustrialHazardDataScript.HazardKind.PISTON_PRESS:
+		var press_bottom: float = -12.0 if industrial_damage_active else -definition.size.y - 44.0
+		var shaft_top := -330.0
+		draw_line(Vector2(0.0, press_bottom - 28.0), Vector2(0.0, shaft_top), Color("#20282e"), 30.0)
+		draw_line(Vector2(0.0, press_bottom - 28.0), Vector2(0.0, shaft_top), Color("#707b82"), 18.0)
+		draw_rect(Rect2(-27.0, shaft_top - 18.0, 54.0, 24.0), Color("#303940"))
+		draw_rect(Rect2(-27.0, shaft_top - 18.0, 54.0, 24.0), Color("#8f9aa0"), false, 4.0)
+		var head_rect := Rect2(-half.x * 0.74, press_bottom - 40.0, half.x * 1.48, 40.0)
+		draw_rect(head_rect, Color("#4b565e"))
+		draw_rect(Rect2(head_rect.position + Vector2(7.0, 7.0), head_rect.size - Vector2(14.0, 14.0)), Color("#242d33"))
+		for index in range(4):
+			var stripe_left: float = head_rect.position.x + index * head_rect.size.x * 0.25
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(stripe_left, head_rect.end.y - 7.0),
+				Vector2(stripe_left + 12.0, head_rect.end.y - 7.0),
+				Vector2(stripe_left + 22.0, head_rect.end.y),
+				Vector2(stripe_left + 10.0, head_rect.end.y),
+			]), Color("#d18b23"))
+		draw_rect(head_rect, Color("#b6c0c5"), false, 4.0)
+		draw_circle(head_rect.position + Vector2(10.0, 10.0), 3.0, Color("#d7e0e3"))
+		draw_circle(head_rect.end - Vector2(10.0, 10.0), 3.0, Color("#d7e0e3"))
+	else:
+		draw_rect(Rect2(-half.x, -22.0, definition.size.x, 22.0), Color("#161d22"))
+		draw_rect(Rect2(-half.x, -22.0, definition.size.x, 22.0), Color("#59656c"), false, 4.0)
+		for index in range(6):
+			var x: float = -half.x + 12.0 + index * (definition.size.x - 24.0) / 5.0
+			draw_line(Vector2(x, -18.0), Vector2(x, -4.0), Color("#d47a24"), 5.0)
+		if industrial_damage_active:
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(-half.x, -8.0), Vector2(-half.x * 0.65, -half.y * 1.7),
+				Vector2(-half.x * 0.25, -half.y * 0.65), Vector2(0.0, -half.y * 2.1),
+				Vector2(half.x * 0.32, -half.y * 0.7), Vector2(half.x * 0.7, -half.y * 1.55),
+				Vector2(half.x, -8.0),
+			]), Color(1.0, 0.28, 0.04, 0.82))
 
 
 func _draw_hazard() -> void:

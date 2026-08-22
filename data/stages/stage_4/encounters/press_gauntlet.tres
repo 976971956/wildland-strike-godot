@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/waves/press_gauntlet.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"press_gauntlet"
+trigger_x = 2260.0
+origin_x = 2380.0
+arena_right = 2700.0
+unlock_right = 2800.0
+banner_title = "PRESS GAUNTLET"
+banner_subtitle = "WATCH THE WARNING FLOOR"
+reward_id = &"score_relic"
+waves = Array[Resource]([ExtResource("2")])

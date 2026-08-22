@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Blade"]
+script = ExtResource("2")
+enemy_id = &"elite_blade"
+offset = Vector2(-130, 505)
+
+[sub_resource type="Resource" id="Shield"]
+script = ExtResource("2")
+enemy_id = &"shield_guard"
+offset = Vector2(80, 590)
+
+[sub_resource type="Resource" id="Demo"]
+script = ExtResource("2")
+enemy_id = &"demolitionist"
+offset = Vector2(260, 640)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"assembly_opening"
+spawns = Array[Resource]([SubResource("Blade"), SubResource("Shield"), SubResource("Demo")])

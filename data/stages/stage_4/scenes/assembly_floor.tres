@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/encounters/assembly_line_lock.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/encounters/press_gauntlet.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/objects/assembly_conveyor.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/objects/press_alpha.tres" id="5"]
+[ext_resource type="Resource" path="res://data/stages/stage_4/objects/press_beta.tres" id="6"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/industrial_assembly_floor.png" id="7"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"assembly_floor"
+display_name = "ARMORED ASSEMBLY LINE"
+transition_subtitle = "THE MACHINES DO NOT STOP FOR INTRUDERS"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"armored_assembly_foundry"
+visual_theme = 10
+background_texture = ExtResource("7")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5"), ExtResource("6")])

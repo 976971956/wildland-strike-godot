@@ -7,6 +7,7 @@ enum ObjectKind {
 	CARRYABLE,
 	WATER_CURRENT,
 	ROAD_HAZARD,
+	INDUSTRIAL_HAZARD,
 }
 
 @export var object_id: StringName
@@ -41,4 +42,6 @@ func is_valid_object() -> bool:
 		return contact_damage > 0 and move_speed > 0.0 and initial_direction != 0
 	if kind == ObjectKind.ROAD_HAZARD:
 		return health > 0 and contact_damage > 0 and defeat_score > 0
+	if kind == ObjectKind.INDUSTRIAL_HAZARD:
+		return false
 	return false

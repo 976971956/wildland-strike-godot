@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="IndustrialHazardData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/industrial_hazard_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"press_beta"
+kind = 5
+position = Vector2(2610, 620)
+size = Vector2(150, 112)
+contact_damage = 20
+initial_direction = 1
+color = Color(0.88, 0.55, 0.12, 1)
+hazard_kind = 1
+cycle_duration = 2.8
+warning_duration = 0.72
+active_duration = 0.34
+cycle_offset = 1.45

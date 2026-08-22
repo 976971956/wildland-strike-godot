@@ -9,6 +9,7 @@ const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const TidalWaveScript = preload("res://scripts/tidal_wave.gd")
 const HighwayVehicleScript = preload("res://scripts/highway_vehicle.gd")
 const RoadMineScript = preload("res://scripts/road_mine.gd")
+const FurnaceWaveScript = preload("res://scripts/furnace_wave.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
@@ -17,7 +18,8 @@ const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
 const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION]
+const STAGE_4_DEFINITION = preload("res://data/stages/stage_4/stage_4.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -672,6 +674,46 @@ func spawn_road_mine(source_actor: Node, damage: int) -> Node:
 	actors.add_child(mine)
 	mine.setup(self, source_actor, source_actor.position + Vector2(-72.0 * source_actor.facing, 0.0), damage)
 	return mine
+
+
+func apply_magnetic_pull(source_actor: Node, damage: int, radius: float) -> int:
+	var hit_count := 0
+	for fighter in get_active_players():
+		if not is_instance_valid(fighter) or fighter.position.distance_to(source_actor.position) > radius:
+			continue
+		var pull_direction := 1 if source_actor.position.x >= fighter.position.x else -1
+		var vertical_pull := clampf((source_actor.position.y - fighter.position.y) * 2.2, -210.0, 210.0)
+		var health_before: int = fighter.health
+		fighter.take_hit(damage, Vector2(pull_direction * 430.0, vertical_pull), false, 0.1, true)
+		if fighter.health < health_before:
+			hit_count += 1
+	for target in get_tree().get_nodes_in_group("enemies"):
+		if (
+			target == source_actor
+			or not is_instance_valid(target)
+			or target.is_defeated
+			or target.definition.faction == source_actor.definition.faction
+			or target.position.distance_to(source_actor.position) > radius
+		):
+			continue
+		var pull_direction := 1 if source_actor.position.x >= target.position.x else -1
+		var health_before: int = target.health
+		target.take_hit(damage, Vector2(pull_direction * 430.0, -20.0), false, false, 0.1, true)
+		if target.health < health_before:
+			hit_count += 1
+	play_sfx(&"magnet_pull")
+	return hit_count
+
+
+func spawn_furnace_blast(source_actor: Node, damage: int) -> Array[Node]:
+	var waves: Array[Node] = []
+	for direction in [-1, 1]:
+		var wave := FurnaceWaveScript.new()
+		actors.add_child(wave)
+		wave.setup(self, source_actor, direction, damage)
+		waves.append(wave)
+	play_sfx(&"furnace_blast")
+	return waves
 
 
 func _create_stage_objects() -> void:

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"motor_pool_crate"
+kind = 0
+position = Vector2(930, 615)
+size = Vector2(64, 68)
+health = 38
+drop_id = &"weapon_rifle"
+defeat_score = 180
+color = Color(0.32, 0.42, 0.46, 1)

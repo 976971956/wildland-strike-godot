@@ -274,6 +274,8 @@ Exit evidence (2026-08-22, audio/localization batch): a deterministic music dire
 
 Post-release evidence (2026-08-22, complete Simplified Chinese batch): the existing language option now localizes the complete player-facing campaign rather than only the shell and boss subtitles. Runtime rendering covers HUD objectives, combat banners, co-op join/down/revive/continue notices, all eight stage routes, 24 scenes, 38 encounter cards, character roles, boss speakers, weapons, pickups, vehicle name, victory/report flow, ending, credits, and mobile pickup labels; switching language applies immediately without duplicating gameplay resources. Chinese touch subtitles wrap by character when no word spaces are present. A catalog traversal regression rejects any untranslated authored stage, encounter, hero, item, weapon, vehicle, or boss-speaker string. The focused localization suite passes 382/382 assertions and the full release matrix passes 53 suites/3,929 assertions. Accepted Chinese options and in-game subtitle Web fixtures render with zero browser warnings/errors. Web export, iOS project export, signed arm64 device build, and installation on the paired iPhone 14 Pro pass.
 
+Post-release evidence (2026-08-22, sensor-landscape maintenance): mobile orientation now uses Godot's sensor-landscape mode, allowing automatic rotation between landscape left and landscape right while deliberately excluding portrait layouts. The release compatibility regression locks the project setting; 53 suites pass 3,985 assertions. Fresh iOS export inspection confirms both landscape orientations for iPhone and iPad, and the signed arm64 build installs, launches, and remains running on the paired iPhone 14 Pro. This native-only maintenance change does not alter the Web build.
+
 Exit gate: desktop, Web, and iOS behave like complete consumer builds rather than development demos.
 
 ### M9 — Balance, QA, and 1.0 release
@@ -321,6 +323,7 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - **2026-08-22 — Platform hierarchy:** desktop/Web 1–3 player local co-op is the multiplayer reference; mobile guarantees polished single-player rather than forcing an unusable three-player touch layout.
 - **2026-08-22 — Continuous delivery:** every completed mutation is tested, documented, committed, pushed to `main`, and redeployed when Web-visible.
 - **2026-08-22 — Reproducible Web performance probe:** a query-gated four-enemy scenario prints one local console summary after fixed warm-up/sample counts, giving future milestones a comparable render baseline without changing ordinary gameplay.
+- **2026-08-22 — Mobile orientation:** native mobile builds follow the device sensor across both landscape directions but do not enter portrait, preserving the 16:9 combat and touch-control layout.
 
 ## Known baseline limitations
 

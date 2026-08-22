@@ -18,6 +18,7 @@ func _test_platform_contract(test) -> void:
 	test.check(project_source.contains('renderer/rendering_method="gl_compatibility"'), "desktop/Web renderer is not the broad-compatibility backend")
 	test.check(project_source.contains('renderer/rendering_method.mobile="gl_compatibility"'), "mobile renderer drifted from the compatibility backend")
 	test.check(project_source.contains('window/stretch/mode="canvas_items"') and project_source.contains('window/stretch/aspect="expand"'), "responsive viewport/stretch contract is incomplete")
+	test.check(project_source.contains('window/handheld/orientation=4'), "mobile orientation must follow the sensor across both landscape directions")
 	test.check(export_source.contains('variant/thread_support=false'), "Web release unexpectedly requires cross-origin-isolated threads")
 	test.check(export_source.contains('html/canvas_resize_policy=2') and export_source.contains('html/focus_canvas_on_start=true'), "Web canvas resize/focus contract drifted")
 	test.check(export_source.contains('application/min_ios_version="15.0"') and export_source.contains('architectures/arm64=true'), "iOS 15+/arm64 release floor drifted")

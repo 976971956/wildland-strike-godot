@@ -32,6 +32,7 @@ const ENEMY_DEFINITIONS := {
 	"elite_bulwark": preload("res://data/enemies/elite_bulwark.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
 	"mirewarden": preload("res://data/enemies/mirewarden.tres"),
+	"iron_vulture": preload("res://data/enemies/iron_vulture.tres"),
 }
 
 enum BehaviorPhase {
@@ -606,6 +607,20 @@ func _execute_boss_special() -> void:
 		_record_behavior_event(&"boss_rush")
 		queue_redraw()
 		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.ROAD_RAM:
+		behavior_phase = BehaviorPhase.BURST
+		behavior_timer = current_boss_phase.burst_duration
+		velocity = behavior_direction * speed * current_boss_phase.burst_speed_scale
+		_record_behavior_event(&"boss_road_ram")
+		game.play_sfx(&"vehicle_ram")
+		queue_redraw()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.MINE_DROP:
+		game.spawn_road_mine(self, current_attack.damage)
+		game.play_sfx(&"mine_drop")
+		_record_behavior_event(&"boss_mine_drop")
+		_begin_recovery()
+		return
 	_start_attack()
 	_record_behavior_event(&"boss_slam")
 	_begin_recovery()
@@ -1156,7 +1171,17 @@ func _draw_behavior_cue() -> void:
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 		draw_line(Vector2(facing * 18.0, -48.0), Vector2(facing * 150.0, -48.0), cue_color, 3.0)
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
-		draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
+		if definition.visual_kind == EnemyDefinitionScript.VisualKind.VEHICLE:
+			draw_line(Vector2(facing * 72.0, -10.0), Vector2(facing * 245.0, -10.0), cue_color, 6.0)
+			for index in range(3):
+				var chevron_x: float = facing * (118.0 + index * 48.0)
+				draw_polyline(PackedVector2Array([
+					Vector2(chevron_x - facing * 16.0, -28.0),
+					Vector2(chevron_x, -10.0),
+					Vector2(chevron_x - facing * 16.0, 8.0),
+				]), cue_color, 5.0)
+		else:
+			draw_arc(Vector2.ZERO, current_boss_phase.special_max_distance * 0.22, 0.0, TAU, 32, cue_color, 6.0)
 
 
 func _draw_creature_state_cue() -> void:
@@ -1173,6 +1198,14 @@ func _draw_creature_state_cue() -> void:
 
 
 func _draw_boss_overlay() -> void:
+	if definition.visual_kind == EnemyDefinitionScript.VisualKind.VEHICLE:
+		var exhaust_pulse := 0.4 + sin(Time.get_ticks_msec() * 0.018) * 0.16
+		for index in range(4):
+			var spark_origin := Vector2(118.0 + index * 7.0, -38.0 + index * 5.0)
+			draw_line(spark_origin, spark_origin + Vector2(18.0 + index * 4.0, 4.0), Color(1.0, 0.44, 0.08, exhaust_pulse), 4.0)
+		if boss_phase_index >= 2:
+			draw_arc(Vector2(0.0, -62.0), 116.0, -PI * 0.9, -PI * 0.1, 28, Color(1.0, 0.16, 0.04, 0.46), 7.0)
+		return
 	if boss_phase_index >= 1:
 		var aura_alpha := 0.22 + sin(Time.get_ticks_msec() * 0.018) * 0.08
 		draw_arc(Vector2(0.0, -78.0), 58.0, 0.0, TAU, 30, Color(1.0, 0.16, 0.05, aura_alpha), 9.0)

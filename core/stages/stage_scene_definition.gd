@@ -8,6 +8,9 @@ enum VisualTheme {
 	FLOODED_CYPRESS,
 	FLOODED_CAMP,
 	SPILLWAY,
+	HIGHWAY_CANYON,
+	HIGHWAY_CHECKPOINT,
+	HIGHWAY_OVERPASS,
 }
 
 @export var scene_id: StringName

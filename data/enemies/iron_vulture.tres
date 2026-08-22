@@ -1,0 +1,96 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/iron_vulture_cannon.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/iron_vulture_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/iron_vulture_ram.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/iron_vulture_mine.tres" id="6"]
+
+[sub_resource type="Resource" id="PhasePursuit"]
+script = ExtResource("4")
+phase_id = &"pursuit"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 3
+speed_scale = 1.0
+telegraph_duration = 0.58
+special_cooldown = 1.45
+special_min_distance = 135.0
+special_max_distance = 620.0
+burst_speed_scale = 2.45
+burst_duration = 0.48
+recovery_duration = 0.66
+dialogue_speaker = "IRON VULTURE"
+dialogue_line = "This road belongs to the convoy."
+tint = Color(1, 0.94, 0.84, 1)
+
+[sub_resource type="Resource" id="PhaseMinefield"]
+script = ExtResource("4")
+phase_id = &"minefield"
+health_threshold_ratio = 0.64
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 4
+speed_scale = 1.12
+telegraph_duration = 0.42
+special_cooldown = 1.0
+special_min_distance = 90.0
+special_max_distance = 690.0
+recovery_duration = 0.5
+dialogue_speaker = "IRON VULTURE"
+dialogue_line = "Watch the asphalt burn."
+reinforcement_enemy_id = &"elite_bombardier"
+reinforcement_count = 1
+tint = Color(1, 0.82, 0.66, 1)
+
+[sub_resource type="Resource" id="PhaseRedline"]
+script = ExtResource("4")
+phase_id = &"redline"
+health_threshold_ratio = 0.3
+attack = ExtResource("5")
+special_attack = ExtResource("5")
+special_kind = 3
+speed_scale = 1.3
+telegraph_duration = 0.28
+special_cooldown = 0.68
+special_min_distance = 80.0
+special_max_distance = 760.0
+burst_speed_scale = 2.95
+burst_duration = 0.54
+recovery_duration = 0.34
+dialogue_speaker = "IRON VULTURE"
+dialogue_line = "Redline. No brakes."
+reinforcement_enemy_id = &"elite_enforcer"
+reinforcement_count = 1
+tint = Color(1, 0.7, 0.56, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"iron_vulture"
+is_boss = true
+rank = 2
+max_health = 390
+speed = 126.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 3200
+outgoing_damage_scale = 1.12
+stun_duration_scale = 0.58
+knockdown_armor = 4
+behavior_kind = 5
+attack_distance = 110.0
+lane_tolerance = 62.0
+vertical_approach_scale = 0.8
+boss_phases = Array[Resource]([SubResource("PhasePursuit"), SubResource("PhaseMinefield"), SubResource("PhaseRedline")])
+sprite_sheet = ExtResource("3")
+visual_kind = 2
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(320, 250)
+target_bottom_offset = 12.0
+actor_scale = Vector2(1.14, 1.14)
+shadow_half_extents = Vector2(86, 14)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

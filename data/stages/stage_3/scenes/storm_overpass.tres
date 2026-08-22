@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/encounters/storm_pursuit.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/encounters/iron_vulture_showdown.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/overpass_barricade.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/overpass_oil.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/highway_overpass.png" id="6"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"storm_overpass"
+display_name = "TEMPEST OVERPASS"
+transition_subtitle = "THE IRON VULTURE IS CLOSING FAST"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"storm_industrial_overpass"
+visual_theme = 8
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

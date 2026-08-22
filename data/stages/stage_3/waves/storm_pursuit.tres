@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Bombardier"]
+script = ExtResource("2")
+enemy_id = &"elite_bombardier"
+offset = Vector2(0, 495)
+
+[sub_resource type="Resource" id="Trike"]
+script = ExtResource("2")
+enemy_id = &"triceratops"
+offset = Vector2(150, 620)
+
+[sub_resource type="Resource" id="Enforcer"]
+script = ExtResource("2")
+enemy_id = &"elite_enforcer"
+offset = Vector2(280, 555)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"storm_pursuit"
+spawns = Array[Resource]([SubResource("Bombardier"), SubResource("Trike"), SubResource("Enforcer")])

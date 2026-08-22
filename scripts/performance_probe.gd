@@ -22,6 +22,12 @@ func _ready() -> void:
 		if "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
+		elif "stage3_preview=2" in query_string:
+			scenario = "stage_3_vehicle_boss_preview"
+			call_deferred("_start_stage_3_preview", true)
+		elif "stage3_preview=1" in query_string:
+			scenario = "stage_3_highway_preview"
+			call_deferred("_start_stage_3_preview", false)
 		elif "stage2_preview=2" in query_string:
 			scenario = "stage_2_boss_preview"
 			call_deferred("_start_stage_2_preview", true)
@@ -640,6 +646,42 @@ func _start_stage_2_preview(show_boss: bool) -> void:
 		game.encounter_director.completed = true
 		game.encounter_director._update_scene(game.player.position.x)
 	game.player.set_physics_process(false)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	game.set_process(false)
+
+
+func _start_stage_3_preview(show_boss: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_advance_campaign_stage"):
+		scenario = "stage_3_preview_setup_failed"
+		return
+	game._advance_campaign_stage()
+	game._advance_campaign_stage()
+	if not is_instance_valid(game.highway_vehicle):
+		scenario = "stage_3_preview_setup_failed"
+		return
+	var vehicle: Node = game.highway_vehicle
+	vehicle.set_physics_process(false)
+	if show_boss:
+		vehicle.position = Vector2(3500.0, 560.0)
+		vehicle._mount_players()
+		game.camera.position.x = 3600.0
+		game.encounter_director._update_scene(vehicle.position.x)
+		game.encounter_director.force_start_encounter(4)
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			enemy.set_physics_process(false)
+			enemy.facing = -1
+			enemy.invulnerable = 999.0
+			enemy.behavior_phase = enemy.BehaviorPhase.TELEGRAPH
+			enemy.behavior_timer = 999.0
+			enemy.queue_redraw()
+	else:
+		vehicle.position = Vector2(690.0, 560.0)
+		vehicle._mount_players()
+		game.camera.position.x = 700.0
+		game.encounter_director.completed = true
+		game.encounter_director._update_scene(vehicle.position.x)
 	game.hud.banner_time = 0.0
 	game.hud.dialogue_time = 0.0
 	game.set_process(false)

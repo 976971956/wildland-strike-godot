@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Bulwark"]
+script = ExtResource("2")
+enemy_id = &"elite_bulwark"
+offset = Vector2(90, 510)
+
+[sub_resource type="Resource" id="Bombardier"]
+script = ExtResource("2")
+enemy_id = &"elite_bombardier"
+offset = Vector2(240, 620)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"checkpoint_reinforcement"
+reinforcement_delay = 0.75
+spawns = Array[Resource]([SubResource("Bulwark"), SubResource("Bombardier")])

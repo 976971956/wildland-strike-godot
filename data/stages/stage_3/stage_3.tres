@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/scenes/canyon_run.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/scenes/raider_checkpoint.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/scenes/storm_overpass.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/highway_vehicle.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_3"
+stage_number = 3
+display_name = "HIGHWAY OF TEETH"
+time_limit_seconds = 255.0
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+vehicle_sequence = ExtResource("5")

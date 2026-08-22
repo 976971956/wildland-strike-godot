@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/waves/convoy_counterattack.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"convoy_counterattack"
+trigger_x = 2290.0
+origin_x = 2540.0
+arena_right = 2760.0
+unlock_right = 3100.0
+banner_title = "CONVOY COUNTERATTACK"
+banner_subtitle = "MOUNTED FIRE HAS INFINITE BELTS"
+reward_id = &"food_meal"
+waves = Array[Resource]([ExtResource("2")])

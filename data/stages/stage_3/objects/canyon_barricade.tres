@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"canyon_barricade"
+kind = 4
+position = Vector2(1010, 490)
+size = Vector2(92, 44)
+health = 42
+contact_damage = 24
+defeat_score = 250
+color = Color(0.48, 0.19, 0.12, 1)

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/encounters/checkpoint_breach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/encounters/convoy_counterattack.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/checkpoint_gate.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/checkpoint_oil.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/highway_checkpoint.png" id="6"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"raider_checkpoint"
+display_name = "CONVOY CHECKPOINT"
+transition_subtitle = "BREAK THE BLOCKADE AT FULL SPEED"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"fortified_highway_checkpoint"
+visual_theme = 7
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

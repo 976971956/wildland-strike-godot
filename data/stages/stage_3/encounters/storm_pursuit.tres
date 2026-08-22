@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/waves/storm_pursuit.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"storm_pursuit"
+trigger_x = 2970.0
+origin_x = 3260.0
+arena_right = 3510.0
+unlock_right = 3720.0
+banner_title = "TEMPEST PURSUIT"
+banner_subtitle = "KEEP THE INTERCEPTOR IN ONE PIECE"
+reward_id = &"score_relic"
+waves = Array[Resource]([ExtResource("2")])

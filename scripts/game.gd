@@ -7,6 +7,8 @@ const ImpactScript = preload("res://scripts/impact_fx.gd")
 const StageObjectScript = preload("res://scripts/stage_object.gd")
 const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
 const TidalWaveScript = preload("res://scripts/tidal_wave.gd")
+const HighwayVehicleScript = preload("res://scripts/highway_vehicle.gd")
+const RoadMineScript = preload("res://scripts/road_mine.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
@@ -14,7 +16,8 @@ const LocalPlayerRegistryScript = preload("res://core/input/local_player_registr
 const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION]
+const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -46,6 +49,7 @@ var remaining_enemies: int:
 var stage_time_remaining := 0.0
 var campaign_stage_index := 0
 var active_stage_definition: Resource
+var highway_vehicle: Node
 var stage_timed_out := false
 var score := 0
 var lives := 2
@@ -122,6 +126,7 @@ func _ready() -> void:
 	_create_player()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_create_stage_objects()
+	_create_vehicle_sequence()
 	stage_time_remaining = active_stage_definition.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
 	_sync_hud_stage_progress()
@@ -358,6 +363,9 @@ func join_local_player(device_id: int, hero_index := -1) -> Node:
 		return null
 	if state == "playing":
 		fighter.invulnerable = 2.2
+		if is_instance_valid(highway_vehicle):
+			fighter.set_physics_process(false)
+			highway_vehicle._mount_players()
 		hud.show_banner("PLAYER %d JOINED" % (slot.slot_index + 1), fighter.hero_display_name, 1.2)
 		play_sfx(&"ui_confirm")
 	else:
@@ -547,6 +555,8 @@ func _sync_local_player_hud(fighter: Node) -> void:
 
 
 func lead_player_x() -> float:
+	if is_instance_valid(highway_vehicle):
+		return highway_vehicle.position.x
 	var lead_x := 0.0
 	for fighter in get_active_players():
 		lead_x = maxf(lead_x, fighter.position.x)
@@ -657,12 +667,29 @@ func spawn_tidal_wave(source_actor: Node, direction: int, damage: int) -> Node:
 	return wave
 
 
+func spawn_road_mine(source_actor: Node, damage: int) -> Node:
+	var mine := RoadMineScript.new()
+	actors.add_child(mine)
+	mine.setup(self, source_actor, source_actor.position + Vector2(-72.0 * source_actor.facing, 0.0), damage)
+	return mine
+
+
 func _create_stage_objects() -> void:
 	for scene in active_stage_definition.scenes:
 		for object_definition in scene.environment_objects:
 			var stage_object := StageObjectScript.new()
 			actors.add_child(stage_object)
 			stage_object.setup(self, object_definition)
+
+
+func _create_vehicle_sequence() -> void:
+	if not active_stage_definition.has_method("is_vehicle_stage") or not active_stage_definition.is_vehicle_stage():
+		highway_vehicle = null
+		return
+	highway_vehicle = HighwayVehicleScript.new()
+	actors.add_child(highway_vehicle)
+	highway_vehicle.setup(self, active_stage_definition.vehicle_sequence)
+	_set_local_players_physics(false)
 
 func enemy_removed(enemy: Node) -> void:
 	encounter_director.enemy_removed(enemy)
@@ -913,6 +940,9 @@ func _advance_campaign_stage() -> void:
 		return
 	campaign_stage_index += 1
 	active_stage_definition = CAMPAIGN_STAGE_DEFINITIONS[campaign_stage_index]
+	if is_instance_valid(highway_vehicle):
+		highway_vehicle.release_players()
+	highway_vehicle = null
 	for child in actors.get_children():
 		if not players.has(child):
 			child.queue_free()
@@ -935,6 +965,7 @@ func _advance_campaign_stage() -> void:
 		fighter.set_physics_process(true)
 		_sync_local_player_hud(fighter)
 	_create_stage_objects()
+	_create_vehicle_sequence()
 	stage_time_remaining = active_stage_definition.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
 	hud.set_boss_health(0, 0)

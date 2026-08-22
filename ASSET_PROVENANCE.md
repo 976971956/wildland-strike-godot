@@ -223,3 +223,57 @@ Constraints: genuinely transparent background, exactly 8 cells in one row, same 
 The environment service output was 2048×768 rather than three independently sized runtime files. The deterministic builder rounds exact third boundaries, resizes each panel to the established 1672×941 scene contract, and leaves the broad combat lane intact. The Mirewarden output retained real alpha but did not center poses at equal mathematical intervals. The first equal-width crop was rejected because neighboring limbs crossed cell boundaries. The final builder discovers the eight largest eight-neighbor opaque components, sorts them by x position, scales each complete silhouette uniformly with nearest-neighbor interpolation, and reconstructs exact transparent 320×320 cells.
 
 Verification: typed Stage 2 scene resources validate and reference all three runtime backgrounds. The Mirewarden definition validates an exact eight-column atlas and three typed phases. The exported Cypress and Spillway fixtures were inspected at 1280×720 gameplay scale; the first boss composition was rejected for a cropped, over-dark entrance, after which spawn position and phase tint were corrected. Accepted fixtures sustain approximately 120 FPS over 300 frames with zero frames above 20 ms or 33 ms.
+
+## 2026-08-22 — Highway environments, Desert Interceptor, and Iron Vulture
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_highway_assets.gd` and `tools/build_interceptor_asset.gd` deterministic crop, isolation, nearest-neighbor normalization, and transparent-cell reconstruction pipelines.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, vehicle, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general 1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/highway_canyon.png`: 1672×941 RGB; SHA-256 `6a07e32457641d17901f06b1f84ae6c91aba747662d725eb9422387ad4961700`.
+- `assets/backgrounds/highway_checkpoint.png`: 1672×941 RGB; SHA-256 `3e9f59ca05201496f08213645121daf9a8f23dde7387194eb4ef10b91c7abce2`.
+- `assets/backgrounds/highway_overpass.png`: 1672×941 RGB; SHA-256 `a47c5f5f6e0261d653402aff4ba05fd70414781c1669932cbae49ed9e211cf21`.
+- `assets/sprites/desert_interceptor_sheet.png`: 1440×240 RGBA, 4×1; SHA-256 `31b0142798384509c3216a91d8e762bf3d8387f052abca6032e3ac3689496065`.
+- `assets/sprites/iron_vulture_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `8633cc7d7172ac6c8b78ea3a8499941c3a279b7153c459aaa11b435bed235986`.
+- Rejected environment concept retained for audit: `assets/backgrounds/highway_atlas_source.png`; SHA-256 `d43368d871e171b9b10db9691c68d5da4b819bb027969ca3c2dae2175a5dcfdc`.
+- Archived vehicle sources: `assets/sprites/desert_interceptor_source.png`, SHA-256 `b4805aff62a9c65471c7fd632e2d947eb9486ae3bae70f9d3ad5fd12b87ffbbb`; and `assets/sprites/iron_vulture_source.png`, SHA-256 `512d59d7996eb919053013d885c02107c7e9b73dabb95318e76fa577c0bc4e46`.
+
+All three source images are excluded from Web and iOS runtime exports.
+
+Initial rejected environment-atlas prompt:
+
+```text
+Create an original clean-room 1990s arcade beat-em-up highway environment atlas for a Godot game named Wildland Strike. One wide cinematic pixel-art concept sheet arranged as THREE clearly separated equal vertical PANELS from left to right, with no gutters and no text: PANEL 1 sun-baked red-rock canyon highway, broken guardrails, distant mesas, abandoned research convoy; PANEL 2 raider checkpoint on a broad cracked asphalt freeway, improvised steel barricades, wrecked trucks, warning lights; PANEL 3 elevated storm overpass at dusk, lightning clouds, industrial skyline, wet asphalt and dramatic perspective. Camera is classic 2.5D side-view beat-em-up, horizon high, broad playable roadway covering lower 38%, foreground never blocks fighters, consistent scale and vanishing point across panels. Rich hand-authored 16-bit/32-bit arcade pixel art, crisp clusters, restrained dithering, dramatic teal/orange palette, serious grounded dinosaur-action atmosphere. Exactly three environment panels only, no characters, no vehicles in the active road area, no UI, no labels, no logos, no copyrighted imagery. High clarity and production-ready detail, landscape canvas.
+```
+
+The three-panel concept was rejected because the delivered panels were too narrow for a readable 16:9 combat arena. It remains only as an excluded provenance artifact. The following three independent prompts produced the accepted runtime backgrounds:
+
+```text
+Original clean-room production background for Wildland Strike, a serious 1990s arcade beat-em-up. Wide 16:9 landscape composition, classic 2.5D side-view. Sun-baked red-rock canyon highway at noon, distant mesas and abandoned scientific convoy far behind the playfield, broken guardrail and research antenna silhouettes, broad cracked asphalt roadway occupying the lower 40% with three readable depth lanes, horizontal side-scrolling composition, no perspective road receding into center. Crisp hand-authored 16-bit/32-bit pixel art, warm copper rock and cyan sky, rich but uncluttered, fighters will stand between y=455 and 665. No characters, no active vehicles, no text, no UI, no logo, no copyrighted imagery.
+```
+
+```text
+Original clean-room production background for Wildland Strike, a serious 1990s arcade beat-em-up. Wide 16:9 landscape composition, classic 2.5D side-view. Raider checkpoint spanning a broad desert freeway at late afternoon, rusted watchtowers, wrecked convoy trucks and steel fortifications only behind the playfield, warning beacons and hanging cables, broad cracked asphalt roadway occupying the lower 40% with three readable depth lanes, horizontal side-scrolling composition and clear fighter silhouettes. Crisp hand-authored 16-bit/32-bit pixel art, burnt orange, gunmetal and dusty teal, rich grounded detail without foreground obstruction. No characters, no active vehicles on roadway, no text, no UI, no logos, no copyrighted imagery.
+```
+
+```text
+Original clean-room production background for Wildland Strike, a serious 1990s arcade beat-em-up. Wide 16:9 landscape composition, classic 2.5D side-view. Elevated industrial overpass during a violent dusk thunderstorm, refinery skyline and lightning behind concrete barriers, wet asphalt reflections and damaged lamps, broad roadway occupying the lower 40% with three readable depth lanes, horizontal side-scrolling composition, dramatic navy, violet, cyan and amber palette. Crisp hand-authored 16-bit/32-bit pixel art, rich atmosphere but open active playfield, fighters will stand between y=455 and 665. No characters, no active vehicles, no text, no UI, no logo, no copyrighted imagery.
+```
+
+Iron Vulture generation prompt:
+
+```text
+Create an original clean-room arcade pixel-art sprite concept sheet for the Wildland Strike Stage 3 vehicle boss, named IRON VULTURE. Transparent background. A brutal improvised armored highway battle truck viewed in strict side profile, facing LEFT, dark charcoal steel with hazard-yellow markings, reinforced ram prow, exposed engine, oversized tires, roof gunner cage, exhaust stacks, and a distinct red vulture insignia that is not a logo from any existing franchise. Arrange EXACTLY EIGHT isolated equal-width cells in one horizontal row with generous transparent separation and the whole vehicle fully contained in every cell: 1 idle engine rumble, 2 suspension bounce, 3 rolling frame A, 4 rolling frame B, 5 ram telegraph with sparks, 6 active high-speed ram, 7 mine-drop recoil, 8 wrecked/defeated. Same scale, ground baseline, orientation, lighting, and silhouette in every cell. Crisp serious 16-bit/32-bit beat-em-up pixel art, readable at gameplay size, no text, no UI, no humanoid character outside the vehicle, no copyrighted designs, no shadows crossing cell boundaries. Very wide landscape atlas.
+```
+
+Desert Interceptor generation prompt:
+
+```text
+Create an original clean-room arcade pixel-art vehicle sprite sheet for Wildland Strike, transparent background. A rugged player-controlled desert interceptor in strict side profile facing RIGHT: low wide armored off-road muscle car, burnt-orange and cream body panels, reinforced steel bumper, exposed suspension, large realistic tires, roll cage, roof-mounted belt-fed gun, visible dark windshield driver silhouette, practical 1990s retro-future design. Arrange EXACTLY FOUR isolated equal-width cells in one horizontal row with generous transparent separation: 1 engine idle, 2 driving suspension frame A, 3 driving suspension frame B with subtle dust, 4 collision-damaged flash/sparks. Same vehicle scale, ground baseline, orientation and lighting in every cell; entire vehicle contained in each cell. Serious crisp 16-bit/32-bit beat-em-up pixel art matching a high-detail canyon highway, not cute, not toy-like, no text, no UI, no logo, no copyrighted designs, no external standing characters, no shadows crossing cell boundaries. Very wide landscape atlas.
+```
+
+The first integrated player vehicle was a procedural placeholder. Exported-browser inspection rejected it as toy-like and also caught standing player sprites clipping through the roof. The final Desert Interceptor atlas replaced that placeholder, and vehicle mounting now hides on-foot silhouettes while preserving each player's independent mounted-fire ownership. Both generated vehicle sources arrived with nonuniform pose spacing, so the retained builders detect the largest complete opaque components, sort them by x position, apply one uniform nearest-neighbor scale, and center each vehicle on a fixed transparent baseline.
+
+Verification: every Stage 3 scene resource validates its original background and the typed vehicle sequence validates speed, lane, hull, collision, ram, and mounted-weapon parameters. Both accepted vehicle sheets retain alpha and divide into exact state cells. The exported 1280×720 canyon, checkpoint, overpass, and three-phase boss fixtures were inspected for lane readability, silhouette scale, crop loss, mounting, depth order, collision cues, and telegraph clarity. The initial oversized circular boss cue was rejected and replaced with road-aligned chevrons. Accepted canyon and boss samples average 119.60 and 120.00 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

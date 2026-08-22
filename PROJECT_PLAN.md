@@ -219,14 +219,16 @@ Exit evidence (2026-08-22, standard/elite roster batch): the human catalog now c
 
 ### M6 — Stages 2–4 and vehicle set piece
 
-Status: **in progress (25%)**
+Status: **in progress (50%)**
 
 - [x] Flooded wilderness stage and boss.
-- [ ] Highway vehicle stage with complete driving and vehicle-boss mechanics.
+- [x] Highway vehicle stage with complete driving and vehicle-boss mechanics.
 - [ ] Garage/industrial multi-scene stage and boss.
 - [ ] Stage map flow, persistent score/lives, completion bonuses, and difficulty progression.
 
 Evidence (2026-08-22, flooded-wilderness batch): Stage 2 is a complete 4,200 px data-driven route through Cypress Floodplain, Drowned Research Camp, and Ancient Spillway, each with independent original 1672×941 scene art and monsoon/mist/lighting ambience. Four ordered encounters combine the complete M5 human roster with neutral Compy, raptor, ankylosaur, and triceratops ecology across fourteen authored initial/reinforcement spawns. Three typed water-current hazards push and periodically damage either faction, allowing the environment to change real combat outcomes. Mirewarden Sable is an original 330-health three-phase boss with an isolated 2560×320 eight-state atlas: Floodgate launches a traveling tidal-wave hit volume, Harpoon Rush switches to a burst state and adds a raptor, and Deluge accelerates tidal pressure while adding two Compys; all phase gates, dialogue, HUD identity, dynamic director accounting, recovery, and completion behavior are resource-driven. The campaign now transitions from Stage 1 to Stage 2 in place while preserving score, lives, selected heroes, and all three local-player slots, reconfiguring the director, art, hazards, timer, and camera bounds. Thirty-nine deterministic suites pass 2329/2329 assertions. Exported environment and boss fixtures average 120.04 and 120.00 FPS over 300 frames with zero frames above 20 ms or 33 ms. Web release export, iOS project export, and unsigned generic-device Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m6-flooded-wilderness.md`.
+
+Evidence (2026-08-22, highway-vehicle batch): Stage 3 is a complete 4,200 px route through Red Mesa Highway, Convoy Checkpoint, and Tempest Overpass, with five ordered encounters, seventeen authored spawns, six destructible road hazards, three scene-specific ambience themes, and independent original 1672×941 backgrounds. A typed `VehicleStageData` resource owns minimum/maximum speed, acceleration, braking, passive drag, three ordered lanes, steering rate, hull health, collision and ram damage/cooldowns, mounted weapon, and per-player firing cooldown. The shared runtime mounts all active local players, suppresses incompatible on-foot physics/standing sprites, drives director/camera progression, supports independent P1–P3 mounted fire, applies hull breakdown consequences, and restores players safely when leaving the sequence. Iron Vulture is an original 390-health armored-truck boss with an isolated 2560×320 eight-state atlas: Pursuit uses a telegraphed lane ram, Minefield deploys armed road mines and an elite bombardier, and Redline accelerates repeated rams with an elite enforcer. The first exported visual was rejected because the procedural player car looked toy-like and exposed a standing fighter through its roof; it was replaced by an original four-state 1440×240 Desert Interceptor atlas and the oversized circular boss cue was replaced with road-aligned chevrons. Forty suites pass 2413/2413 assertions. Accepted exported-Web fixtures average 119.60 FPS for the canyon route and 120.00 FPS for the boss over 300 frames, with zero frames above 20 ms or 33 ms and zero browser warnings/errors. Web release export, iOS project export, and unsigned generic-device Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m6-highway-vehicle.md`.
 
 Exit gate: first half of the campaign is content-complete and playable by all supported player counts.
 
@@ -268,7 +270,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M6 — Highway vehicle stage:** build acceleration, lane steering, collision/ram rules, roadside hazards, mounted attacks, a vehicle-boss state machine, and a complete Stage 3 route while preserving the M0–M6 gates.
+1. **M6 — Garage/industrial Stage 4:** build a multi-scene garage and foundry route, machinery hazards, escalation encounters, a unique industrial boss, campaign difficulty progression, and a complete first-half map flow while preserving every M0–M6 gate.
 
 ## Definition of done for every task
 

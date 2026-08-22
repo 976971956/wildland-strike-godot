@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="VehicleStageData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/vehicle_stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/weapons/rifle.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+vehicle_id = &"desert_interceptor"
+display_name = "DESERT INTERCEPTOR"
+start_x = 260.0
+end_x = 4120.0
+lane_positions = PackedFloat32Array(490, 560, 630)
+minimum_speed = 108.0
+maximum_speed = 370.0
+acceleration = 190.0
+braking = 285.0
+passive_drag = 58.0
+lane_steering_speed = 265.0
+hull_health = 280
+collision_damage = 22
+ram_damage = 48
+ram_cooldown = 0.52
+mounted_weapon = ExtResource("2")
+mounted_attack_cooldown = 0.24

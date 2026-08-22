@@ -41,6 +41,7 @@ const SUITES := [
 	{"name": "dinosaur_ecosystem", "path": "res://tests/suites/dinosaur_ecosystem_test.gd"},
 	{"name": "enemy_roster", "path": "res://tests/suites/enemy_roster_test.gd"},
 	{"name": "stage_2_flooded_wilderness", "path": "res://tests/suites/stage_2_flooded_wilderness_test.gd"},
+	{"name": "stage_3_highway_vehicle", "path": "res://tests/suites/stage_3_highway_vehicle_test.gd"},
 ]
 
 

@@ -6,6 +6,7 @@ extends Resource
 @export var display_name := ""
 @export_range(0.0, 3600.0, 1.0) var time_limit_seconds := 0.0
 @export var scenes: Array[Resource] = []
+@export var vehicle_sequence: Resource
 
 
 func is_valid_stage() -> bool:
@@ -27,7 +28,16 @@ func is_valid_stage() -> bool:
 			if encounter.unlock_right > end_x():
 				return false
 			encounter_ids[encounter.encounter_id] = true
+	if vehicle_sequence != null:
+		if not vehicle_sequence.has_method("is_valid_vehicle_stage") or not vehicle_sequence.is_valid_vehicle_stage():
+			return false
+		if vehicle_sequence.start_x < scenes[0].start_x or vehicle_sequence.end_x > end_x():
+			return false
 	return true
+
+
+func is_vehicle_stage() -> bool:
+	return vehicle_sequence != null and vehicle_sequence.has_method("is_valid_vehicle_stage") and vehicle_sequence.is_valid_vehicle_stage()
 
 
 func all_encounters() -> Array[Resource]:

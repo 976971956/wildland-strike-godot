@@ -5,6 +5,8 @@ enum SpecialKind {
 	GROUND_SLAM,
 	RUSH,
 	TIDAL_WAVE,
+	ROAD_RAM,
+	MINE_DROP,
 }
 
 @export var phase_id: StringName
@@ -43,7 +45,7 @@ func is_valid_phase() -> bool:
 		or dialogue_line.is_empty()
 	):
 		return false
-	if special_kind == SpecialKind.RUSH and (burst_speed_scale <= 1.0 or burst_duration <= 0.0):
+	if special_kind in [SpecialKind.RUSH, SpecialKind.ROAD_RAM] and (burst_speed_scale <= 1.0 or burst_duration <= 0.0):
 		return false
 	if reinforcement_count > 0 and reinforcement_enemy_id.is_empty():
 		return false

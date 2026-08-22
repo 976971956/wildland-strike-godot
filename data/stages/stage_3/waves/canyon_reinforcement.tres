@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Enforcer"]
+script = ExtResource("2")
+enemy_id = &"elite_enforcer"
+offset = Vector2(130, 505)
+
+[sub_resource type="Resource" id="Compy"]
+script = ExtResource("2")
+enemy_id = &"compy"
+offset = Vector2(250, 625)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"canyon_reinforcement"
+reinforcement_delay = 0.7
+spawns = Array[Resource]([SubResource("Enforcer"), SubResource("Compy")])

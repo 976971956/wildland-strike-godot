@@ -47,6 +47,12 @@ func _draw() -> void:
 				_draw_flooded_camp(scene)
 			5:
 				_draw_spillway(scene)
+			6:
+				_draw_highway_canyon(scene)
+			7:
+				_draw_highway_checkpoint(scene)
+			8:
+				_draw_highway_overpass(scene)
 
 
 func _draw_ruins(scene: Resource) -> void:
@@ -126,6 +132,33 @@ func _draw_monsoon(scene: Resource, strength: float) -> void:
 		var rain_x: float = scene.start_x + fmod(index * 127.0 + animation_time * 128.0, width)
 		var rain_y: float = 275.0 + fmod(index * 61.0 + animation_time * 182.0, 360.0)
 		draw_line(Vector2(rain_x, rain_y), Vector2(rain_x - 9.0, rain_y + 24.0), Color(0.62, 0.84, 0.92, 0.2 * strength), 2.0)
+
+
+func _draw_highway_canyon(scene: Resource) -> void:
+	var width: float = scene.end_x - scene.start_x
+	for index in range(8):
+		var dust_x: float = scene.start_x + fmod(index * 193.0 - animation_time * (48.0 + index * 2.0), width)
+		var dust_y := 618.0 + index % 3 * 19.0
+		draw_line(Vector2(dust_x, dust_y), Vector2(dust_x + 78.0, dust_y - 8.0), Color(0.86, 0.55, 0.28, 0.12), 5.0)
+
+
+func _draw_highway_checkpoint(scene: Resource) -> void:
+	for index in range(6):
+		var pulse := (sin(animation_time * 5.2 + index * 0.8) + 1.0) * 0.5
+		draw_circle(Vector2(scene.start_x + 145.0 + index * 220.0, 414.0), 5.0 + pulse * 2.0, Color(1.0, 0.22, 0.08, 0.28 + pulse * 0.4))
+	for index in range(5):
+		var spark_x: float = scene.start_x + fmod(index * 281.0 + animation_time * 94.0, scene.end_x - scene.start_x)
+		draw_line(Vector2(spark_x, 468.0), Vector2(spark_x - 11.0, 480.0), Color(1.0, 0.72, 0.2, 0.3), 2.0)
+
+
+func _draw_highway_overpass(scene: Resource) -> void:
+	_draw_monsoon(scene, 0.58)
+	var flash := maxf(0.0, sin(animation_time * 0.91) - 0.987) * 42.0
+	if flash > 0.0:
+		draw_rect(Rect2(scene.start_x, 0.0, scene.end_x - scene.start_x, 520.0), Color(0.68, 0.76, 1.0, minf(flash, 0.23)))
+	for index in range(6):
+		var drift := fmod(animation_time * 30.0 + index * 24.0, 88.0)
+		draw_polyline(_ellipse_points(Vector2(scene.start_x + 160.0 + index * 220.0, 616.0), 12.0 + drift, 3.0 + drift * 0.08), Color(0.48, 0.7, 0.94, 0.17 * (1.0 - drift / 92.0)), 2.0)
 
 
 func _ellipse_points(center: Vector2, radius_x: float, radius_y: float) -> PackedVector2Array:

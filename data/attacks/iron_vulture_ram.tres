@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/special.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"iron_vulture_ram"
+sound_event = &"vehicle_ram"
+duration = 0.5
+hit_trigger_remaining = 0.31
+hitbox_shape = 2
+circle_radius = 108.0
+damage = 27
+knockback = Vector2(520, -58)
+launch = true
+impact_strength = 3
+impact_profile = ExtResource("2")
+priority = 4
+counter_hit_damage_bonus = 8
+counter_hit_knockback_scale = 1.3
+counter_hit_stun_bonus = 0.18

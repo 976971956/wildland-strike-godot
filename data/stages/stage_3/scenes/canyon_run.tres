@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/encounters/canyon_intercept.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/canyon_barricade.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_3/objects/canyon_oil.tres" id="4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/highway_canyon.png" id="5"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"canyon_run"
+display_name = "RED MESA HIGHWAY"
+transition_subtitle = "TAKE THE INTERCEPTOR AND RUN THEM DOWN"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"desert_canyon_highway"
+visual_theme = 6
+background_texture = ExtResource("5")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("4")])

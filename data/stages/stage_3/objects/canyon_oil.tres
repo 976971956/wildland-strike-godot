@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"canyon_oil_slick"
+kind = 4
+position = Vector2(1270, 630)
+size = Vector2(78, 38)
+health = 28
+contact_damage = 18
+defeat_score = 150
+color = Color(0.12, 0.14, 0.13, 1)

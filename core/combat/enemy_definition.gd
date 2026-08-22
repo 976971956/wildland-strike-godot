@@ -4,6 +4,7 @@ extends Resource
 enum VisualKind {
 	HUMANOID,
 	RAPTOR,
+	VEHICLE,
 }
 
 enum BehaviorKind {

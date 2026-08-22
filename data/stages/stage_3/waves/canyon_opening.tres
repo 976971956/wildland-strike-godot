@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Raider"]
+script = ExtResource("2")
+enemy_id = &"knife_raider"
+offset = Vector2(0, 490)
+
+[sub_resource type="Resource" id="Hunter"]
+script = ExtResource("2")
+enemy_id = &"hunter"
+offset = Vector2(120, 630)
+
+[sub_resource type="Resource" id="Raptor"]
+script = ExtResource("2")
+enemy_id = &"raptor"
+offset = Vector2(230, 560)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"canyon_opening"
+spawns = Array[Resource]([SubResource("Raider"), SubResource("Hunter"), SubResource("Raptor")])

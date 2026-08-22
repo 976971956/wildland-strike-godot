@@ -38,6 +38,8 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		hurtbox.setup(self, definition.size * 0.45)
 	else:
 		add_to_group("stage_hazards")
+		if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
+			add_to_group("road_hazards")
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -69,6 +71,9 @@ func _physics_process(delta: float) -> void:
 		_resolve_water_current(delta)
 		queue_redraw()
 		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
+		queue_redraw()
+		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		queue_redraw()
 		return
@@ -90,6 +95,19 @@ func take_stage_hit(amount: int, _impact_direction: int) -> bool:
 	flash_timer = 0.1
 	if health <= 0:
 		_destroy_object()
+	queue_redraw()
+	return true
+
+
+func impact_by_vehicle(amount: int, impact_direction: int) -> bool:
+	if is_defeated or definition.kind != EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
+		return false
+	health -= amount
+	flash_timer = 0.12
+	if health <= 0:
+		_destroy_object()
+	else:
+		position.x += impact_direction * 34.0
 	queue_redraw()
 	return true
 
@@ -280,6 +298,8 @@ func _draw() -> void:
 		_draw_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.WATER_CURRENT:
 		_draw_water_current()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.ROAD_HAZARD:
+		_draw_road_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -294,6 +314,27 @@ func _draw_breakable() -> void:
 	draw_rect(Rect2(-half.x + 5.0, -definition.size.y + 5.0, definition.size.x - 10.0, definition.size.y - 10.0), Color("#5e3b2b"), false, 5.0)
 	draw_line(Vector2(-half.x + 7.0, -definition.size.y + 7.0), Vector2(half.x - 7.0, -7.0), Color("#c78a4e"), 6.0)
 	draw_line(Vector2(half.x - 7.0, -definition.size.y + 7.0), Vector2(-half.x + 7.0, -7.0), Color("#c78a4e"), 6.0)
+
+
+func _draw_road_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	_draw_oval(Vector2(0.0, 7.0), half.x, 9.0, Color(0.02, 0.03, 0.04, 0.45))
+	var hazard_color: Color = Color.WHITE if flash_timer > 0.0 else definition.color
+	if "oil" in String(definition.object_id):
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.35, Color(0.04, 0.05, 0.05, 0.78))
+		for index in range(3):
+			draw_circle(Vector2(-half.x * 0.55 + index * half.x * 0.55, -4.0 - index % 2 * 4.0), 5.0, Color(0.18, 0.2, 0.17, 0.68))
+		return
+	draw_rect(Rect2(-half.x, -definition.size.y, definition.size.x, definition.size.y), hazard_color)
+	for index in range(4):
+		var stripe_x: float = -half.x + index * definition.size.x * 0.25
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(stripe_x, -definition.size.y),
+			Vector2(stripe_x + definition.size.x * 0.12, -definition.size.y),
+			Vector2(stripe_x + definition.size.x * 0.25, 0.0),
+			Vector2(stripe_x + definition.size.x * 0.13, 0.0),
+		]), Color("#f2c43d"))
+	draw_rect(Rect2(-half.x, -definition.size.y, definition.size.x, definition.size.y), Color("#3b3126"), false, 4.0)
 
 
 func _draw_hazard() -> void:

@@ -259,7 +259,6 @@ func _start_audio_localization_preview(show_subtitle: bool) -> void:
 		game.hud.set_options(game.settings, game.options_selected_index, false)
 	game.set_process(false)
 	var controls = game.touch_controls
-	controls.size = Vector2(1280.0, 720.0)
 	controls.enabled_for_device = true
 	controls.visible = true
 	controls.safe_area_override = Rect2(70.0, 28.0, 1140.0, 654.0)

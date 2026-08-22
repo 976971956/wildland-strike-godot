@@ -5,6 +5,7 @@ const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd"
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
 const PickupDefinitionScript = preload("res://core/items/pickup_definition.gd")
 const PickupCatalogScript = preload("res://core/items/pickup_catalog.gd")
+const ArcadeFont = preload("res://assets/fonts/NotoSansSC-Variable.ttf")
 
 var kind := "food"
 var game
@@ -96,7 +97,7 @@ func _draw_weapon_pickup(bob: float) -> void:
 			draw_circle(Vector2(0.0, -17.0 + bob), 13.0, weapon_color)
 			draw_rect(Rect2(-4.0, -34.0 + bob, 8.0, 8.0), Color("#d5b96d"))
 	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
-	draw_string(ThemeDB.fallback_font, label_rect.position, weapon_definition.display_name, HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
+	draw_string(ArcadeFont, label_rect.position, game.localized_content(weapon_definition.display_name), HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
 
 
 func _draw_item_pickup(bob: float) -> void:
@@ -116,4 +117,4 @@ func _draw_item_pickup(bob: float) -> void:
 		draw_colored_polygon(points, item_definition.color)
 		draw_circle(icon_position, icon_size * 0.3, item_definition.color.lightened(0.35))
 	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
-	draw_string(ThemeDB.fallback_font, label_rect.position, item_definition.display_name, HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
+	draw_string(ArcadeFont, label_rect.position, game.localized_content(item_definition.display_name), HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))

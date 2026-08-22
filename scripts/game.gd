@@ -19,6 +19,7 @@ const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const LocalPlayerRegistryScript = preload("res://core/input/local_player_registry.gd")
 const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
 const ArcadeProfileScript = preload("res://core/persistence/arcade_profile.gd")
+const Localization = preload("res://core/localization/arcade_localization.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
 const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
 const STAGE_3_DEFINITION = preload("res://data/stages/stage_3/stage_3.tres")
@@ -174,6 +175,10 @@ func _ready() -> void:
 	_apply_settings()
 	music_director.play_cue(MusicDirectorScript.Cue.TITLE)
 	set_process(true)
+
+
+func localized_content(value: String) -> String:
+	return Localization.content(value, String(settings.get("language", "en")))
 
 
 func _notification(what: int) -> void:
@@ -339,7 +344,7 @@ func _start_game() -> void:
 	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
 	hud.set_player_health(player.health, player.max_health)
 	hud.set_mode("playing")
-	hud.show_banner("STAGE %d  READY" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.1)
+	hud.show_banner(localized_content("STAGE %d READY") % active_stage_definition.stage_number, localized_content(active_stage_definition.display_name), 2.1)
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE, campaign_stage_index)
 	play_sfx("start")
 
@@ -707,7 +712,7 @@ func join_local_player(device_id: int, hero_index := -1) -> Node:
 		if is_instance_valid(highway_vehicle):
 			fighter.set_physics_process(false)
 			highway_vehicle._mount_players()
-		hud.show_banner("PLAYER %d JOINED" % (slot.slot_index + 1), fighter.hero_display_name, 1.2)
+		hud.show_banner(localized_content("PLAYER %d JOINED") % (slot.slot_index + 1), localized_content(fighter.hero_display_name), 1.2)
 		play_sfx(&"ui_confirm")
 	else:
 		_sync_selection_hud()
@@ -732,7 +737,7 @@ func _disconnect_local_player(device_id: int) -> bool:
 		disconnected_player_snapshots.erase(device_id)
 		return false
 	if is_instance_valid(hud):
-		hud.show_banner("CONTROLLER DISCONNECTED", "PLAYER %d RESERVED" % (int(snapshot.slot_index) + 1), 2.0)
+		hud.show_banner(localized_content("CONTROLLER DISCONNECTED"), localized_content("PLAYER %d RESERVED") % (int(snapshot.slot_index) + 1), 2.0)
 	return true
 
 
@@ -761,7 +766,7 @@ func _reconnect_local_player(device_id: int) -> Node:
 	_sync_selection_hud()
 	disconnected_player_snapshots.erase(device_id)
 	if is_instance_valid(hud):
-		hud.show_banner("CONTROLLER RECONNECTED", "PLAYER %d RESTORED" % (slot.slot_index + 1), 1.5)
+		hud.show_banner(localized_content("CONTROLLER RECONNECTED"), localized_content("PLAYER %d RESTORED") % (slot.slot_index + 1), 1.5)
 	play_sfx(&"ui_confirm")
 	return fighter
 
@@ -922,7 +927,7 @@ func _execute_team_attack(participants: Array) -> void:
 	var participant_labels := PackedStringArray()
 	for slot_index in last_team_attack_participants:
 		participant_labels.append("P%d" % (slot_index + 1))
-	hud.show_banner("TEAM ATTACK!", "%s LINK // %d TARGETS" % [" + ".join(participant_labels), last_team_attack_hits], 1.4)
+	hud.show_banner(localized_content("TEAM ATTACK!"), localized_content("%s LINK // %d TARGETS") % [" + ".join(participant_labels), last_team_attack_hits], 1.4)
 	play_sfx(TEAM_ATTACK.sound_event)
 
 
@@ -1224,7 +1229,7 @@ func _on_encounter_started(encounter: Resource, _encounter_index: int) -> void:
 func _on_encounter_cleared(encounter: Resource, _encounter_index: int) -> void:
 	_sync_hud_stage_progress()
 	if not encounter.reward_id.is_empty():
-		hud.show_banner("AREA CLEAR", "KEEP MOVING RIGHT  →", 1.8)
+		hud.show_banner(localized_content("AREA CLEAR"), localized_content("KEEP MOVING RIGHT  →"), 1.8)
 		_spawn_reward(encounter.reward_id)
 
 
@@ -1367,7 +1372,7 @@ func _begin_player_downed(fighter: Node) -> void:
 	downed_time_remaining[fighter.local_slot_index] = revive_window
 	hud.set_local_player_down_timer(fighter.local_slot_index, revive_window)
 	if revive_window > 0.0:
-		hud.show_banner("PLAYER %d DOWN" % (fighter.local_slot_index + 1), "MOVE CLOSE + ATTACK TO REVIVE", 1.4)
+		hud.show_banner(localized_content("PLAYER %d DOWN") % (fighter.local_slot_index + 1), localized_content("MOVE CLOSE + ATTACK TO REVIVE"), 1.4)
 
 
 func try_revive_teammate(rescuer: Node) -> bool:
@@ -1394,7 +1399,7 @@ func try_revive_teammate(rescuer: Node) -> bool:
 	best_target.set_physics_process(true)
 	_sync_local_player_hud(best_target)
 	hud.set_local_player_down_timer(slot_index, -1.0)
-	hud.show_banner("PLAYER %d REVIVED" % (slot_index + 1), "35% HEALTH + TEMPORARY INVINCIBILITY", 1.3)
+	hud.show_banner(localized_content("PLAYER %d REVIVED") % (slot_index + 1), localized_content("35% HEALTH + TEMPORARY INVINCIBILITY"), 1.3)
 	play_sfx(&"revive")
 	return true
 
@@ -1437,7 +1442,7 @@ func _consume_player_continue(fighter: Node) -> void:
 		hud.set_local_player_down_timer(fighter.local_slot_index, CONTINUE_RESPAWN_DELAY)
 	else:
 		hud.set_local_player_down_timer(fighter.local_slot_index, -2.0)
-		hud.show_banner("PLAYER %d OUT" % (fighter.local_slot_index + 1), "NO CONTINUES REMAIN", 1.2)
+		hud.show_banner(localized_content("PLAYER %d OUT") % (fighter.local_slot_index + 1), localized_content("NO CONTINUES REMAIN"), 1.2)
 
 
 func _confirm_continue_for_slot(slot_index: int) -> bool:
@@ -1452,7 +1457,7 @@ func _confirm_continue_for_slot(slot_index: int) -> bool:
 	fighter.set_physics_process(not get_tree().paused)
 	_sync_local_player_hud(fighter)
 	hud.set_local_player_down_timer(slot_index, -1.0)
-	hud.show_banner("PLAYER %d CONTINUE!" % (slot_index + 1), "TEMPORARY INVINCIBILITY", 1.2)
+	hud.show_banner(localized_content("PLAYER %d CONTINUE!") % (slot_index + 1), localized_content("TEMPORARY INVINCIBILITY"), 1.2)
 	play_sfx(&"start")
 	return true
 
@@ -1470,7 +1475,7 @@ func _decline_continue(slot_index: int) -> void:
 	if is_instance_valid(fighter):
 		_sync_local_player_hud(fighter)
 	hud.set_local_player_down_timer(slot_index, -2.0)
-	hud.show_banner("PLAYER %d OUT" % (slot_index + 1), "CONTINUE TIME EXPIRED", 1.2)
+	hud.show_banner(localized_content("PLAYER %d OUT") % (slot_index + 1), localized_content("CONTINUE TIME EXPIRED"), 1.2)
 	_resolve_team_gameover()
 
 
@@ -1560,7 +1565,7 @@ func _advance_campaign_stage() -> void:
 	hud.set_stage_time(stage_time_remaining)
 	hud.set_boss_health(0, 0)
 	hud.set_mode("playing")
-	hud.show_banner("STAGE %d" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.4)
+	hud.show_banner(localized_content("STAGE %d") % active_stage_definition.stage_number, localized_content(active_stage_definition.display_name), 2.4)
 	state = "playing"
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE, campaign_stage_index)
 	play_sfx(&"start")

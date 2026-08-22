@@ -148,6 +148,10 @@ func _tr(key: String, fallback := "") -> String:
 	return Localization.text(key, language, fallback)
 
 
+func _content(value: String) -> String:
+	return Localization.content(value, language)
+
+
 func set_options(settings: Dictionary, selected_index: int, returning_to_game: bool) -> void:
 	option_values = settings.duplicate(true)
 	option_selected_index = clampi(selected_index, 0, 11)
@@ -313,6 +317,11 @@ static func dialogue_panel_rect(touch_layout: bool) -> Rect2:
 
 static func wrap_dialogue_line(line: String, max_characters: int = 42) -> PackedStringArray:
 	var lines := PackedStringArray()
+	max_characters = maxi(max_characters, 1)
+	if not line.contains(" "):
+		for offset in range(0, line.length(), max_characters):
+			lines.append(line.substr(offset, max_characters))
+		return lines
 	var current := ""
 	for word in line.split(" ", false):
 		var candidate := word if current.is_empty() else current + " " + word
@@ -410,7 +419,7 @@ func _draw() -> void:
 		if not multiplayer_hud and not weapon_name.is_empty() and weapon_ammo > 0:
 			draw_rect(Rect2(474, 20, 92, 48), Color(0.035, 0.045, 0.07, 0.88))
 			draw_rect(Rect2(474, 20, 92, 4), Color("#74c9aa"))
-			draw_string(font, Vector2(478, 42), weapon_name, HORIZONTAL_ALIGNMENT_CENTER, 84, 13, Color("#d8efe7"))
+			draw_string(font, Vector2(478, 42), _content(weapon_name), HORIZONTAL_ALIGNMENT_CENTER, 84, 13, Color("#d8efe7"))
 			draw_string(font, Vector2(478, 61), "×%02d" % weapon_ammo, HORIZONTAL_ALIGNMENT_CENTER, 84, 16, Color.WHITE)
 		if boss_max <= 0 or boss_health <= 0:
 			var status_color := Color("#ef6a56") if arena_locked else Color("#70d0ad")
@@ -418,29 +427,29 @@ func _draw() -> void:
 			var objective_width := 322.0 if multiplayer_hud else 362.0
 			draw_rect(Rect2(objective_x, 20, objective_width, 64), Color(0.035, 0.045, 0.07, 0.9))
 			draw_rect(Rect2(objective_x, 20, objective_width, 4), status_color)
-			draw_string(font, Vector2(objective_x + 18, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 125, _scaled_font_size(19), Color("#f4dc83"))
-			var objective := "HOSTILES  %02d" % stage_hostiles if arena_locked else "ADVANCE  →"
+			draw_string(font, Vector2(objective_x + 18, 48), _content("AREA %d/%d") % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 125, _scaled_font_size(19), Color("#f4dc83"))
+			var objective := _content("HOSTILES  %02d") % stage_hostiles if arena_locked else _content("ADVANCE  →")
 			draw_string(font, Vector2(objective_x + 137, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, objective_width - 155, _scaled_font_size(19), status_color)
-			draw_string(font, Vector2(objective_x + 18, 72), "COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN", HORIZONTAL_ALIGNMENT_LEFT, objective_width - 36, 13, Color("#b8c8c3"))
+			draw_string(font, Vector2(objective_x + 18, 72), _content("COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN"), HORIZONTAL_ALIGNMENT_LEFT, objective_width - 36, 13, Color("#b8c8c3"))
 		if ratio < 0.3:
-			draw_string(font, Vector2(350, 99), "DANGER", HORIZONTAL_ALIGNMENT_RIGHT, 48, 13, Color(1.0, 0.32, 0.24, danger_pulse))
+			draw_string(font, Vector2(350, 99), _content("DANGER"), HORIZONTAL_ALIGNMENT_RIGHT, 48, 13, Color(1.0, 0.32, 0.24, danger_pulse))
 
 	# Keyboard hints are hidden on touch devices where virtual controls replace them.
 	if mode == "playing" and not _touch_layout_active():
 		draw_rect(Rect2(22,674,715,30),Color(0.02,0.03,0.045,0.72))
-		draw_string(font,Vector2(35,696),"MOVE WASD/ARROWS   ATTACK J/Z   JUMP K/X   COMMAND DOWN>FORWARD+ATTACK   SPECIAL ATTACK+JUMP",HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("#dbe4df"))
+		draw_string(font,Vector2(35,696),_content("MOVE WASD/ARROWS   ATTACK J/Z   JUMP K/X   COMMAND DOWN>FORWARD+ATTACK   SPECIAL ATTACK+JUMP"),HORIZONTAL_ALIGNMENT_LEFT,-1,17,Color("#dbe4df"))
 
 	if boss_max > 0 and boss_health > 0 and mode == "playing":
 		draw_rect(Rect2(778,34,466,49),Color(0.04,0.025,0.04,0.9))
-		draw_string(font,Vector2(798,56),"%s  // PHASE %d" % [boss_name, boss_phase],HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#ffcf5e"))
+		draw_string(font,Vector2(798,56),_content("%s  // PHASE %d") % [_content(boss_name), boss_phase],HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#ffcf5e"))
 		draw_rect(Rect2(798,63,424,10),Color("#3b1d27"))
 		draw_rect(Rect2(798,63,424.0*boss_health/boss_max,10),Color("#e94845"))
 
 	if banner_time > 0.0 and mode == "playing":
 		draw_rect(Rect2(350,260,580,110),Color(0.025,0.035,0.05,0.82))
 		draw_rect(Rect2(350,260,580,4),Color("#efbf4d"))
-		draw_string(font,Vector2(350,310),banner,HORIZONTAL_ALIGNMENT_CENTER,580,34,Color("#ffe17c"))
-		draw_string(font,Vector2(350,344),banner_sub,HORIZONTAL_ALIGNMENT_CENTER,580,18,Color("#d5e0db"))
+		draw_string(font,Vector2(350,310),_content(banner),HORIZONTAL_ALIGNMENT_CENTER,580,34,Color("#ffe17c"))
+		draw_string(font,Vector2(350,344),_content(banner_sub),HORIZONTAL_ALIGNMENT_CENTER,580,18,Color("#d5e0db"))
 
 	if dialogue_time > 0.0 and mode == "playing":
 		var touch_dialogue := _touch_layout_active()
@@ -448,7 +457,7 @@ func _draw() -> void:
 		draw_rect(dialogue_rect, Color(0.025, 0.018, 0.025, 0.94))
 		draw_rect(Rect2(dialogue_rect.position, Vector2(7, dialogue_rect.size.y)), Color("#d84a35"))
 		var dialogue_text_width := dialogue_rect.size.x - 48.0
-		draw_string(font, dialogue_rect.position + Vector2(24, 30), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, _scaled_font_size(18), Color("#f0b65b"))
+		draw_string(font, dialogue_rect.position + Vector2(24, 30), _content(dialogue_speaker), HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, _scaled_font_size(18), Color("#f0b65b"))
 		if touch_dialogue:
 			var wrapped := wrap_dialogue_line(dialogue_line)
 			for line_index in range(mini(wrapped.size(), 2)):
@@ -461,14 +470,14 @@ func _draw() -> void:
 	if mode == "title":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.035,0.58))
 		var top_score := int(profile_high_scores[0].score) if not profile_high_scores.is_empty() else 0
-		draw_string(font, Vector2(0, 48), "HI  %08d" % top_score, HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#9fc9bd"))
+		draw_string(font, Vector2(0, 48), _content("HI  %08d") % top_score, HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#9fc9bd"))
 		draw_string(font,Vector2(0,210),"WILDLAND STRIKE",HORIZONTAL_ALIGNMENT_CENTER,size.x,68,Color("#f1c14f"))
-		draw_string(font,Vector2(0,258),"ARCADE SURVIVAL",HORIZONTAL_ALIGNMENT_CENTER,size.x,27,Color("#d0eee3"))
+		draw_string(font,Vector2(0,258),_content("ARCADE SURVIVAL"),HORIZONTAL_ALIGNMENT_CENTER,size.x,27,Color("#d0eee3"))
 		draw_rect(Rect2(size.x/2-210,330,420,64),Color(0.03,0.05,0.07,0.9))
 		draw_rect(Rect2(size.x/2-210,330,420,4),Color("#e55045"))
 		draw_string(font,Vector2(size.x/2-210,371),_tr("title_start"),HORIZONTAL_ALIGNMENT_CENTER,420,24,Color.WHITE)
 		draw_string(font,Vector2(0,448),_tr("title_links"),HORIZONTAL_ALIGNMENT_CENTER,size.x,18,Color("#b9c7c2"))
-		draw_string(font,Vector2(0,486),"AN ORIGINAL CLEAN-ROOM ARCADE CAMPAIGN",HORIZONTAL_ALIGNMENT_CENTER,size.x,16,Color("#718f88"))
+		draw_string(font,Vector2(0,486),_content("AN ORIGINAL CLEAN-ROOM ARCADE CAMPAIGN"),HORIZONTAL_ALIGNMENT_CENTER,size.x,16,Color("#718f88"))
 	elif mode == "attract":
 		_draw_attract_screen()
 	elif mode == "high_scores":
@@ -479,11 +488,11 @@ func _draw() -> void:
 		_draw_controls_screen()
 	elif mode == "select":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 1.0))
-		draw_string(font, Vector2(0, 72), "SELECT OPERATIVE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
-		draw_string(font, Vector2(0, 105), "FOUR ROLES // ONE MISSION", HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
+		draw_string(font, Vector2(0, 72), _content("SELECT OPERATIVE"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
+		draw_string(font, Vector2(0, 105), _content("FOUR ROLES // ONE MISSION"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
 		for index in range(hero_roster.size()):
 			_draw_hero_card(hero_roster[index], index, _hero_card_selected(index))
-		var select_hint := "TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "EACH PLAYER CHOOSES     A / START  READY     BACK  CANCEL"
+		var select_hint := _content("TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "EACH PLAYER CHOOSES     A / START  READY     BACK  CANCEL")
 		draw_string(font, Vector2(0, 664), select_hint, HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color.WHITE)
 	elif mode == "hero_animation":
 		_draw_hero_animation_preview()
@@ -493,21 +502,21 @@ func _draw() -> void:
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_rect(Rect2(318, 142, 644, 438), Color(0.025, 0.035, 0.05, 0.94))
 		draw_rect(Rect2(318, 142, 644, 6), Color("#f2c756"))
-		draw_string(font, Vector2(318, 207), "STAGE %d CLEAR" % victory_stage_number, HORIZONTAL_ALIGNMENT_CENTER, 644, 43, Color("#f2c756"))
-		draw_string(font, Vector2(318, 238), victory_stage_name, HORIZONTAL_ALIGNMENT_CENTER, 644, 19, Color("#f0bd5b"))
-		draw_string(font, Vector2(318, 266), victory_clear_message, HORIZONTAL_ALIGNMENT_CENTER, 644, 17, Color("#d6dfdb"))
+		draw_string(font, Vector2(318, 207), _content("STAGE %d CLEAR") % victory_stage_number, HORIZONTAL_ALIGNMENT_CENTER, 644, 43, Color("#f2c756"))
+		draw_string(font, Vector2(318, 238), _content(victory_stage_name), HORIZONTAL_ALIGNMENT_CENTER, 644, 19, Color("#f0bd5b"))
+		draw_string(font, Vector2(318, 266), _content(victory_clear_message), HORIZONTAL_ALIGNMENT_CENTER, 644, 17, Color("#d6dfdb"))
 		if victory_phase == &"bonus" or victory_phase == &"complete":
-			draw_string(font, Vector2(390, 326), "TIME BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(390, 326), _content("TIME BONUS"), HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
 			draw_string(font, Vector2(720, 326), "%07d" % victory_time_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
-			draw_string(font, Vector2(390, 366), "LIFE BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(390, 366), _content("LIFE BONUS"), HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
 			draw_string(font, Vector2(720, 366), "%07d" % victory_life_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
-			draw_string(font, Vector2(390, 406), "CLEAR BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
+			draw_string(font, Vector2(390, 406), _content("CLEAR BONUS"), HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
 			draw_string(font, Vector2(720, 406), "%07d" % victory_clear_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
 			draw_line(Vector2(390, 430), Vector2(890, 430), Color("#f2c756"), 2.0)
-			draw_string(font, Vector2(390, 470), "FINAL SCORE", HORIZONTAL_ALIGNMENT_LEFT, 300, 24, Color("#f2c756"))
+			draw_string(font, Vector2(390, 470), _content("FINAL SCORE"), HORIZONTAL_ALIGNMENT_LEFT, 300, 24, Color("#f2c756"))
 			draw_string(font, Vector2(690, 470), "%08d" % victory_final_score, HORIZONTAL_ALIGNMENT_RIGHT, 200, 24, Color.WHITE)
 		if victory_phase == &"complete":
-			var victory_hint := "TAP / ENTER FOR ROUTE MAP" if victory_has_next else "TAP / ENTER FOR CAMPAIGN REPORT"
+			var victory_hint := _content("TAP / ENTER FOR ROUTE MAP" if victory_has_next else "TAP / ENTER FOR CAMPAIGN REPORT")
 			draw_string(font, Vector2(318, 538), victory_hint, HORIZONTAL_ALIGNMENT_CENTER, 644, 20, Color("#d6dfdb"))
 	elif mode == "ending":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.006, 0.012, 0.025, 0.96))
@@ -517,17 +526,17 @@ func _draw() -> void:
 		draw_circle(Vector2(640, 232), 112.0, Color(0.16, 0.76, 0.54, 0.1))
 		draw_arc(Vector2(640, 232), 112.0, 0.0, TAU, 48, Color(0.38, 0.92, 0.7, 0.5), 5.0)
 		draw_arc(Vector2(640, 232), 78.0, 0.0, TAU, 48, Color(1.0, 0.26, 0.7, 0.44), 4.0)
-		draw_string(font, Vector2(0, 113), "THE GENESIS CORE IS SILENT", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
-		draw_string(font, Vector2(220, 385), "THE LOCKDOWN BREAKS. THE CAPTIVE WILDLANDS ARE FREE.", HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#c8e8df"))
-		draw_string(font, Vector2(220, 430), "ABOVE THE MOUNTAIN, THE FIRST CLEAN DAWN RETURNS.", HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#a7d9cc"))
-		draw_string(font, Vector2(220, 500), "OPERATIVES RETURNED  %d     FINAL SCORE  %08d" % [maxi(campaign_display_lives, 0), campaign_display_score], HORIZONTAL_ALIGNMENT_CENTER, 840, 20, Color.WHITE)
-		draw_string(font, Vector2(0, 636), "TAP / ENTER FOR CREDITS", HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color("#f2c756"))
+		draw_string(font, Vector2(0, 113), _content("THE GENESIS CORE IS SILENT"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
+		draw_string(font, Vector2(220, 385), _content("THE LOCKDOWN BREAKS. THE CAPTIVE WILDLANDS ARE FREE."), HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#c8e8df"))
+		draw_string(font, Vector2(220, 430), _content("ABOVE THE MOUNTAIN, THE FIRST CLEAN DAWN RETURNS."), HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(220, 500), _content("OPERATIVES RETURNED  %d     FINAL SCORE  %08d") % [maxi(campaign_display_lives, 0), campaign_display_score], HORIZONTAL_ALIGNMENT_CENTER, 840, 20, Color.WHITE)
+		draw_string(font, Vector2(0, 636), _content("TAP / ENTER FOR CREDITS"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color("#f2c756"))
 	elif mode == "credits":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.98))
 		draw_rect(Rect2(302, 56, 676, 604), Color(0.02, 0.034, 0.05, 0.96))
 		draw_rect(Rect2(302, 56, 676, 6), Color("#f2c756"))
 		draw_string(font, Vector2(302, 122), "WILDLAND STRIKE", HORIZONTAL_ALIGNMENT_CENTER, 676, 42, Color("#f2c756"))
-		draw_string(font, Vector2(302, 154), "AN ORIGINAL CLEAN-ROOM ARCADE CAMPAIGN", HORIZONTAL_ALIGNMENT_CENTER, 676, 17, Color("#9fc9bd"))
+		draw_string(font, Vector2(302, 154), _content("AN ORIGINAL CLEAN-ROOM ARCADE CAMPAIGN"), HORIZONTAL_ALIGNMENT_CENTER, 676, 17, Color("#9fc9bd"))
 		var credit_lines := [
 			["GAME DESIGN & DIRECTION", "WILDLAND STRIKE TEAM"],
 			["ENGINE & TOOLS", "GODOT ENGINE"],
@@ -537,41 +546,41 @@ func _draw() -> void:
 		]
 		for index in range(credit_lines.size()):
 			var y := 228.0 + index * 70.0
-			draw_string(font, Vector2(340, y), credit_lines[index][0], HORIZONTAL_ALIGNMENT_LEFT, 285, 16, Color("#a7d9cc"))
-			draw_string(font, Vector2(645, y), credit_lines[index][1], HORIZONTAL_ALIGNMENT_RIGHT, 295, 18, Color.WHITE)
+			draw_string(font, Vector2(340, y), _content(credit_lines[index][0]), HORIZONTAL_ALIGNMENT_LEFT, 285, 16, Color("#a7d9cc"))
+			draw_string(font, Vector2(645, y), _content(credit_lines[index][1]), HORIZONTAL_ALIGNMENT_RIGHT, 295, 18, Color.WHITE)
 		draw_line(Vector2(360, 575), Vector2(920, 575), Color("#f2c756"), 2.0)
-		draw_string(font, Vector2(302, 612), "THANK YOU FOR PLAYING  //  %08d" % campaign_display_score, HORIZONTAL_ALIGNMENT_CENTER, 676, 20, Color("#f2c756"))
-		draw_string(font, Vector2(0, 694), "TAP / ENTER FOR FINAL REPORT", HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#d6dfdb"))
+		draw_string(font, Vector2(302, 612), _content("THANK YOU FOR PLAYING  //  %08d") % campaign_display_score, HORIZONTAL_ALIGNMENT_CENTER, 676, 20, Color("#f2c756"))
+		draw_string(font, Vector2(0, 694), _content("TAP / ENTER FOR FINAL REPORT"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#d6dfdb"))
 	elif mode == "campaign_complete":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.92))
 		draw_rect(Rect2(280, 112, 720, 488), Color(0.025, 0.04, 0.055, 0.98))
 		draw_rect(Rect2(280, 112, 720, 7), Color("#f2c756"))
-		draw_string(font, Vector2(280, 202), "CAMPAIGN COMPLETE", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
-		draw_string(font, Vector2(280, 245), "%d-STAGE WILDLAND FRONT SECURED" % maxi(campaign_stage_nodes.size(), campaign_completed_count), HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
-		draw_string(font, Vector2(355, 335), "FRONT COMPLETION BONUS", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(280, 202), _content("CAMPAIGN COMPLETE"), HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
+		draw_string(font, Vector2(280, 245), _content("%d-STAGE WILDLAND FRONT SECURED") % maxi(campaign_stage_nodes.size(), campaign_completed_count), HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
+		draw_string(font, Vector2(355, 335), _content("FRONT COMPLETION BONUS"), HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
 		draw_string(font, Vector2(740, 335), "%08d" % campaign_final_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
-		draw_string(font, Vector2(355, 395), "REMAINING CONTINUES", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(355, 395), _content("REMAINING CONTINUES"), HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
 		draw_string(font, Vector2(740, 395), "%02d" % campaign_display_lives, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
 		draw_line(Vector2(355, 430), Vector2(925, 430), Color("#f2c756"), 2.0)
-		draw_string(font, Vector2(355, 482), "FINAL SCORE", HORIZONTAL_ALIGNMENT_LEFT, 330, 27, Color("#f2c756"))
+		draw_string(font, Vector2(355, 482), _content("FINAL SCORE"), HORIZONTAL_ALIGNMENT_LEFT, 330, 27, Color("#f2c756"))
 		draw_string(font, Vector2(700, 482), "%08d" % campaign_display_score, HORIZONTAL_ALIGNMENT_RIGHT, 225, 27, Color.WHITE)
 		if final_score_rank >= 0:
-			draw_string(font, Vector2(280, 522), "LOCAL RANK  #%02d" % (final_score_rank + 1), HORIZONTAL_ALIGNMENT_CENTER, 720, 17, Color("#9fc9bd"))
-		draw_string(font, Vector2(280, 555), "TAP / ENTER TO RETURN TO TITLE", HORIZONTAL_ALIGNMENT_CENTER, 720, 19, Color("#d6dfdb"))
+			draw_string(font, Vector2(280, 522), _content("LOCAL RANK  #%02d") % (final_score_rank + 1), HORIZONTAL_ALIGNMENT_CENTER, 720, 17, Color("#9fc9bd"))
+		draw_string(font, Vector2(280, 555), _content("TAP / ENTER TO RETURN TO TITLE"), HORIZONTAL_ALIGNMENT_CENTER, 720, 19, Color("#d6dfdb"))
 	elif mode == "gameover":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_string(font,Vector2(0,278),_tr("game_over"),HORIZONTAL_ALIGNMENT_CENTER,size.x,54,Color("#ed5a4c"))
 		draw_string(font,Vector2(0,338),"%s  %08d" % [_tr("final_score"), score],HORIZONTAL_ALIGNMENT_CENTER,size.x,25,Color.WHITE)
 		if final_score_rank >= 0:
-			draw_string(font, Vector2(0, 374), "LOCAL RANK  #%02d" % (final_score_rank + 1), HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#f2c756"))
-		draw_string(font,Vector2(0,402),"TAP / ENTER TO RESTART",HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))
+			draw_string(font, Vector2(0, 374), _content("LOCAL RANK  #%02d") % (final_score_rank + 1), HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#f2c756"))
+		draw_string(font,Vector2(0,402),_content("TAP / ENTER TO RESTART"),HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))
 
 
 func _draw_attract_screen() -> void:
 	draw_rect(Rect2(0, 0, size.x, size.y), Color(0.006, 0.014, 0.026, 0.97))
 	draw_rect(Rect2(120, 72, 1040, 560), Color(0.025, 0.045, 0.06, 0.96))
 	draw_rect(Rect2(120, 72, 1040, 6), Color("#f2c756"))
-	draw_string(font, Vector2(120, 132), "HOW TO SURVIVE THE WILDLANDS", HORIZONTAL_ALIGNMENT_CENTER, 1040, 34, Color("#f2c756"))
+	draw_string(font, Vector2(120, 132), _content("HOW TO SURVIVE THE WILDLANDS"), HORIZONTAL_ALIGNMENT_CENTER, 1040, 34, Color("#f2c756"))
 	var tips := [
 		["MOVE", "EIGHT DIRECTIONS // DOUBLE TAP TO RUN"],
 		["STRIKE", "FOUR-HIT CHAIN // RUN + AIR ATTACKS"],
@@ -581,10 +590,10 @@ func _draw_attract_screen() -> void:
 	]
 	for index in range(tips.size()):
 		var y := 202.0 + index * 66.0
-		draw_string(font, Vector2(184, y), tips[index][0], HORIZONTAL_ALIGNMENT_LEFT, 160, 18, Color("#9fc9bd"))
-		draw_string(font, Vector2(350, y), tips[index][1], HORIZONTAL_ALIGNMENT_LEFT, 730, 20, Color.WHITE)
-	draw_string(font, Vector2(120, 590), "8 STAGES  //  4 OPERATIVES  //  1–3 LOCAL PLAYERS", HORIZONTAL_ALIGNMENT_CENTER, 1040, 18, Color("#b7e8df"))
-	draw_string(font, Vector2(0, 690), "TAP / ENTER TO JOIN", HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color("#f2c756"))
+		draw_string(font, Vector2(184, y), _content(tips[index][0]), HORIZONTAL_ALIGNMENT_LEFT, 160, 18, Color("#9fc9bd"))
+		draw_string(font, Vector2(350, y), _content(tips[index][1]), HORIZONTAL_ALIGNMENT_LEFT, 730, 20, Color.WHITE)
+	draw_string(font, Vector2(120, 590), _content("8 STAGES  //  4 OPERATIVES  //  1–3 LOCAL PLAYERS"), HORIZONTAL_ALIGNMENT_CENTER, 1040, 18, Color("#b7e8df"))
+	draw_string(font, Vector2(0, 690), _content("TAP / ENTER TO JOIN"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color("#f2c756"))
 
 
 func _draw_high_score_screen() -> void:
@@ -672,8 +681,8 @@ func _draw_campaign_map() -> void:
 	for band in range(7):
 		var y := 118.0 + band * 72.0
 		draw_line(Vector2(0, y), Vector2(size.x, y - 36.0), Color(0.08, 0.16, 0.19, 0.22), 2.0)
-	draw_string(font, Vector2(0, 62), "WILDLAND CAMPAIGN ROUTE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 38, Color("#f2c756"))
-	draw_string(font, Vector2(0, 94), "ACTIVE FRONT // %d OPERATIONS" % campaign_stage_nodes.size(), HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
+	draw_string(font, Vector2(0, 62), _content("WILDLAND CAMPAIGN ROUTE"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 38, Color("#f2c756"))
+	draw_string(font, Vector2(0, 94), _content("ACTIVE FRONT // %d OPERATIONS") % campaign_stage_nodes.size(), HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
 	for index in range(campaign_stage_nodes.size() - 1):
 		var from: Vector2 = campaign_stage_nodes[index].position
 		var to: Vector2 = campaign_stage_nodes[index + 1].position
@@ -694,15 +703,15 @@ func _draw_campaign_map() -> void:
 		draw_string(font, point + Vector2(-31, 8), "%d" % int(node.number), HORIZONTAL_ALIGNMENT_CENTER, 62, 22, node_color)
 		var label_rect := Rect2(point.x - 112.0, point.y + 43.0, 224.0, 62.0)
 		draw_rect(label_rect, Color(0.02, 0.035, 0.05, 0.92))
-		draw_string(font, label_rect.position + Vector2(8, 23), String(node.name), HORIZONTAL_ALIGNMENT_CENTER, 208, 15, Color("#dce8e3") if not locked else Color("#718087"))
-		draw_string(font, label_rect.position + Vector2(8, 47), "CLEARED" if completed else String(node.subtitle), HORIZONTAL_ALIGNMENT_CENTER, 208, 13, node_color)
+		draw_string(font, label_rect.position + Vector2(8, 23), _content(String(node.name)), HORIZONTAL_ALIGNMENT_CENTER, 208, 15, Color("#dce8e3") if not locked else Color("#718087"))
+		draw_string(font, label_rect.position + Vector2(8, 47), _content("CLEARED" if completed else String(node.subtitle)), HORIZONTAL_ALIGNMENT_CENTER, 208, 13, node_color)
 	if not campaign_stage_nodes.is_empty():
 		var target: Dictionary = campaign_stage_nodes[campaign_target_index]
 		draw_rect(Rect2(310, 570, 660, 96), Color(0.025, 0.045, 0.06, 0.96))
 		draw_rect(Rect2(310, 570, 660, 5), Color("#f2c756"))
-		draw_string(font, Vector2(332, 606), "NEXT  STAGE %d // %s" % [int(target.number), String(target.name)], HORIZONTAL_ALIGNMENT_LEFT, 460, 19, Color.WHITE)
-		draw_string(font, Vector2(332, 638), "THREAT %.2fx   CLEAR %05d   SCORE %08d   CONTINUES %d" % [float(target.threat), int(target.bonus), campaign_display_score, campaign_display_lives], HORIZONTAL_ALIGNMENT_LEFT, 610, 15, Color("#b7e8df"))
-		draw_string(font, Vector2(310, 700), "TAP / ENTER TO DEPLOY", HORIZONTAL_ALIGNMENT_CENTER, 660, 19, Color("#f2c756"))
+		draw_string(font, Vector2(332, 606), _content("NEXT  STAGE %d // %s") % [int(target.number), _content(String(target.name))], HORIZONTAL_ALIGNMENT_LEFT, 460, 19, Color.WHITE)
+		draw_string(font, Vector2(332, 638), _content("THREAT %.2fx   CLEAR %05d   SCORE %08d   CONTINUES %d") % [float(target.threat), int(target.bonus), campaign_display_score, campaign_display_lives], HORIZONTAL_ALIGNMENT_LEFT, 610, 15, Color("#b7e8df"))
+		draw_string(font, Vector2(310, 700), _content("TAP / ENTER TO DEPLOY"), HORIZONTAL_ALIGNMENT_CENTER, 660, 19, Color("#f2c756"))
 
 
 func _draw_local_player_panels(danger_pulse: float) -> void:
@@ -735,7 +744,7 @@ func _draw_player_panel(state_data: Dictionary, panel: Rect2, danger_pulse: floa
 	draw_rect(Rect2(panel.position, Vector2(panel.size.x, 5 if full_size else 4)), color if not down else Color("#a73535"))
 	var compact_primary := not full_size and int(state_data.slot_index) == 0
 	var name_width := panel.size.x - (128.0 if full_size else (112.0 if compact_primary else 70.0))
-	draw_string(font, panel.position + Vector2(14, 28), "P%d  %s" % [int(state_data.slot_index) + 1, state_data.name], HORIZONTAL_ALIGNMENT_LEFT, name_width, 16 if not full_size else 20, color.lightened(0.3))
+	draw_string(font, panel.position + Vector2(14, 28), "P%d  %s" % [int(state_data.slot_index) + 1, _content(String(state_data.name))], HORIZONTAL_ALIGNMENT_LEFT, name_width, 16 if not full_size else 20, color.lightened(0.3))
 	if full_size:
 		draw_string(font, panel.position + Vector2(293, 28), "%08d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
 	elif compact_primary:
@@ -751,10 +760,10 @@ func _draw_player_panel(state_data: Dictionary, panel: Rect2, danger_pulse: floa
 	draw_string(font, panel.position + Vector2(panel.size.x - 48, panel.size.y - 17), "×%d" % int(state_data.lives), HORIZONTAL_ALIGNMENT_LEFT, -1, 15 if not full_size else 18, Color("#b7e8df"))
 	if down:
 		var down_time: float = float(state_data.get("down_time", -1.0))
-		var down_label := "OUT" if is_equal_approx(down_time, -2.0) else ("DOWN %.1f" % down_time if down_time >= 0.0 else "DOWN")
+		var down_label := _content("OUT") if is_equal_approx(down_time, -2.0) else (_content("DOWN %.1f") % down_time if down_time >= 0.0 else _content("DOWN"))
 		draw_string(font, panel.position + Vector2(panel.size.x - 92, 28), down_label, HORIZONTAL_ALIGNMENT_RIGHT, 80, 13, Color("#ff7568"))
 	elif not String(state_data.weapon_name).is_empty() and int(state_data.weapon_ammo) > 0:
-		draw_string(font, panel.position + Vector2(panel.size.x - 82, 28), "%s %02d" % [state_data.weapon_name, int(state_data.weapon_ammo)], HORIZONTAL_ALIGNMENT_RIGHT, 70, 11, Color("#b7e8df"))
+		draw_string(font, panel.position + Vector2(panel.size.x - 82, 28), "%s %02d" % [_content(String(state_data.weapon_name)), int(state_data.weapon_ammo)], HORIZONTAL_ALIGNMENT_RIGHT, 70, 11, Color("#b7e8df"))
 
 
 func _hero_card_selected(hero_index: int) -> bool:
@@ -787,8 +796,8 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 		Rect2(Vector2.ZERO, source_cell)
 	)
 	draw_rect(Rect2(card_x + 38, 346, card_width - 76, 3), hero.accent_color)
-	draw_string(font, Vector2(card_x, 385), hero.display_name, HORIZONTAL_ALIGNMENT_CENTER, card_width, 28, Color.WHITE)
-	draw_string(font, Vector2(card_x + 10, 415), hero.role_title, HORIZONTAL_ALIGNMENT_CENTER, card_width - 20, 15, hero.accent_color.lightened(0.25))
+	draw_string(font, Vector2(card_x, 385), _content(hero.display_name), HORIZONTAL_ALIGNMENT_CENTER, card_width, 28, Color.WHITE)
+	draw_string(font, Vector2(card_x + 10, 415), _content(hero.role_title), HORIZONTAL_ALIGNMENT_CENTER, card_width - 20, 15, hero.accent_color.lightened(0.25))
 	_draw_hero_stat(card_x + 32, 452, "VIT", float(hero.max_health) / 150.0, hero.primary_color)
 	_draw_hero_stat(card_x + 32, 482, "SPD", hero.move_speed / 290.0, hero.primary_color)
 	_draw_hero_stat(card_x + 32, 512, "PWR", hero.damage_scale / 1.3, hero.primary_color)
@@ -797,14 +806,14 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 		var badges: Array[String] = []
 		for selection in local_player_selections:
 			if int(selection.hero_index) == index:
-				badges.append("P%d %s" % [int(selection.slot_index) + 1, "READY" if bool(selection.ready) else "SELECTING"])
+				badges.append("P%d %s" % [int(selection.slot_index) + 1, _content("READY" if bool(selection.ready) else "SELECTING")])
 		if badges.is_empty():
-			badges.append("P1 SELECTING")
+			badges.append("P1 %s" % _content("SELECTING"))
 		draw_string(font, Vector2(card_x + 8, 590), "  •  ".join(PackedStringArray(badges)), HORIZONTAL_ALIGNMENT_CENTER, card_width - 16, 15, hero.accent_color.lightened(0.25))
 
 
 func _draw_hero_stat(x: float, y: float, label: String, value: float, color: Color) -> void:
-	draw_string(font, Vector2(x, y), label, HORIZONTAL_ALIGNMENT_LEFT, 48, 13, Color("#b7c8c3"))
+	draw_string(font, Vector2(x, y), _content(label), HORIZONTAL_ALIGNMENT_LEFT, 48, 13, Color("#b7c8c3"))
 	draw_rect(Rect2(x + 52, y - 11, 160, 10), Color(0.09, 0.12, 0.14, 1.0))
 	draw_rect(Rect2(x + 52, y - 11, 160 * clampf(value, 0.0, 1.0), 10), color.lightened(0.18))
 
@@ -814,7 +823,7 @@ func _draw_hero_animation_preview() -> void:
 	if animation_preview_hero == null:
 		return
 	var hero := animation_preview_hero
-	draw_string(font, Vector2(0, 54), "%s // 24-FRAME ACTION GRID" % hero.display_name, HORIZONTAL_ALIGNMENT_CENTER, size.x, 30, hero.accent_color)
+	draw_string(font, Vector2(0, 54), _content("%s // 24-FRAME ACTION GRID") % _content(hero.display_name), HORIZONTAL_ALIGNMENT_CENTER, size.x, 30, hero.accent_color)
 	var source_cell := Vector2(
 		hero.sprite_sheet.get_width() / float(hero.sprite_columns),
 		hero.sprite_sheet.get_height() / float(hero.sprite_rows)
@@ -832,4 +841,4 @@ func _draw_hero_animation_preview() -> void:
 				Rect2(tile_pos + Vector2(30, 5), Vector2(128, 128)),
 				Rect2(Vector2(column, row) * source_cell, source_cell)
 			)
-	draw_string(font, Vector2(0, 710), "IDLE / MOVE / COMBAT / AIR / DAMAGE / WEAPON / VICTORY", HORIZONTAL_ALIGNMENT_CENTER, size.x, 15, Color("#b7c8c3"))
+	draw_string(font, Vector2(0, 710), _content("IDLE / MOVE / COMBAT / AIR / DAMAGE / WEAPON / VICTORY"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 15, Color("#b7c8c3"))

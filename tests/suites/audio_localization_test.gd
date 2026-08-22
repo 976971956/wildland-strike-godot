@@ -12,6 +12,53 @@ func run(test) -> void:
 	for language in ["en", "zh"]:
 		for key in Localization.UI.en:
 			test.check(not Localization.text(key, language).is_empty(), "%s UI text is missing %s" % [language, key])
+	for shell_text in [
+		"ARCADE SURVIVAL",
+		"SELECT OPERATIVE",
+		"AREA %d/%d",
+		"CAMPAIGN COMPLETE",
+		"HOW TO SURVIVE THE WILDLANDS",
+		"WILDLAND CAMPAIGN ROUTE",
+		"TAP / ENTER TO RESTART",
+	]:
+		test.check(Localization.content(shell_text, "zh") != shell_text, "shell text lacks Chinese translation: %s" % shell_text)
+
+	var authored_content_count := 0
+	for stage_number in range(1, 9):
+		var stage: Resource = load("res://data/stages/stage_%d/stage_%d.tres" % [stage_number, stage_number])
+		for value in [stage.display_name, stage.route_subtitle, stage.clear_message]:
+			test.check(Localization.has_content_translation(value), "stage %d content lacks Chinese translation: %s" % [stage_number, value])
+			authored_content_count += 1
+		for scene: Resource in stage.scenes:
+			for value in [scene.display_name, scene.transition_subtitle]:
+				if String(value).is_empty():
+					continue
+				test.check(Localization.has_content_translation(value), "stage %d scene content lacks Chinese translation: %s" % [stage_number, value])
+				authored_content_count += 1
+			for encounter: Resource in scene.encounters:
+				for value in [encounter.banner_title, encounter.banner_subtitle]:
+					if String(value).is_empty():
+						continue
+					test.check(Localization.has_content_translation(value), "stage %d encounter content lacks Chinese translation: %s" % [stage_number, value])
+					authored_content_count += 1
+	for file_name in DirAccess.get_files_at("res://data/heroes"):
+		if not file_name.ends_with(".tres"):
+			continue
+		var hero: Resource = load("res://data/heroes".path_join(file_name))
+		for value in [hero.display_name, hero.role_title]:
+			test.check(Localization.has_content_translation(value), "%s content lacks Chinese translation: %s" % [file_name, value])
+			authored_content_count += 1
+	for directory in ["res://data/weapons", "res://data/items"]:
+		for file_name in DirAccess.get_files_at(directory):
+			if not file_name.ends_with(".tres"):
+				continue
+			var definition: Resource = load(directory.path_join(file_name))
+			test.check(Localization.has_content_translation(definition.display_name), "%s content lacks Chinese translation: %s" % [file_name, definition.display_name])
+			authored_content_count += 1
+	var vehicle: Resource = load("res://data/stages/stage_3/highway_vehicle.tres")
+	test.check(Localization.has_content_translation(vehicle.display_name), "vehicle content lacks Chinese translation: %s" % vehicle.display_name)
+	authored_content_count += 1
+	test.check(authored_content_count >= 140, "campaign translation coverage did not traverse all authored display content")
 
 	var translated_lines := 0
 	for file_name in DirAccess.get_files_at("res://data/enemies"):
@@ -21,6 +68,7 @@ func run(test) -> void:
 		if definition == null or not definition.is_boss:
 			continue
 		for phase: Resource in definition.boss_phases:
+			test.check(Localization.has_content_translation(phase.dialogue_speaker), "%s phase %s speaker lacks Chinese translation" % [file_name, phase.phase_id])
 			test.check(Localization.has_dialogue_translation(phase.dialogue_line), "%s phase %s lacks Chinese subtitles" % [file_name, phase.phase_id])
 			test.check(Localization.dialogue(phase.dialogue_line, "zh") != phase.dialogue_line, "%s phase %s subtitle was not translated" % [file_name, phase.phase_id])
 			translated_lines += 1
@@ -69,6 +117,8 @@ func run(test) -> void:
 	test.check(game.settings.language == "zh" and game.hud.language == "zh", "language option did not update the HUD immediately")
 	game.hud.show_dialogue("COMMANDER VOSS", "This district answers to me.", 3.0)
 	test.check(game.hud.dialogue_line == "这片街区由我说了算。" and game.hud.dialogue_time > 0.0, "Chinese boss subtitle did not render")
+	var wrapped_chinese: PackedStringArray = game.hud.wrap_dialogue_line("这是一条需要在手机字幕框内自动换行的中文测试文本", 8)
+	test.check(wrapped_chinese.size() >= 3 and wrapped_chinese[0].length() <= 8, "Chinese touch subtitles did not wrap by character")
 	game.options_selected_index = 9
 	game._adjust_option(1)
 	game.hud.show_dialogue("COMMANDER VOSS", "This district answers to me.", 3.0)

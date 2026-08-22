@@ -833,8 +833,12 @@ func _has_projectile_weapon() -> bool:
 func _fire_equipped_weapon() -> void:
 	if not _has_projectile_weapon():
 		return
+	var firing_pose := held_weapon_pose()
+	var projectile_visual_height := 48.0
+	if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+		projectile_visual_height = maxf(78.0, -float(Vector2(firing_pose.get("origin", Vector2(0.0, -78.0))).y))
 	for shot_index in range(equipped_weapon.shots_per_use):
-		game.spawn_weapon_projectile(
+		var projectile: Node = game.spawn_weapon_projectile(
 			self,
 			equipped_weapon,
 			&"player",
@@ -844,6 +848,8 @@ func _fire_equipped_weapon() -> void:
 			shot_index,
 			equipped_weapon.shots_per_use
 		)
+		if is_instance_valid(projectile) and "visual_height" in projectile:
+			projectile.visual_height = projectile_visual_height
 	game.play_sfx(equipped_weapon.fire_sfx)
 	weapon_hits -= 1
 	# A firearm/explosive consumes exactly one round per attack even when the
@@ -1021,20 +1027,9 @@ func held_weapon_pose() -> Dictionary:
 	if equipped_weapon == null:
 		return {}
 	var origin := _held_hand_anchor(_visual_frame())
+	var grip_source_origin := origin
 	var rotation: float = equipped_weapon.held_idle_rotation
 	var movement_weight := clampf(velocity.length() / maxf(move_speed, 1.0), 0.0, 1.0)
-	var secondary_motion: Dictionary
-	if movement_weight > 0.05 and attack_timer <= 0.0:
-		secondary_motion = HeldItemMotionScript.locomotion_pose(
-			walk_phase,
-			movement_weight,
-			Vector2(2.6, 2.2),
-			0.075
-		)
-	else:
-		secondary_motion = HeldItemMotionScript.breathing_pose(visual_clock)
-	origin += Vector2(secondary_motion.offset)
-	rotation += float(secondary_motion.rotation)
 	if attack_timer > 0.0 and current_attack != null and current_attack.duration > 0.0:
 		var progress := clampf(1.0 - attack_timer / current_attack.duration, 0.0, 1.0)
 		var contact_progress := clampf(
@@ -1042,6 +1037,10 @@ func held_weapon_pose() -> Dictionary:
 			0.08,
 			0.78
 		)
+		if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
+			return _melee_weapon_attack_pose(progress, contact_progress, grip_source_origin)
+		if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+			return _firearm_weapon_attack_pose(progress, contact_progress, grip_source_origin)
 		if progress <= contact_progress:
 			var strike_weight := smoothstep(0.0, contact_progress, progress)
 			rotation = lerpf(equipped_weapon.held_idle_rotation, equipped_weapon.held_contact_rotation, strike_weight)
@@ -1053,9 +1052,68 @@ func held_weapon_pose() -> Dictionary:
 			else:
 				var recovery_weight := smoothstep(0.42, 1.0, recovery)
 				rotation = lerpf(follow_rotation, equipped_weapon.held_idle_rotation, recovery_weight)
-			if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-				origin.x -= sin(clampf(recovery / 0.42, 0.0, 1.0) * PI) * 6.0
-	return {"origin": origin, "rotation": rotation}
+		return {"origin": origin, "rotation": rotation, "grip_source_origin": grip_source_origin}
+	var secondary_motion: Dictionary
+	if movement_weight > 0.05:
+		secondary_motion = HeldItemMotionScript.locomotion_pose(
+			walk_phase,
+			movement_weight,
+			Vector2(2.6, 2.2),
+			0.075
+		)
+	else:
+		secondary_motion = HeldItemMotionScript.breathing_pose(visual_clock)
+	origin += Vector2(secondary_motion.offset)
+	rotation += float(secondary_motion.rotation)
+	return {"origin": origin, "rotation": rotation, "grip_source_origin": grip_source_origin}
+
+
+func _melee_weapon_attack_pose(progress: float, contact_progress: float, grip_source_origin: Vector2) -> Dictionary:
+	var windup_origin := Vector2(24.0, -112.0)
+	var contact_origin := Vector2(58.0, -78.0)
+	var windup_rotation := minf(equipped_weapon.held_idle_rotation - 0.78, -0.82)
+	var contact_rotation := maxf(equipped_weapon.held_contact_rotation, 0.82)
+	if progress <= contact_progress:
+		var chop_start := contact_progress * 0.32
+		var chop_weight := smoothstep(chop_start, contact_progress, progress)
+		return {
+			"origin": windup_origin.lerp(contact_origin, chop_weight),
+			"rotation": lerpf(windup_rotation, contact_rotation, chop_weight),
+			"grip_source_origin": grip_source_origin,
+		}
+	var recovery := (progress - contact_progress) / maxf(1.0 - contact_progress, 0.001)
+	var follow_origin := contact_origin + Vector2(7.0, 14.0)
+	var follow_rotation := contact_rotation + 0.18
+	var origin: Vector2
+	var rotation: float
+	if recovery < 0.38:
+		var follow_weight := smoothstep(0.0, 0.38, recovery)
+		origin = contact_origin.lerp(follow_origin, follow_weight)
+		rotation = lerpf(contact_rotation, follow_rotation, follow_weight)
+	else:
+		var settle_weight := smoothstep(0.38, 1.0, recovery)
+		origin = follow_origin.lerp(contact_origin, settle_weight)
+		rotation = lerpf(follow_rotation, equipped_weapon.held_idle_rotation, settle_weight)
+	return {"origin": origin, "rotation": rotation, "grip_source_origin": grip_source_origin}
+
+
+func _firearm_weapon_attack_pose(progress: float, contact_progress: float, grip_source_origin: Vector2) -> Dictionary:
+	var aim_origin := grip_source_origin + Vector2(8.0, -9.0)
+	var aim_rotation: float = equipped_weapon.held_contact_rotation
+	if progress <= contact_progress:
+		var raise_weight := smoothstep(0.0, maxf(contact_progress * 0.72, 0.001), progress)
+		return {
+			"origin": grip_source_origin.lerp(aim_origin, raise_weight),
+			"rotation": lerpf(equipped_weapon.held_idle_rotation, aim_rotation, raise_weight),
+			"grip_source_origin": grip_source_origin,
+		}
+	var recovery := (progress - contact_progress) / maxf(1.0 - contact_progress, 0.001)
+	var recoil_weight := sin(clampf(recovery / 0.34, 0.0, 1.0) * PI)
+	var settle_weight := smoothstep(0.34, 1.0, recovery)
+	var origin := aim_origin + Vector2(-8.0 * recoil_weight, 2.0 * recoil_weight)
+	origin = origin.lerp(grip_source_origin, settle_weight)
+	var rotation := lerpf(aim_rotation - recoil_weight * 0.08, equipped_weapon.held_idle_rotation, settle_weight)
+	return {"origin": origin, "rotation": rotation, "grip_source_origin": grip_source_origin}
 
 
 func held_weapon_grip_cover() -> Dictionary:
@@ -1065,12 +1123,14 @@ func held_weapon_grip_cover() -> Dictionary:
 	var pose := held_weapon_pose()
 	var origin: Vector2 = pose.get("origin", Vector2.ZERO)
 	var target_rect := Rect2(origin - HELD_GRIP_COVER_SIZE * 0.5, HELD_GRIP_COVER_SIZE)
+	var source_origin: Vector2 = pose.get("grip_source_origin", origin)
 	var hero_target := _hero_target_rect()
 	var cell := Vector2(
 		hero_sprite_sheet.get_width() / float(hero_sprite_columns),
 		hero_sprite_sheet.get_height() / float(hero_sprite_rows)
 	)
-	var normalized_position := (target_rect.position - hero_target.position) / hero_target.size
+	var source_target_rect := Rect2(source_origin - HELD_GRIP_COVER_SIZE * 0.5, HELD_GRIP_COVER_SIZE)
+	var normalized_position := (source_target_rect.position - hero_target.position) / hero_target.size
 	var normalized_size := target_rect.size / hero_target.size
 	var frame_origin := Vector2(frame) * cell
 	var source_rect := Rect2(
@@ -1136,6 +1196,9 @@ func _visual_frame() -> Vector2i:
 			return Vector2i(1, 2)
 		return Vector2i(0, 2)
 	if attack_timer > 0.0:
+		if current_attack != null and equipped_weapon != null and weapon_ammo > 0 and current_attack.duration > 0.0:
+			if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+				return Vector2i(1, 1)
 		if current_attack != null and current_attack.attack_id == &"player_run_attack":
 			return Vector2i(4, 1)
 		if current_attack != null and current_attack.attack_id == &"player_command_attack":

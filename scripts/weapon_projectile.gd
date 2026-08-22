@@ -26,6 +26,7 @@ var hit_actor_ids := {}
 var arm_timer := 0.0
 var lingering_timer := 0.0
 var lingering_tick_timer := 0.0
+var visual_height := 48.0
 
 
 func setup(
@@ -245,7 +246,7 @@ func _combat_candidates() -> Array[Node]:
 func _draw() -> void:
 	if definition == null:
 		return
-	var draw_offset := Vector2(0.0, -48.0)
+	var draw_offset := Vector2(0.0, -visual_height)
 	if exploded and lingering_timer > 0.0:
 		var pulse := 0.85 + sin(lingering_timer * 13.0) * 0.15
 		draw_circle(Vector2(0.0, -8.0), definition.explosion_radius * 0.34, Color(1.0, 0.24, 0.04, 0.18))

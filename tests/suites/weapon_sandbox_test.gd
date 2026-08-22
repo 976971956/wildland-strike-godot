@@ -89,6 +89,8 @@ func run(test) -> void:
 	test.check(probe_source.contains("weapon_sandbox_preview=3") and probe_source.contains('"weapon_rocket"'), "reproducible heavy-weapon contact-pose Web preview is missing")
 	test.check(probe_source.contains("weapon_sandbox_preview=4") and probe_source.contains("shotgun_held_idle_preview"), "reproducible held-weapon idle Web preview is missing")
 	test.check(probe_source.contains("weapon_sandbox_preview=5") and probe_source.contains("machete_held_walk_preview"), "reproducible walking hand-grip Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=6") and probe_source.contains("machete_overhead_windup_preview"), "reproducible overhead machete wind-up Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=7") and probe_source.contains("shotgun_aimed_fire_preview"), "reproducible raised-arm firearm Web preview is missing")
 
 
 func _verify_melee_behaviors(test) -> void:
@@ -116,6 +118,18 @@ func _verify_melee_behaviors(test) -> void:
 	var pose_at_start: Dictionary = game.player.held_weapon_pose()
 	game.player.attack_timer = game.player.current_attack.hit_trigger_remaining - 0.001
 	var pose_at_contact: Dictionary = game.player.held_weapon_pose()
+	var slash_start: Vector2 = pose_at_start.get("origin", Vector2.ZERO)
+	var slash_contact: Vector2 = pose_at_contact.get("origin", Vector2.ZERO)
+	test.check(
+		slash_start.y < -105.0
+		and float(pose_at_start.get("rotation", 0.0)) < -0.55,
+		"machete attack does not raise the gripping hand and blade into a readable overhead wind-up"
+	)
+	test.check(
+		slash_contact.y > slash_start.y + 28.0
+		and float(pose_at_contact.get("rotation", 0.0)) > 0.65,
+		"machete attack does not travel downward through a vertical chopping arc at contact"
+	)
 	test.check(game.player._visual_frame() not in [Vector2i(2, 3), Vector2i(3, 3)], "equipped attack still draws the hero sheet's baked duplicate machete/pistol")
 	game.player._check_attack_hit()
 	test.check(game.player.grabbed_enemy == null, "an armed melee strike incorrectly entered the unarmed contact-grab state")
@@ -175,11 +189,23 @@ func _verify_firearm_behaviors(test) -> void:
 	game.player.position = Vector2(400.0, 550.0)
 
 	game.player.give_weapon("weapon_shotgun")
-	_fire_player_weapon(game.player)
+	var firearm_idle: Dictionary = game.player.held_weapon_pose()
+	game.player._start_attack()
+	game.player.attack_timer = game.player.current_attack.hit_trigger_remaining - 0.001
+	var firearm_aim: Dictionary = game.player.held_weapon_pose()
+	var idle_origin: Vector2 = firearm_idle.get("origin", Vector2.ZERO)
+	var aim_origin: Vector2 = firearm_aim.get("origin", Vector2.ZERO)
+	test.check(
+		aim_origin.y < idle_origin.y - 20.0
+		and aim_origin.x > idle_origin.x + 14.0,
+		"firearm attack does not raise and extend the gripping arm into an aimed firing stance"
+	)
+	game.player._check_attack_hit()
 	var projectiles: Array[Node] = test.tree.get_nodes_in_group("weapon_projectiles")
 	test.check(projectiles.size() == WeaponCatalogScript.SHOTGUN.shots_per_use, "shotgun did not emit its five-pellet depth spread")
 	var shotgun_depth_velocities := {}
 	for projectile in projectiles:
+		test.check("visual_height" in projectile and projectile.visual_height >= 78.0, "shotgun tracer does not leave from the raised gun muzzle")
 		shotgun_depth_velocities[snappedf(projectile.velocity.y, 0.01)] = true
 		projectile.queue_free()
 	test.check(shotgun_depth_velocities.size() == 5, "shotgun pellets do not fan across distinct depth lanes")

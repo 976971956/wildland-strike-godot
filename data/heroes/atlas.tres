@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="HeroDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/atlas_sheet_v2.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -10,6 +11,7 @@ role_title = "POWER GRAPPLER"
 role_summary = "Highest health, damage and throw force at the cost of speed and items."
 primary_color = Color(0.603922, 0.266667, 0.184314, 1)
 accent_color = Color(0.941176, 0.705882, 0.254902, 1)
+sprite_sheet = ExtResource("2")
 max_health = 150
 move_speed = 210.0
 run_multiplier = 1.45

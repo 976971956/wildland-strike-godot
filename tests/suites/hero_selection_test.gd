@@ -52,6 +52,7 @@ func run(test) -> void:
 	test.check(game.player.max_health == 90 and game.player.health == 90, "selected hero vitality was not applied")
 	test.check(game.player.move_speed == 290.0 and game.player.run_speed_multiplier == 1.8, "selected hero movement was not applied")
 	test.check(game.player.damage_scale == 0.85 and game.player.aerial_control == 1.4, "selected hero combat profile was not applied")
+	test.check(game.player.hero_sprite_sheet == HEROES[2].sprite_sheet, "selected hero animation sheet was not applied")
 	test.check(game.hud.player_name == "KESTREL" and game.hud.max_health == 90, "selected hero identity/health did not reach HUD")
 	var health_before: int = game.player.health
 	game.player.health = 40

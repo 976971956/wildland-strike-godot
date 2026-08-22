@@ -89,3 +89,37 @@ Generation direction for every strip required one consistent original character,
 Post-processing isolated the eight largest connected actors from each generated strip, discarded pixels belonging to neighboring actors, preserved each pose's relative vertical placement, applied one uniform nearest-neighbor scale per character, and centered every result in an exact 320×320 transparent cell. This deterministic normalization was added after the first equal-width crop still exposed neighboring limbs in the actual Web renderer.
 
 Verification: all four imported textures retain alpha and divide exactly into eight cells; grunt, hunter, brute, raptor, and boss use state-driven idle, locomotion, telegraph/windup, contact/burst, hurt, and defeat indices. A no-damage `roster_preview=1` Web fixture displays all five archetypes simultaneously without cross-faction combat contaminating the visual test. The final 1280×720 roster and both boss phases were inspected for cell bleed, crop loss, scale, silhouettes, tint, and depth ordering. The roster sample averaged 119.96 FPS over 300 frames with zero frames above 20 ms or 33 ms.
+
+## 2026-08-22 — Mara, Kestrel, and Atlas 24-frame animation sheets
+
+Tool: OpenAI built-in `image_gen` generation and precise-background-edit workflows, followed by deterministic FFmpeg chroma-to-alpha conversion and the project-local `tools/normalize_sprite_sheet.gd` per-cell connected-component cleanup.
+
+Reference role: only the existing original-IP `assets/sprites/ranger_sheet_v2.png` was supplied as a production-format reference for the 6×4 grid, scale, action order, and arcade rendering density. Each output explicitly requested a new face, body, costume, silhouette, palette, and identity. No franchise screenshot, ROM asset, external character, logo, or traced animation frame was used. The initially generated checkerboard-background files were rejected and are not retained in the repository.
+
+### Final files
+
+- `assets/sprites/mara_sheet_v2.png`: 1536×1024 RGBA, 6×4; SHA-256 `46ef9dec67079f56a55c20466358ed4518ba9438d3446263151818c5971d96e8`; intermediate chroma source SHA-256 `5222917e752d037e5742a2aa64651fcd857a3af85c32304e49d7fea707e41f44`.
+- `assets/sprites/kestrel_sheet_v2.png`: 1536×1024 RGBA, 6×4; SHA-256 `9536037ba1048349e6962db60a1b5f96ea877676e9a191014da1af848847d759`; intermediate chroma source SHA-256 `9b7a69d414e4a81bd7d06129cc498f43ea42927261dbcc42bfd97dfd542d566b`.
+- `assets/sprites/atlas_sheet_v2.png`: 1536×1024 RGBA, 6×4; SHA-256 `ea90a6815e546f893dc6a1e744c4617d955a1f1ca3ab0d71e10977e907fa6eb4`; intermediate chroma source SHA-256 `b0de4ccf43a7726ebeea43360f62fad4fde02d245df87c440003072c08b74a13`.
+
+Shared final generation direction:
+
+```text
+Use case: stylized-concept
+Asset type: production 2D arcade beat-'em-up character animation sprite sheet for Wildland Strike
+Input images: Image 1 is an original-IP Ranger sheet used only as the exact production-format, grid, scale, pixel-rendering, and action-order reference; create a completely new character and do not preserve or copy Ranger's face, hair, costume, body, or colors
+Style/medium: polished hand-authored late-1980s/early-1990s arcade pixel art, crisp deliberate pixel clusters, a limited character-specific palette, strong dark outlines, readable belt-scrolling brawler silhouettes, and the same rendering density and full-body scale as Image 1
+Composition/framing: exact 6-column by 4-row grid on a 1536x1024 canvas, one centered full-body side-view sprite in each equal 256x256 cell, every action facing screen-right, consistent foot baseline and uniform scale, no overlap or cell bleed
+Action order: row 1 = two breathing idle frames and four movement frames; row 2 = attack startup/contact chain, launcher, rush, and defensive special; row 3 = jump rise, air kick, dive, grab, hurt, and knockdown; row 4 = defeated, get-up, machete, pistol, and two victory poses
+Constraints: original character and original IP only; exactly 24 sprites; consistent identity/costume/proportions; cleanly sliceable equal cells; no scenery, text, logos, watermark, copyrighted characters, cropped limbs, duplicate poses, or objects crossing cell boundaries
+```
+
+Character-specific direction:
+
+- Mara: athletic female field technician with short tied copper hair, slate-blue cropped mechanic jacket, dark work shirt, reinforced blue-gray utility trousers, teal gloves, compact tool harness, and rugged boots; blue/teal/copper palette, wrench-hand launcher, tool-raise victory.
+- Kestrel: lean female aerial scout with short swept silver hair, plum flight jacket, orange scarf, fitted charcoal tactical trousers, orange wraps, and lightweight high boots; plum/charcoal/orange palette, rising-knee launcher, long aerial kick, acrobatic get-up.
+- Atlas: massive male power grappler with shaved head, short auburn beard, rust-red sleeveless utility vest, charcoal undershirt, oversized amber gauntlets, heavy dark cargo trousers, and steel-toe boots; rust/charcoal/amber palette, hammerfist chain, body kick, crushing grab, double-fist victory.
+
+Isolation edit changed only the empty generated checker background to a uniform chroma-magenta field while preserving the sprites and exact grid. FFmpeg converted that field to alpha. Browser inspection of a query-gated 24-cell fixture then identified both texture-filter sampling and disconnected neighboring-pose fragments. Nearest-neighbor sampling removed atlas-edge interpolation; the retained normalizer removed weak alpha, components below 128 pixels, and independent components farther than an eight-pixel expansion of the main character while preserving nearby weapon flashes and motion arcs.
+
+Verification: all four hero resources validate their own texture/grid metadata. Each final sheet retains alpha, is exactly divisible into 24 equal cells, and every cell passes deterministic opaque-silhouette and transparent-gutter checks. Mara, Kestrel, and Atlas were each inspected across all 24 exported-Web cells after cleanup; the final real-sprite character-select screen was also inspected. The animation and selection fixtures average about 120 FPS across 300 frames with zero frames above 20 ms and no console errors.

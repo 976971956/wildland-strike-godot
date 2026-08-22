@@ -17,7 +17,15 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "hero_select_preview=1" in query_string:
+		if "hero_animation_preview=" in query_string:
+			scenario = "hero_animation_preview"
+			var hero_index := 1
+			if "hero_animation_preview=kestrel" in query_string:
+				hero_index = 2
+			elif "hero_animation_preview=atlas" in query_string:
+				hero_index = 3
+			call_deferred("_start_hero_animation_preview", hero_index)
+		elif "hero_select_preview=1" in query_string:
 			scenario = "hero_select_preview"
 			call_deferred("_start_hero_select_preview")
 		elif "formation_acceptance=1" in query_string:
@@ -94,6 +102,17 @@ func _start_hero_select_preview() -> void:
 		return
 	game._open_character_select()
 	game.select_hero(2)
+	game.set_process(false)
+
+
+func _start_hero_animation_preview(hero_index: int) -> void:
+	var game := get_parent()
+	if not game.has_method("select_hero") or game.HERO_DEFINITIONS.size() != 4:
+		scenario = "hero_animation_setup_failed"
+		return
+	game.select_hero(hero_index)
+	game.hud.set_hero_animation_preview(game.selected_hero())
+	game.hud.set_mode("hero_animation")
 	game.set_process(false)
 
 

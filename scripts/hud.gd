@@ -32,9 +32,11 @@ var player_name := "RANGER"
 var player_color := Color("#f5dc7c")
 var hero_roster: Array[Resource] = []
 var selected_hero_index := 0
+var animation_preview_hero: Resource
 var font: Font
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	font = ThemeDB.fallback_font
 	set_process(true)
 	queue_redraw()
@@ -103,6 +105,11 @@ func set_hero_roster(definitions: Array, selected_index: int) -> void:
 		if definition != null:
 			hero_roster.append(definition)
 	selected_hero_index = clampi(selected_index, 0, maxi(hero_roster.size() - 1, 0))
+	queue_redraw()
+
+
+func set_hero_animation_preview(hero: Resource) -> void:
+	animation_preview_hero = hero
 	queue_redraw()
 
 
@@ -235,6 +242,8 @@ func _draw() -> void:
 			_draw_hero_card(hero_roster[index], index, index == selected_hero_index)
 		var select_hint := "TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "LEFT / RIGHT  CHOOSE     ATTACK / ENTER  DEPLOY"
 		draw_string(font, Vector2(0, 664), select_hint, HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color.WHITE)
+	elif mode == "hero_animation":
+		_draw_hero_animation_preview()
 	elif mode == "victory":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_rect(Rect2(318, 142, 644, 438), Color(0.025, 0.035, 0.05, 0.94))
@@ -271,16 +280,15 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 	draw_rect(Rect2(card_rect.position, Vector2(card_width, 7 if selected else 3)), edge_color)
 	if selected:
 		draw_rect(card_rect.grow(4), Color(edge_color, 0.18), false, 4.0)
-	var portrait_center := Vector2(card_x + card_width * 0.5, 255)
-	draw_circle(portrait_center + Vector2(0, -34), 38, hero.primary_color.lightened(0.2))
-	draw_colored_polygon(PackedVector2Array([
-		portrait_center + Vector2(-62, 82),
-		portrait_center + Vector2(-46, 8),
-		portrait_center + Vector2(46, 8),
-		portrait_center + Vector2(62, 82),
-	]), hero.primary_color)
-	draw_line(portrait_center + Vector2(-44, 22), portrait_center + Vector2(-76, 66), hero.accent_color, 12)
-	draw_line(portrait_center + Vector2(44, 22), portrait_center + Vector2(76, 66), hero.accent_color, 12)
+	var source_cell := Vector2(
+		hero.sprite_sheet.get_width() / float(hero.sprite_columns),
+		hero.sprite_sheet.get_height() / float(hero.sprite_rows)
+	)
+	draw_texture_rect_region(
+		hero.sprite_sheet,
+		Rect2(card_x + 50, 156, 180, 180),
+		Rect2(Vector2.ZERO, source_cell)
+	)
 	draw_rect(Rect2(card_x + 38, 346, card_width - 76, 3), hero.accent_color)
 	draw_string(font, Vector2(card_x, 385), hero.display_name, HORIZONTAL_ALIGNMENT_CENTER, card_width, 28, Color.WHITE)
 	draw_string(font, Vector2(card_x + 10, 415), hero.role_title, HORIZONTAL_ALIGNMENT_CENTER, card_width - 20, 15, hero.accent_color.lightened(0.25))
@@ -296,3 +304,29 @@ func _draw_hero_stat(x: float, y: float, label: String, value: float, color: Col
 	draw_string(font, Vector2(x, y), label, HORIZONTAL_ALIGNMENT_LEFT, 48, 13, Color("#b7c8c3"))
 	draw_rect(Rect2(x + 52, y - 11, 160, 10), Color(0.09, 0.12, 0.14, 1.0))
 	draw_rect(Rect2(x + 52, y - 11, 160 * clampf(value, 0.0, 1.0), 10), color.lightened(0.18))
+
+
+func _draw_hero_animation_preview() -> void:
+	draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 1.0))
+	if animation_preview_hero == null:
+		return
+	var hero := animation_preview_hero
+	draw_string(font, Vector2(0, 54), "%s // 24-FRAME ACTION GRID" % hero.display_name, HORIZONTAL_ALIGNMENT_CENTER, size.x, 30, hero.accent_color)
+	var source_cell := Vector2(
+		hero.sprite_sheet.get_width() / float(hero.sprite_columns),
+		hero.sprite_sheet.get_height() / float(hero.sprite_rows)
+	)
+	var tile_size := Vector2(188, 138)
+	var gap := Vector2(12, 9)
+	var start := Vector2(46, 104)
+	for row in range(hero.sprite_rows):
+		for column in range(hero.sprite_columns):
+			var tile_pos := start + Vector2(column * (tile_size.x + gap.x), row * (tile_size.y + gap.y))
+			draw_rect(Rect2(tile_pos, tile_size), Color(0.035, 0.055, 0.075, 0.98))
+			draw_rect(Rect2(tile_pos, Vector2(tile_size.x, 2)), Color(hero.primary_color, 0.7))
+			draw_texture_rect_region(
+				hero.sprite_sheet,
+				Rect2(tile_pos + Vector2(30, 5), Vector2(128, 128)),
+				Rect2(Vector2(column, row) * source_cell, source_cell)
+			)
+	draw_string(font, Vector2(0, 710), "IDLE / MOVE / COMBAT / AIR / DAMAGE / WEAPON / VICTORY", HORIZONTAL_ALIGNMENT_CENTER, size.x, 15, Color("#b7c8c3"))

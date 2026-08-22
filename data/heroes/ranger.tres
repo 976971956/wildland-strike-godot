@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="HeroDefinition" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ranger_sheet_v2.png" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -10,6 +11,7 @@ role_title = "BALANCED VANGUARD"
 role_summary = "Reliable reach, health and mobility. Built for learning every system."
 primary_color = Color(0.188235, 0.482353, 0.411765, 1)
 accent_color = Color(0.94902, 0.756863, 0.309804, 1)
+sprite_sheet = ExtResource("2")
 max_health = 120
 move_speed = 255.0
 run_multiplier = 1.65

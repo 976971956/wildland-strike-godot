@@ -54,6 +54,9 @@ var grapple_power := 1.0
 var hero_definition: Resource
 var hero_id: StringName = &"ranger"
 var hero_display_name := "RANGER"
+var hero_sprite_sheet: Texture2D = SPRITE_SHEET
+var hero_sprite_columns := SPRITE_COLUMNS
+var hero_sprite_rows := SPRITE_ROWS
 var facing := 1
 var z_height := 0.0
 var z_velocity := 0.0
@@ -108,6 +111,7 @@ var fighter_state: int:
 
 func setup(p_game: Node, p_hero_definition: Resource = null) -> void:
 	game = p_game
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	apply_hero_definition(p_hero_definition)
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
 	add_to_group("player")
@@ -138,6 +142,9 @@ func apply_hero_definition(value: Resource) -> void:
 	hero_definition = value
 	hero_id = value.hero_id
 	hero_display_name = value.display_name
+	hero_sprite_sheet = value.sprite_sheet
+	hero_sprite_columns = value.sprite_columns
+	hero_sprite_rows = value.sprite_rows
 	max_health = value.max_health
 	move_speed = value.move_speed
 	run_speed_multiplier = value.run_multiplier
@@ -723,15 +730,15 @@ func _draw() -> void:
 	_draw_oval(Vector2(0, 1), 29.0, 9.0, Color(0.02,0.03,0.04,0.42))
 	var frame := _visual_frame()
 	var cell := Vector2(
-		SPRITE_SHEET.get_width() / float(SPRITE_COLUMNS),
-		SPRITE_SHEET.get_height() / float(SPRITE_ROWS)
+		hero_sprite_sheet.get_width() / float(hero_sprite_columns),
+		hero_sprite_sheet.get_height() / float(hero_sprite_rows)
 	)
 	var target_size := Vector2(154.0, 171.0)
 	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 16.0, target_size.x, target_size.y)
 	var source_rect := Rect2(frame.x * cell.x, frame.y * cell.y, cell.x, cell.y)
 	var tint_color := Color(1.0, 0.72, 0.72) if hurt_timer > 0.0 else Color.WHITE
 	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
-	draw_texture_rect_region(SPRITE_SHEET, target_rect, source_rect, tint_color)
+	draw_texture_rect_region(hero_sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if weapon_hits > 0 and equipped_weapon != null and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
 		draw_line(jump_offset + Vector2(22*facing,-62), jump_offset + Vector2(63*facing,-73), Color("#e8eee4"), 8)

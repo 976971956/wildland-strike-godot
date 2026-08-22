@@ -7,6 +7,9 @@ extends Resource
 @export_multiline var role_summary := ""
 @export var primary_color := Color.WHITE
 @export var accent_color := Color.WHITE
+@export var sprite_sheet: Texture2D
+@export_range(1, 12, 1) var sprite_columns := 6
+@export_range(1, 12, 1) var sprite_rows := 4
 @export_range(60, 240, 1) var max_health := 120
 @export_range(160.0, 340.0, 1.0) var move_speed := 255.0
 @export_range(1.2, 2.2, 0.01) var run_multiplier := 1.65
@@ -22,6 +25,9 @@ func is_valid_hero() -> bool:
 		and not display_name.is_empty()
 		and not role_title.is_empty()
 		and not role_summary.is_empty()
+		and sprite_sheet != null
+		and sprite_sheet.get_width() % sprite_columns == 0
+		and sprite_sheet.get_height() % sprite_rows == 0
 		and max_health >= 60
 		and move_speed >= 160.0
 		and run_multiplier >= 1.2

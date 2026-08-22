@@ -7,6 +7,7 @@ var slot_index := 0
 var device_id := KEYBOARD_DEVICE
 var hero_index := 0
 var selection_ready := false
+var remaining_lives := 2
 
 
 func _init(p_slot_index: int = 0, p_device_id: int = KEYBOARD_DEVICE, p_hero_index: int = 0) -> void:

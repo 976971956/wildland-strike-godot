@@ -23,6 +23,9 @@ func _ready() -> void:
 		elif "local_coop_select=3" in query_string:
 			scenario = "local_coop_select"
 			call_deferred("_start_local_coop_select_preview")
+		elif "coop_revive_preview=1" in query_string:
+			scenario = "coop_revive_preview"
+			call_deferred("_start_coop_revive_preview")
 		elif "hero_animation_preview=" in query_string:
 			scenario = "hero_animation_preview"
 			var hero_index := 1
@@ -153,6 +156,26 @@ func _start_local_coop_select_preview() -> void:
 	game.local_player_registry.set_ready(0, true)
 	game.local_player_registry.set_ready(1, true)
 	game._sync_selection_hud()
+	game.set_process(false)
+
+
+func _start_coop_revive_preview() -> void:
+	var game := get_parent()
+	var second: Node = game.join_local_player(0, 1)
+	if second == null:
+		scenario = "coop_revive_setup_failed"
+		return
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.position = Vector2(720.0, 555.0)
+	second.position = Vector2(800.0, 555.0)
+	game.player.set_physics_process(false)
+	second.set_physics_process(false)
+	second.invulnerable = 0.0
+	second.take_hit(second.max_health, Vector2.ZERO)
+	game.downed_time_remaining[1] = 5.6
+	game.hud.set_local_player_down_timer(1, 5.6)
+	game.hud.show_banner("PLAYER 2 DOWN", "MOVE CLOSE + ATTACK TO REVIVE", 999.0)
 	game.set_process(false)
 
 

@@ -69,6 +69,8 @@ var victory_clear_bonus := 0
 var victory_bonus_applied := false
 var shared_camera_zoom := 1.0
 var joy_selection_axis_latch := {}
+var downed_time_remaining := {}
+var continue_respawn_time := {}
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -79,6 +81,10 @@ const MIN_SAFE_SPAWN_DISTANCE := 70.0
 const MIN_SHARED_CAMERA_ZOOM := 0.72
 const COOP_ENEMY_HEALTH_SCALES := [1.0, 1.4, 1.7]
 const COOP_ENEMY_DAMAGE_SCALES := [1.0, 1.08, 1.16]
+const TEAMMATE_REVIVE_WINDOW := 8.0
+const TEAMMATE_REVIVE_DISTANCE := 96.0
+const TEAMMATE_REVIVE_HEALTH_RATIO := 0.35
+const CONTINUE_RESPAWN_DELAY := 1.1
 
 func _ready() -> void:
 	local_player_registry.reset_with_keyboard(selected_hero_index)
@@ -160,6 +166,7 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("start"):
 			get_tree().reload_current_scene()
 		return
+	_tick_downed_players(delta)
 	var active_players := get_active_players()
 	if active_players.is_empty():
 		return
@@ -346,6 +353,8 @@ func leave_local_player(device_id: int) -> bool:
 	if slot == null or slot.slot_index == 0:
 		return false
 	var fighter := player_for_slot(slot.slot_index)
+	downed_time_remaining.erase(slot.slot_index)
+	continue_respawn_time.erase(slot.slot_index)
 	local_player_registry.leave_device(device_id)
 	hud.remove_local_player_state(slot.slot_index)
 	if is_instance_valid(fighter):
@@ -397,17 +406,21 @@ func _sync_local_player_hud(fighter: Node) -> void:
 	var weapon_display_name := ""
 	if fighter.equipped_weapon != null:
 		weapon_display_name = fighter.equipped_weapon.display_name
+	var slot = local_player_registry.slot_at(fighter.local_slot_index)
+	var remaining_lives: int = slot.remaining_lives if slot != null else lives
 	hud.set_local_player_state(
 		fighter.local_slot_index,
 		fighter.hero_display_name,
 		fighter.hero_definition.primary_color,
 		fighter.health,
 		fighter.max_health,
-		lives,
+		remaining_lives,
 		weapon_display_name,
 		fighter.weapon_ammo,
 		fighter.is_defeated
 	)
+	if downed_time_remaining.has(fighter.local_slot_index):
+		hud.set_local_player_down_timer(fighter.local_slot_index, float(downed_time_remaining[fighter.local_slot_index]))
 
 
 func lead_player_x() -> float:
@@ -621,32 +634,127 @@ func _on_local_player_health(current: int, maximum: int, fighter: Node) -> void:
 
 
 func _on_player_defeated() -> void:
-	lives -= 1
-	hud.set_lives(lives)
-	if lives >= 0:
-		await get_tree().create_timer(1.1).timeout
-		player.revive(player.position - Vector2(70,0))
-		hud.show_banner("CONTINUE!", "TEMPORARY INVINCIBILITY", 1.2)
-	else:
-		state = "gameover"
-		music_director.play_cue(MusicDirectorScript.Cue.SILENT)
-		_set_local_players_physics(false)
-		hud.set_mode("gameover")
+	_begin_player_downed(player)
 
 
 func _on_local_player_defeated(fighter: Node) -> void:
 	_sync_local_player_hud(fighter)
-	if fighter == player:
-		_on_player_defeated()
+	_begin_player_downed(fighter)
+
+
+func _begin_player_downed(fighter: Node) -> void:
+	if not is_instance_valid(fighter) or state != "playing":
 		return
 	fighter.set_physics_process(false)
-	if get_active_players().is_empty():
-		state = "gameover"
-		music_director.play_cue(MusicDirectorScript.Cue.SILENT)
-		_set_local_players_physics(false)
-		hud.set_mode("gameover")
+	var revive_window := TEAMMATE_REVIVE_WINDOW if coop_player_count() > 1 and not get_active_players().is_empty() else 0.0
+	downed_time_remaining[fighter.local_slot_index] = revive_window
+	hud.set_local_player_down_timer(fighter.local_slot_index, revive_window)
+	if revive_window > 0.0:
+		hud.show_banner("PLAYER %d DOWN" % (fighter.local_slot_index + 1), "MOVE CLOSE + ATTACK TO REVIVE", 1.4)
+
+
+func try_revive_teammate(rescuer: Node) -> bool:
+	if state != "playing" or not is_instance_valid(rescuer) or rescuer.is_defeated:
+		return false
+	var best_target: Node = null
+	var best_distance := TEAMMATE_REVIVE_DISTANCE + 1.0
+	for slot_index in downed_time_remaining.keys():
+		if float(downed_time_remaining[slot_index]) <= 0.0:
+			continue
+		var candidate := player_for_slot(int(slot_index))
+		if not is_instance_valid(candidate) or not candidate.is_defeated:
+			continue
+		var distance: float = rescuer.position.distance_to(candidate.position)
+		if distance <= TEAMMATE_REVIVE_DISTANCE and distance < best_distance:
+			best_target = candidate
+			best_distance = distance
+	if best_target == null:
+		return false
+	var slot_index: int = best_target.local_slot_index
+	downed_time_remaining.erase(slot_index)
+	continue_respawn_time.erase(slot_index)
+	best_target.revive(best_target.position, TEAMMATE_REVIVE_HEALTH_RATIO)
+	best_target.set_physics_process(true)
+	_sync_local_player_hud(best_target)
+	hud.set_local_player_down_timer(slot_index, -1.0)
+	hud.show_banner("PLAYER %d REVIVED" % (slot_index + 1), "35% HEALTH + TEMPORARY INVINCIBILITY", 1.3)
+	play_sfx(&"revive")
+	return true
+
+
+func _tick_downed_players(delta: float) -> void:
+	for slot_index in continue_respawn_time.keys().duplicate():
+		continue_respawn_time[slot_index] = maxf(0.0, float(continue_respawn_time[slot_index]) - delta)
+		if float(continue_respawn_time[slot_index]) > 0.0:
+			continue
+		continue_respawn_time.erase(slot_index)
+		var fighter := player_for_slot(int(slot_index))
+		if not is_instance_valid(fighter):
+			continue
+		fighter.revive(_find_safe_revive_position(fighter))
+		fighter.set_physics_process(true)
+		_sync_local_player_hud(fighter)
+		hud.set_local_player_down_timer(int(slot_index), -1.0)
+		hud.show_banner("PLAYER %d CONTINUE!" % (int(slot_index) + 1), "TEMPORARY INVINCIBILITY", 1.2)
+	for slot_index in downed_time_remaining.keys().duplicate():
+		var fighter := player_for_slot(int(slot_index))
+		if not is_instance_valid(fighter) or not fighter.is_defeated:
+			downed_time_remaining.erase(slot_index)
+			continue
+		var remaining := maxf(0.0, float(downed_time_remaining[slot_index]) - delta)
+		downed_time_remaining[slot_index] = remaining
+		hud.set_local_player_down_timer(int(slot_index), remaining)
+		if remaining <= 0.0:
+			_consume_player_continue(fighter)
+	_resolve_team_gameover()
+
+
+func _consume_player_continue(fighter: Node) -> void:
+	var slot = local_player_registry.slot_at(fighter.local_slot_index)
+	downed_time_remaining.erase(fighter.local_slot_index)
+	if slot == null:
+		return
+	if fighter == player:
+		slot.remaining_lives = lives
+	slot.remaining_lives -= 1
+	if fighter == player:
+		lives = slot.remaining_lives
+		hud.set_lives(lives)
+	_sync_local_player_hud(fighter)
+	if slot.remaining_lives >= 0:
+		continue_respawn_time[fighter.local_slot_index] = CONTINUE_RESPAWN_DELAY
+		hud.set_local_player_down_timer(fighter.local_slot_index, 0.0)
 	else:
-		hud.show_banner("PLAYER %d DOWN" % (fighter.local_slot_index + 1), "TEAMMATE REVIVE ARRIVES NEXT", 1.2)
+		hud.set_local_player_down_timer(fighter.local_slot_index, -2.0)
+		hud.show_banner("PLAYER %d OUT" % (fighter.local_slot_index + 1), "NO CONTINUES REMAIN", 1.2)
+
+
+func _find_safe_revive_position(fighter: Node) -> Vector2:
+	var anchor: Vector2 = fighter.position - Vector2(70.0, 0.0)
+	var active := get_active_players()
+	if not active.is_empty():
+		anchor = active[0].position - Vector2(70.0, 0.0)
+	var candidates := [anchor, anchor + Vector2(0.0, -68.0), anchor + Vector2(0.0, 68.0), anchor - Vector2(85.0, 0.0)]
+	for candidate: Vector2 in candidates:
+		candidate.x = clampf(candidate.x, 100.0, stage_limit - 60.0)
+		candidate.y = clampf(candidate.y, 475.0, 645.0)
+		var safe := true
+		for actor in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("enemies"):
+			if actor != fighter and is_instance_valid(actor) and candidate.distance_to(actor.position) < MIN_SAFE_SPAWN_DISTANCE:
+				safe = false
+				break
+		if safe:
+			return candidate
+	return Vector2(clampf(anchor.x, 100.0, stage_limit - 60.0), clampf(anchor.y, 475.0, 645.0))
+
+
+func _resolve_team_gameover() -> void:
+	if state != "playing" or not get_active_players().is_empty() or not continue_respawn_time.is_empty() or not downed_time_remaining.is_empty():
+		return
+	state = "gameover"
+	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+	_set_local_players_physics(false)
+	hud.set_mode("gameover")
 
 func _victory() -> void:
 	if state != "playing":

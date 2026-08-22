@@ -33,6 +33,7 @@ const SUITES := [
 	{"name": "hero_animation", "path": "res://tests/suites/hero_animation_test.gd"},
 	{"name": "local_player_architecture", "path": "res://tests/suites/local_player_architecture_test.gd"},
 	{"name": "coop_scaling", "path": "res://tests/suites/coop_scaling_test.gd"},
+	{"name": "coop_revive", "path": "res://tests/suites/coop_revive_test.gd"},
 ]
 
 

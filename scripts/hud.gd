@@ -142,6 +142,7 @@ func set_local_player_state(
 		"weapon_name": current_weapon_name,
 		"weapon_ammo": current_weapon_ammo,
 		"down": down,
+		"down_time": -1.0,
 	}
 	var existing_index := _local_player_state_index(slot_index)
 	if existing_index >= 0:
@@ -157,6 +158,15 @@ func set_local_player_state(
 		lives = remaining_lives
 		weapon_name = current_weapon_name
 		weapon_ammo = current_weapon_ammo
+	queue_redraw()
+
+
+func set_local_player_down_timer(slot_index: int, seconds: float) -> void:
+	var existing_index := _local_player_state_index(slot_index)
+	if existing_index < 0:
+		return
+	local_player_states[existing_index]["down"] = seconds >= 0.0 or is_equal_approx(seconds, -2.0)
+	local_player_states[existing_index]["down_time"] = seconds
 	queue_redraw()
 
 
@@ -351,6 +361,7 @@ func _draw_local_player_panels(danger_pulse: float) -> void:
 			"weapon_name": weapon_name,
 			"weapon_ammo": weapon_ammo,
 			"down": false,
+			"down_time": -1.0,
 		}, Rect2(22, 20, 430, 82), danger_pulse, true)
 		return
 	var panel_width := 250.0
@@ -383,7 +394,9 @@ func _draw_player_panel(state_data: Dictionary, panel: Rect2, danger_pulse: floa
 	draw_rect(Rect2(bar_x + 3, bar_y + 3, (bar_width - 6) * health_ratio, 12 if full_size else 7), health_color)
 	draw_string(font, panel.position + Vector2(panel.size.x - 48, panel.size.y - 17), "×%d" % int(state_data.lives), HORIZONTAL_ALIGNMENT_LEFT, -1, 15 if not full_size else 18, Color("#b7e8df"))
 	if down:
-		draw_string(font, panel.position + Vector2(panel.size.x - 74, 28), "DOWN", HORIZONTAL_ALIGNMENT_RIGHT, 62, 13, Color("#ff7568"))
+		var down_time: float = float(state_data.get("down_time", -1.0))
+		var down_label := "OUT" if is_equal_approx(down_time, -2.0) else ("DOWN %.1f" % down_time if down_time >= 0.0 else "DOWN")
+		draw_string(font, panel.position + Vector2(panel.size.x - 92, 28), down_label, HORIZONTAL_ALIGNMENT_RIGHT, 80, 13, Color("#ff7568"))
 	elif not String(state_data.weapon_name).is_empty() and int(state_data.weapon_ammo) > 0:
 		draw_string(font, panel.position + Vector2(panel.size.x - 82, 28), "%s %02d" % [state_data.weapon_name, int(state_data.weapon_ammo)], HORIZONTAL_ALIGNMENT_RIGHT, 70, 11, Color("#b7e8df"))
 

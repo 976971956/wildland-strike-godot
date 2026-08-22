@@ -241,6 +241,15 @@ func _apply_intent(intent) -> void:
 		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
 			_start_special()
 		return
+	if (
+		intent.attack_pressed
+		and z_height <= 5.0
+		and game.has_method("try_revive_teammate")
+		and game.try_revive_teammate(self)
+	):
+		run_controller.cancel()
+		velocity = Vector2.ZERO
+		return
 	if is_instance_valid(grabbed_enemy):
 		velocity = Vector2.ZERO
 		if intent.attack_pressed:
@@ -636,12 +645,12 @@ func lose_priority_clash() -> void:
 	queue_redraw()
 
 
-func revive(respawn_position: Vector2) -> void:
+func revive(respawn_position: Vector2, health_ratio := 1.0) -> void:
 	run_controller.cancel()
 	command_controller.cancel()
 	_release_grabbed_enemy()
 	_reset_combo()
-	health = max_health
+	health = clampi(roundi(max_health * health_ratio), 1, max_health)
 	is_defeated = false
 	invulnerable = 2.2
 	position = respawn_position

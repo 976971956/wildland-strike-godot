@@ -22,6 +22,12 @@ func _ready() -> void:
 		if "enemy_roster_preview=2" in query_string:
 			scenario = "full_enemy_roster_preview"
 			call_deferred("_start_full_enemy_roster_preview")
+		elif "stage8_preview=2" in query_string:
+			scenario = "stage_8_architect_calder_preview"
+			call_deferred("_start_stage_8_preview", true)
+		elif "stage8_preview=1" in query_string:
+			scenario = "stage_8_genesis_protocol_preview"
+			call_deferred("_start_stage_8_preview", false)
 		elif "stage7_preview=2" in query_string:
 			scenario = "stage_7_vault_sentinels_preview"
 			call_deferred("_start_stage_7_preview", true)
@@ -113,6 +119,12 @@ func _ready() -> void:
 		elif "campaign_flow_preview=2" in query_string:
 			scenario = "campaign_complete_preview"
 			call_deferred("_start_campaign_flow_preview", true)
+		elif "credits_preview=1" in query_string:
+			scenario = "campaign_credits_preview"
+			call_deferred("_start_campaign_epilogue_preview", true)
+		elif "ending_preview=1" in query_string:
+			scenario = "campaign_ending_preview"
+			call_deferred("_start_campaign_epilogue_preview", false)
 		elif "campaign_flow_preview=1" in query_string:
 			scenario = "campaign_map_preview"
 			call_deferred("_start_campaign_flow_preview", false)
@@ -893,6 +905,47 @@ func _start_stage_7_preview(show_boss: bool) -> void:
 	game.set_process(false)
 
 
+func _start_stage_8_preview(show_boss: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_advance_campaign_stage"):
+		scenario = "stage_8_preview_setup_failed"
+		return
+	for _stage in range(7):
+		game._advance_campaign_stage()
+	if game.active_stage_definition.stage_id != &"stage_8":
+		scenario = "stage_8_preview_setup_failed"
+		return
+	if show_boss:
+		game.player.position = Vector2(3515.0, 580.0)
+		game.camera.position.x = 3600.0
+		game.encounter_director._update_scene(game.player.position.x)
+		game.encounter_director.force_start_encounter(4)
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			if enemy.definition.enemy_id != &"architect_calder":
+				enemy.queue_free()
+				continue
+			enemy.set_physics_process(false)
+			enemy.facing = -1
+			enemy.invulnerable = 999.0
+			enemy.behavior_phase = enemy.BehaviorPhase.TELEGRAPH
+			enemy.behavior_timer = 999.0
+			enemy.queue_redraw()
+	else:
+		game.player.position = Vector2(2150.0, 585.0)
+		game.camera.position.x = 2100.0
+		game.encounter_director.completed = true
+		game.encounter_director._update_scene(game.player.position.x)
+	for hazard in get_tree().get_nodes_in_group("lab_hazards"):
+		hazard.set_physics_process(false)
+		hazard.lab_damage_active = false
+		hazard.lab_warning_active = true
+		hazard.queue_redraw()
+	game.player.set_physics_process(false)
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
+	game.set_process(false)
+
+
 func _start_scene_preview(scene_index: int) -> void:
 	var game := get_parent()
 	if (
@@ -938,13 +991,34 @@ func _start_campaign_flow_preview(complete: bool) -> void:
 	game.score = 68420
 	game.hud.set_score(game.score)
 	game.lives = 1
-	game.campaign_stage_index = 5 if complete else 4
+	game.campaign_stage_index = 7 if complete else 4
 	game.active_stage_definition = game.CAMPAIGN_STAGE_DEFINITIONS[game.campaign_stage_index]
-	game.completed_stage_count = 6 if complete else 5
+	game.completed_stage_count = 8 if complete else 5
 	if complete:
 		game._complete_first_half_campaign()
+		game._open_credits()
+		game._open_campaign_report()
 	else:
 		game._open_campaign_map(5)
+	game.set_process(false)
+	game.player.set_physics_process(false)
+
+
+func _start_campaign_epilogue_preview(show_credits: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_complete_first_half_campaign"):
+		scenario = "campaign_epilogue_preview_setup_failed"
+		return
+	game.score = 136500
+	game.hud.set_score(game.score)
+	game.lives = 2
+	game.campaign_stage_index = 7
+	game.active_stage_definition = game.CAMPAIGN_STAGE_DEFINITIONS[7]
+	game.completed_stage_count = 8
+	game.campaign_completion_bonus_applied = true
+	game._complete_first_half_campaign()
+	if show_credits:
+		game._open_credits()
 	game.set_process(false)
 	game.player.set_physics_process(false)
 

@@ -11,6 +11,7 @@ enum ObjectKind {
 	DISASTER_HAZARD,
 	JUNGLE_HAZARD,
 	VAULT_HAZARD,
+	LAB_HAZARD,
 }
 
 @export var object_id: StringName
@@ -52,5 +53,7 @@ func is_valid_object() -> bool:
 	if kind == ObjectKind.JUNGLE_HAZARD:
 		return false
 	if kind == ObjectKind.VAULT_HAZARD:
+		return false
+	if kind == ObjectKind.LAB_HAZARD:
 		return false
 	return false

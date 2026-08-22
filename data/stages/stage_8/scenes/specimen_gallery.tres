@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/encounters/specimen_containment.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/gallery_mutagen_west.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/gallery_mutagen_east.tres" id="4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/specimen_gallery.png" id="5"]
+[resource]
+script = ExtResource("1")
+scene_id = &"specimen_gallery"
+display_name = "SPECIMEN GALLERY"
+transition_subtitle = "CONTAINMENT IS FAILING"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"gene_forge_gallery"
+visual_theme = 22
+background_texture = ExtResource("5")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("4")])

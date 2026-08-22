@@ -15,6 +15,8 @@ enum SpecialKind {
 	TITAN_CALL,
 	BARRIER_PULSE,
 	SYNC_CROSSFIRE,
+	GENESIS_BARRAGE,
+	CORE_COLLAPSE,
 }
 
 @export var phase_id: StringName

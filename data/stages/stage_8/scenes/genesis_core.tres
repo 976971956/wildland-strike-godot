@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/encounters/genesis_threshold.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/encounters/architect_calder_showdown.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/core_surge_west.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/core_surge_east.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/genesis_core.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"genesis_core"
+display_name = "THE GENESIS CORE"
+transition_subtitle = "FINAL LOCKDOWN // NO RETURN"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"genesis_reactor"
+visual_theme = 23
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

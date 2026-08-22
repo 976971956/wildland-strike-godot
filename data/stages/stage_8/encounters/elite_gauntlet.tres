@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/elite_gauntlet.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"elite_gauntlet"
+trigger_x = 1050.0
+origin_x = 1140.0
+arena_left = 860.0
+arena_right = 1360.0
+unlock_right = 1400.0
+banner_title = "ELITE GAUNTLET"
+banner_subtitle = "FOUR PROTOCOLS // NO RETREAT"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

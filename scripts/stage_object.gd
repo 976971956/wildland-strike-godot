@@ -7,6 +7,7 @@ const IndustrialHazardDataScript = preload("res://core/stages/industrial_hazard_
 const DisasterHazardDataScript = preload("res://core/stages/disaster_hazard_data.gd")
 const JungleHazardDataScript = preload("res://core/stages/jungle_hazard_data.gd")
 const VaultHazardDataScript = preload("res://core/stages/vault_hazard_data.gd")
+const LabHazardDataScript = preload("res://core/stages/lab_hazard_data.gd")
 const MEDIUM_IMPACT = preload("res://data/impacts/medium.tres")
 
 var game: Node
@@ -39,6 +40,9 @@ var jungle_damage_active := false
 var vault_cycle_time := 0.0
 var vault_warning_active := false
 var vault_damage_active := false
+var lab_cycle_time := 0.0
+var lab_warning_active := false
+var lab_damage_active := false
 
 
 func setup(p_game: Node, p_definition: Resource) -> void:
@@ -69,6 +73,9 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
 			add_to_group("vault_hazards")
 			vault_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
+		elif definition.kind == EnvironmentObjectDataScript.ObjectKind.LAB_HAZARD:
+			add_to_group("lab_hazards")
+			lab_cycle_time = fmod(definition.cycle_offset, definition.cycle_duration)
 	add_to_group("stage_objects")
 	queue_redraw()
 
@@ -117,6 +124,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
 		_tick_vault_hazard(delta)
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.LAB_HAZARD:
+		_tick_lab_hazard(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -493,6 +504,41 @@ func _tick_vault_hazard(delta: float) -> void:
 			game.play_sfx(&"industrial_impact")
 
 
+func _tick_lab_hazard(delta: float) -> void:
+	for actor_id in hazard_actor_cooldowns.keys().duplicate():
+		var remaining := maxf(0.0, float(hazard_actor_cooldowns[actor_id]) - delta)
+		if remaining <= 0.0:
+			hazard_actor_cooldowns.erase(actor_id)
+		else:
+			hazard_actor_cooldowns[actor_id] = remaining
+	lab_cycle_time = fmod(lab_cycle_time + delta, definition.cycle_duration)
+	var active_start: float = definition.cycle_duration - definition.active_duration
+	lab_warning_active = lab_cycle_time >= active_start - definition.warning_duration and lab_cycle_time < active_start
+	lab_damage_active = lab_cycle_time >= active_start
+	if not lab_damage_active:
+		return
+	for actor in _industrial_targets():
+		if not _overlaps_actor(actor):
+			continue
+		if definition.hazard_kind == LabHazardDataScript.HazardKind.MUTAGEN_POOL:
+			actor.velocity *= definition.movement_scale
+		elif definition.hazard_kind == LabHazardDataScript.HazardKind.CORE_SURGE:
+			actor.position.x += definition.initial_direction * definition.move_speed * delta
+		if hazard_actor_cooldowns.has(actor.get_instance_id()):
+			continue
+		var knockback_direction: int = definition.initial_direction if definition.hazard_kind == LabHazardDataScript.HazardKind.CORE_SURGE else (1 if actor.position.x >= position.x else -1)
+		var horizontal_force := 330.0 if definition.hazard_kind == LabHazardDataScript.HazardKind.ARC_FIELD else (285.0 if definition.hazard_kind == LabHazardDataScript.HazardKind.CORE_SURGE else 170.0)
+		var vertical_force := -92.0 if definition.hazard_kind == LabHazardDataScript.HazardKind.CORE_SURGE else -48.0
+		var knockback := Vector2(knockback_direction * horizontal_force, vertical_force)
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, knockback, false, 0.07, true, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, knockback, true, false, 0.07, true)
+		hazard_actor_cooldowns[actor.get_instance_id()] = 0.82
+		if game.has_method("play_sfx"):
+			game.play_sfx(&"industrial_impact")
+
+
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
@@ -508,6 +554,8 @@ func _draw() -> void:
 		_draw_jungle_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD:
 		_draw_vault_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.LAB_HAZARD:
+		_draw_lab_hazard()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -724,6 +772,36 @@ func _draw_vault_hazard() -> void:
 				var rise := fmod(vault_cycle_time * (20.0 + index) + index * 17.0, maxf(definition.size.y, 1.0))
 				var center := Vector2(-half.x * 0.78 + index * half.x * 0.17 + sin(vault_cycle_time + index) * 7.0, half.y * 0.35 - rise)
 				draw_circle(center, 6.0 + index % 3 * 3.0, Color(0.62, 0.95, 1.0, 0.48 if vault_damage_active else 0.22))
+
+
+func _draw_lab_hazard() -> void:
+	var half: Vector2 = definition.size * 0.5
+	var pulse := 0.62 + sin(lab_cycle_time * 17.0) * 0.17
+	var cue_alpha := pulse if lab_warning_active else (0.82 if lab_damage_active else 0.18)
+	if definition.hazard_kind == LabHazardDataScript.HazardKind.ARC_FIELD:
+		draw_rect(Rect2(-half.x, -half.y, definition.size.x, definition.size.y), Color(0.42, 0.12, 0.72, cue_alpha * (0.28 if lab_damage_active else 0.08)))
+		for side in [-1.0, 1.0]:
+			draw_rect(Rect2(side * half.x - 10.0, -half.y - 16.0, 20.0, definition.size.y + 32.0), Color("#32303f"))
+			draw_circle(Vector2(side * half.x, -half.y * 0.55), 8.0, Color(0.42, 1.0, 0.72, cue_alpha))
+		for arc_index in range(4):
+			var y: float = -half.y * 0.72 + arc_index * definition.size.y * 0.24
+			var points := PackedVector2Array([Vector2(-half.x, y), Vector2(-half.x * 0.35, y - 12.0), Vector2(0.0, y + 10.0), Vector2(half.x * 0.38, y - 8.0), Vector2(half.x, y)])
+			draw_polyline(points, Color(0.55, 0.98, 0.88, cue_alpha), 5.0 if lab_damage_active else 3.0)
+	elif definition.hazard_kind == LabHazardDataScript.HazardKind.MUTAGEN_POOL:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.5, Color(0.22, 0.86, 0.48, cue_alpha * 0.22))
+		draw_arc(Vector2.ZERO, half.x * 0.92, 0.0, TAU, 30, Color(0.58, 1.0, 0.42, cue_alpha), 4.0)
+		for index in range(9):
+			var bubble_x := -half.x * 0.76 + index * half.x * 0.19
+			var bubble_y := sin(lab_cycle_time * (2.0 + index * 0.1) + index) * half.y * 0.24
+			draw_circle(Vector2(bubble_x, bubble_y), 5.0 + index % 3 * 2.0, Color(0.72, 1.0, 0.48, 0.55 if lab_damage_active else 0.24))
+	else:
+		_draw_oval(Vector2.ZERO, half.x, half.y * 0.54, Color(0.74, 0.12, 0.66, cue_alpha * 0.18))
+		for ring_index in range(3):
+			var ring_scale := 0.38 + ring_index * 0.25
+			draw_arc(Vector2.ZERO, half.x * ring_scale, 0.0, TAU, 32, Color(0.32 if ring_index % 2 == 0 else 1.0, 0.96 if ring_index % 2 == 0 else 0.24, 0.68, cue_alpha), 4.0)
+		for side in [-1.0, 1.0]:
+			var arrow_x: float = side * half.x * 0.7
+			draw_polyline(PackedVector2Array([Vector2(arrow_x - side * 15.0, -12.0), Vector2(arrow_x, 0.0), Vector2(arrow_x - side * 15.0, 12.0)]), Color(1.0, 0.68, 0.24, cue_alpha), 4.0)
 
 
 func _draw_hazard() -> void:

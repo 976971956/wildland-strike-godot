@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/calder_gene_lash.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/architect_calder_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/calder_genesis_barrage.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/calder_apex_strike.tres" id="6"]
+[ext_resource type="Resource" path="res://data/attacks/calder_core_collapse.tres" id="7"]
+
+[sub_resource type="Resource" id="PhaseArchitect"]
+script = ExtResource("4")
+phase_id = &"architect"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 13
+speed_scale = 1.0
+telegraph_duration = 0.58
+special_cooldown = 1.28
+special_min_distance = 90.0
+special_max_distance = 620.0
+recovery_duration = 0.62
+dialogue_speaker = "ARCHITECT SERA CALDER"
+dialogue_line = "You crossed seven locks to witness a new world."
+sprite_row_override = 0
+tint = Color(0.95, 1, 0.97, 1)
+
+[sub_resource type="Resource" id="PhaseApex"]
+script = ExtResource("4")
+phase_id = &"apex_mantle"
+health_threshold_ratio = 0.62
+attack = ExtResource("6")
+special_attack = ExtResource("6")
+special_kind = 1
+speed_scale = 1.22
+telegraph_duration = 0.42
+special_cooldown = 0.94
+special_min_distance = 115.0
+special_max_distance = 700.0
+burst_speed_scale = 2.45
+burst_duration = 0.52
+recovery_duration = 0.48
+dialogue_speaker = "ARCHITECT SERA CALDER"
+dialogue_line = "Then survive the shape it demands."
+reinforcement_enemy_id = &"elite_enforcer"
+reinforcement_count = 1
+sprite_row_override = 1
+tint = Color(0.88, 1, 0.9, 1)
+
+[sub_resource type="Resource" id="PhaseCore"]
+script = ExtResource("4")
+phase_id = &"genesis_core"
+health_threshold_ratio = 0.25
+attack = ExtResource("7")
+special_attack = ExtResource("7")
+special_kind = 14
+speed_scale = 1.36
+telegraph_duration = 0.34
+special_cooldown = 0.72
+special_min_distance = 70.0
+special_max_distance = 760.0
+recovery_duration = 0.4
+dialogue_speaker = "GENESIS CORE"
+dialogue_line = "No vessel. No limit. No retreat."
+reinforcement_enemy_id = &"raptor"
+reinforcement_count = 2
+sprite_row_override = 2
+tint = Color(1, 0.9, 1, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"architect_calder"
+is_boss = true
+rank = 2
+max_health = 720
+speed = 112.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 8000
+outgoing_damage_scale = 1.22
+stun_duration_scale = 0.42
+knockdown_armor = 4
+behavior_kind = 5
+attack_distance = 88.0
+lane_tolerance = 66.0
+vertical_approach_scale = 0.82
+boss_phases = Array[Resource]([SubResource("PhaseArchitect"), SubResource("PhaseApex"), SubResource("PhaseCore")])
+sprite_sheet = ExtResource("3")
+visual_kind = 4
+sprite_columns = 8
+sprite_rows = 3
+target_size = Vector2(286, 286)
+target_bottom_offset = 18.0
+actor_scale = Vector2(1.2, 1.2)
+shadow_half_extents = Vector2(66, 15)
+show_health_bar = true

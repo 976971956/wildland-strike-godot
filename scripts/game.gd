@@ -12,6 +12,7 @@ const RoadMineScript = preload("res://scripts/road_mine.gd")
 const FurnaceWaveScript = preload("res://scripts/furnace_wave.gd")
 const SeismicFractureScript = preload("res://scripts/seismic_fracture.gd")
 const VaultEnergyLaneScript = preload("res://scripts/vault_energy_lane.gd")
+const GenesisCollapseZoneScript = preload("res://scripts/genesis_collapse_zone.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
@@ -24,7 +25,8 @@ const STAGE_4_DEFINITION = preload("res://data/stages/stage_4/stage_4.tres")
 const STAGE_5_DEFINITION = preload("res://data/stages/stage_5/stage_5.tres")
 const STAGE_6_DEFINITION = preload("res://data/stages/stage_6/stage_6.tres")
 const STAGE_7_DEFINITION = preload("res://data/stages/stage_7/stage_7.tres")
-const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION, STAGE_6_DEFINITION, STAGE_7_DEFINITION]
+const STAGE_8_DEFINITION = preload("res://data/stages/stage_8/stage_8.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION, STAGE_3_DEFINITION, STAGE_4_DEFINITION, STAGE_5_DEFINITION, STAGE_6_DEFINITION, STAGE_7_DEFINITION, STAGE_8_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -204,6 +206,14 @@ func _process(delta: float) -> void:
 	if state == "campaign_complete":
 		if Input.is_action_just_pressed("start"):
 			get_tree().reload_current_scene()
+		return
+	if state == "ending":
+		if Input.is_action_just_pressed("start"):
+			_open_credits()
+		return
+	if state == "credits":
+		if Input.is_action_just_pressed("start"):
+			_open_campaign_report()
 		return
 	if state == "gameover":
 		if Input.is_action_just_pressed("start"):
@@ -798,6 +808,47 @@ func spawn_vault_energy_lanes(source_actor: Node, damage: int, crossfire := fals
 	return lanes
 
 
+func spawn_genesis_barrage(source_actor: Node, damage: int) -> Array[Node]:
+	var lanes: Array[Node] = []
+	var lane_positions := [
+		Vector2(source_actor.position.x - 54.0, 492.0),
+		Vector2(source_actor.position.x + 54.0, 540.0),
+		Vector2(source_actor.position.x - 54.0, 588.0),
+		Vector2(source_actor.position.x + 54.0, 636.0),
+	]
+	for index in range(lane_positions.size()):
+		var lane := VaultEnergyLaneScript.new()
+		actors.add_child(lane)
+		var color := Color(0.28, 1.0, 0.62, 1.0) if index % 2 == 0 else Color(1.0, 0.2, 0.72, 1.0)
+		lane.setup(self, source_actor, lane_positions[index], damage, color)
+		lanes.append(lane)
+	play_sfx(&"boss_phase")
+	return lanes
+
+
+func spawn_genesis_collapse(source_actor: Node, damage: int) -> Array[Node]:
+	var zones: Array[Node] = []
+	var positions: Array[Vector2] = []
+	for fighter in get_active_players():
+		positions.append(Vector2(fighter.position.x, clampf(fighter.position.y, 500.0, 630.0)))
+	for offset in [-230.0, 230.0]:
+		positions.append(Vector2(clampf(source_actor.position.x + offset, 3460.0, 4070.0), 570.0))
+	for zone_position in positions:
+		var duplicate := false
+		for existing in zones:
+			if existing.position.distance_to(zone_position) < 92.0:
+				duplicate = true
+				break
+		if duplicate:
+			continue
+		var zone := GenesisCollapseZoneScript.new()
+		actors.add_child(zone)
+		zone.setup(self, source_actor, zone_position, damage)
+		zones.append(zone)
+	play_sfx(&"boss_phase")
+	return zones
+
+
 func _create_stage_objects() -> void:
 	for scene in active_stage_definition.scenes:
 		for object_definition in scene.environment_objects:
@@ -1146,11 +1197,27 @@ func _complete_first_half_campaign() -> void:
 	if not campaign_completion_bonus_applied:
 		campaign_completion_bonus_applied = true
 		add_score(campaign_completion_bonus)
-	state = "campaign_complete"
+	state = "ending"
 	_set_local_players_physics(false)
 	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
-	hud.set_campaign_complete(score, campaign_completion_bonus, lives)
+	hud.set_ending(score, lives)
 	play_sfx(&"victory")
+
+
+func _open_credits() -> void:
+	if state != "ending":
+		return
+	state = "credits"
+	hud.set_credits(score)
+	play_sfx(&"ui_confirm")
+
+
+func _open_campaign_report() -> void:
+	if state != "credits":
+		return
+	state = "campaign_complete"
+	hud.set_campaign_complete(score, campaign_completion_bonus, lives)
+	play_sfx(&"ui_confirm")
 
 
 func _tick_victory(delta: float) -> void:

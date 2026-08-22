@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/scenes/gene_forge_causeway.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/scenes/specimen_gallery.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/scenes/genesis_core.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_8"
+stage_number = 8
+display_name = "THE GENESIS PROTOCOL"
+route_subtitle = "FINAL GENE-FORGE ASSAULT"
+clear_message = "THE WILDLANDS ARE FREE"
+map_position = Vector2(840, 520)
+time_limit_seconds = 330.0
+enemy_health_scale = 1.62
+enemy_damage_scale = 1.3
+clear_bonus = 20000
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

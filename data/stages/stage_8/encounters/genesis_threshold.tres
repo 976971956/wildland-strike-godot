@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/genesis_threshold.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"genesis_threshold"
+trigger_x = 2960.0
+origin_x = 3070.0
+arena_left = 2840.0
+arena_right = 3400.0
+unlock_right = 3460.0
+banner_title = "GENESIS THRESHOLD"
+banner_subtitle = "BREAK THE LAST DEFENSE LINE"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

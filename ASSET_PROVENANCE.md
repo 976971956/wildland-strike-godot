@@ -564,3 +564,78 @@ Constraints: genuine transparent background mandatory; exactly 8 cells per row a
 The first deterministic pass trimmed each row globally and then sliced it evenly; Web inspection rejected the result because pose widths were not mathematically uniform and neighboring fragments crossed cell boundaries. The accepted builder instead divides the source into sixteen fixed cells, retains only the largest connected opaque figure inside each cell, and uniformly centers it on a transparent 320×320 runtime cell. This intentionally removes detached distant effect fragments while preserving every complete character silhouette.
 
 Verification: all three Stage 7 scene resources validate and reference unique original backgrounds. The accepted paired-boss atlas retains alpha and divides into sixteen exact cells. Exported 1280×720 environment and paired-boss fixtures were inspected for active-lane readability, silhouette scale, crop loss, hazard occlusion, combined-HUD correctness, synchronized telegraphs, and dual-boss composition. A clipped Nyx placement and an overlapping cryogenic cue were rejected and corrected. Accepted fixtures average 120.1547 and 120.0881 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.
+
+## 2026-08-22 — Genesis Protocol environments and Architect Calder
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_architect_calder_assets.gd` per-row connected-component isolation, nearest-neighbor normalization, deterministic black-key cleanup, and exact transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, or traced animation frame was supplied. Every prompt used only the original Wildland Strike setting and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- `assets/backgrounds/gene_forge_causeway.png`: 1672×941 RGB; SHA-256 `75718fc453c4b8bceb36a1c8ae6d47b56e82d57576479f830e23e5f0882e5d6f`.
+- `assets/backgrounds/specimen_gallery.png`: 1672×941 RGB; SHA-256 `b9ec8fe70bfb1f43a7a5b0dea92fc7075c48f504da5470137fa978bf69665efc`.
+- `assets/backgrounds/genesis_core.png`: 1672×941 RGB; SHA-256 `f6e7b1f065f8401ee3e0726aa183f551c594bdc51d937b9e4ceae4ddcea246c9`.
+- Archived initial boss source: `assets/sprites/architect_calder_source.png`; 1536×1024 RGBA; SHA-256 `e747a88a51efbe4fa08a15d56deb720b02ed668ad8c773a0c7ec7fea45b08290`.
+- Archived isolation source: `assets/sprites/architect_calder_edit_source.png`; 1536×1024 RGB; SHA-256 `5ef8c220dd727c11576cf48546f6dd30078575bafb3b6afd714e11d013fb9944`.
+- `assets/sprites/architect_calder_sheet.png`: 2560×960 RGBA, 8×3; SHA-256 `5da1b9dd5eb2ff1f16445d05976553fd31f032782c7a4ff00c0034caa03fef0d`.
+
+The two archived sources are excluded from Web and iOS runtime exports.
+
+Gene-Forge Causeway generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 8, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the exterior access causeway of a sealed subterranean gene-forge laboratory beneath an ancient mountain, armored quarantine gates, decontamination arches, thick specimen transport rails, sealed hazard containers and restrained emergency drones only behind reinforced barriers; the path leads horizontally toward the final facility
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, completely original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed dark steel gameplay lane occupying lower 40%, three readable depth layers, horizon high; fighters stand between y=455 and 665; gates, rails, containers and machinery remain behind guardrails
+Lighting/mood: cold cyan quarantine light, muted green glass, amber floor lamps, restrained red lockdown warnings, tense final-approach atmosphere with strong silhouette readability
+Constraints: environment only; no people, no fighters, no creatures, no visible animals, no active vehicles, no text, no UI, no logos, no watermark, no copyrighted imagery, no central vanishing-point corridor, no glass or machinery crossing the active combat lane, no foreground obstruction
+```
+
+Specimen Gallery generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production background for Wildland Strike Stage 8, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the interior of a colossal original gene-forge specimen gallery during containment failure, rows of tall reinforced synthesis cylinders holding only abstract plant tissue, mineral gel and shadowy non-recognizable organic masses, robotic surgical gantries folded away behind glass, ruptured coolant pipes, armored command bridges and sealed elevator doors
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, grounded high-detail premium late-1990s belt-scrolling brawler environment, completely original clean-room identity
+Composition/framing: wide 16:9 strict side view, horizontal side-scrolling layout, broad unobstructed sterile metal gameplay lane occupying lower 40%, three readable depth layers, horizon high; fighters stand between y=455 and 665; all cylinders, glass, gantries and machinery remain behind thick rails
+Lighting/mood: eerie jade and violet laboratory glow, cold white surgical lights, amber floor safety lamps, restrained red containment alarms, escalating final-stage tension with clear fighter silhouettes
+Constraints: environment only; no people, no recognizable animals, no dinosaurs, no characters, no text, no UI, no logos, no watermark, no copyrighted imagery, no central perspective corridor, no broken glass or machinery across the active combat lane, no foreground obstruction
+```
+
+Genesis Core generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original production final-boss arena background for Wildland Strike Stage 8, a serious 1990s 2.5D arcade beat-em-up
+Primary request: the Genesis Core, an immense symmetrical subterranean reactor chamber where an original suspended crystalline bio-reactor is locked inside three concentric containment rings, paired energy pylons, armored gene-forge conduits, collapsing observation decks and a sealed escape lift all kept behind reinforced rails
+Style/medium: crisp hand-authored 16-bit/32-bit arcade pixel art, premium grounded late-1990s belt-scrolling brawler environment, completely original clean-room identity and readable metal/crystal/energy materials
+Composition/framing: wide 16:9 strict side view, horizontal symmetrical final-arena composition, broad unobstructed black-steel gameplay platform occupying lower 40%, three readable depth layers; final boss and fighters stand between y=455 and 665; reactor, rings, pylons and machinery remain behind or above the platform
+Lighting/mood: opposing toxic jade and hot magenta reactor light, deep indigo shadows, white containment arcs and restrained amber escape lamps, apocalyptic but highly readable final confrontation
+Constraints: environment only; no people, no boss, no characters, no creatures, no text, no UI, no logos, no watermark, no copyrighted imagery, no energy beam crossing the active floor, no central perspective corridor, no foreground obstruction
+```
+
+Architect Calder generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original transparent three-form final-boss sprite action atlas for Wildland Strike Stage 8
+Primary request: exactly THREE ROWS of EIGHT isolated equal-width cells showing three successive forms of the same completely original final boss, ARCHITECT SERA CALDER, all facing LEFT. ROW 1: a tall severe older female gene-forge director in asymmetrical white, graphite and jade command armor, cropped silver hair, long translucent magenta gene-lash on one forearm, compact crystalline reactor rig on her back. ROW 2: her transformed APEX MANTLE form, a massive upright original bio-armored chimera with four powerful arms, obsidian and bone-white interlocking plates, jade luminous seams, magenta reactor rig fused into the shoulders, no resemblance to a real dinosaur or existing franchise creature. ROW 3: her exposed GENESIS CORE form, a lower hovering original crystalline organism with a central masked face, six short armored tendrils close to the body, split jade/magenta energy shell and recognizable remnants of the same reactor rig.
+Pose order in every row: 1 combat idle, 2 locomotion, 3 primary strike, 4 special telegraph, 5 energy attack, 6 charging heavy attack, 7 hurt stagger, 8 defeated collapse
+Style/medium: serious crisp hand-authored 16-bit/32-bit arcade beat-em-up pixel art, strong distinct silhouettes, detailed premium late-1990s sprite rendering, original clean-room designs
+Composition/framing: very wide three-row landscape atlas; exactly one complete full-body form centered per cell; consistent scale, foot or hover baseline, orientation, lighting, identity and costume within each row; generous genuinely transparent gutters; all limbs, lash, tendrils and close effects remain inside their own cell
+Constraints: genuine transparent background mandatory; exactly 8 cells per row and exactly 3 rows; no scenery, floor, labels, text, UI, logos, watermark, copyrighted designs, recognizable franchise creatures, vehicles, extra characters, detached distant effects, shadows crossing cells, cropped anatomy
+```
+
+The first background-removal edit preserved the character but baked a checkerboard pattern instead of genuine transparency. A second isolation edit preserved the three forms and rescaled all poses onto pure black, using this prompt:
+
+```text
+Production isolation edit of this exact atlas. Preserve the same three forms, character identity, costumes, colors, pose order and left-facing orientation, but SCALE EVERY POSE DOWN to about 78 percent and REPOSITION it to the exact center of a strict mathematical 8-column by 3-row grid. There must be at least 28 pixels of completely empty separation at every cell boundary; no limb, lash, crystal, tendril, energy shard or effect may cross or touch a cell boundary. Keep exactly one complete pose per cell, all anatomy visible. Replace the checkerboard with one uniform pure opaque black #000000 background so it can be keyed deterministically. No gradient, no checkerboard, no scenery, floor, shadows, grid lines, labels, text, UI, logos, watermark or extra characters. Output the complete 8x3 atlas, not a crop.
+```
+
+Fixed-cell and whole-row slicing were rejected because irregular pose spacing caused clipping or merged neighboring components. The accepted builder keys only exact/near-exact black and bright edge-connected checker remnants, finds the eight largest connected components within each authored row, sorts them horizontally, then uniformly centers each complete figure inside an exact transparent 320×320 cell. This retains complete forms and deterministic gutters without distributing the archived generation canvases.
+
+Verification: all three Stage 8 scene resources validate and reference unique original backgrounds. The accepted final-boss atlas retains alpha and divides into twenty-four exact cells. Exported 1280×720 environment and boss fixtures were inspected for active-lane readability, silhouette scale, crop loss, hazard occlusion, phase identity, warning/impact clarity, ending hierarchy, and credits readability. Accepted environment and boss fixtures both average 119.9968 FPS over 300 frames, with zero frames above 20 ms or 33 ms and no browser warnings or errors.

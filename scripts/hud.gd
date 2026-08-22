@@ -293,6 +293,19 @@ func set_campaign_complete(final_score: int, completion_bonus: int, current_live
 	mode = "campaign_complete"
 	queue_redraw()
 
+
+func set_ending(final_score: int, current_lives: int) -> void:
+	campaign_display_score = maxi(final_score, 0)
+	campaign_display_lives = current_lives
+	mode = "ending"
+	queue_redraw()
+
+
+func set_credits(final_score: int) -> void:
+	campaign_display_score = maxi(final_score, 0)
+	mode = "credits"
+	queue_redraw()
+
 func _draw() -> void:
 	var ratio := clampf(float(health)/maxf(max_health,1),0.0,1.0)
 	var danger_pulse := 0.72 + sin(Time.get_ticks_msec() * 0.012) * 0.28
@@ -391,12 +404,45 @@ func _draw() -> void:
 		if victory_phase == &"complete":
 			var victory_hint := "TAP / ENTER FOR ROUTE MAP" if victory_has_next else "TAP / ENTER FOR CAMPAIGN REPORT"
 			draw_string(font, Vector2(318, 538), victory_hint, HORIZONTAL_ALIGNMENT_CENTER, 644, 20, Color("#d6dfdb"))
+	elif mode == "ending":
+		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.006, 0.012, 0.025, 0.96))
+		for band in range(9):
+			var band_y := 110.0 + band * 64.0
+			draw_line(Vector2(0, band_y), Vector2(size.x, band_y - 86.0), Color(0.12, 0.42, 0.38, 0.12), 2.0)
+		draw_circle(Vector2(640, 232), 112.0, Color(0.16, 0.76, 0.54, 0.1))
+		draw_arc(Vector2(640, 232), 112.0, 0.0, TAU, 48, Color(0.38, 0.92, 0.7, 0.5), 5.0)
+		draw_arc(Vector2(640, 232), 78.0, 0.0, TAU, 48, Color(1.0, 0.26, 0.7, 0.44), 4.0)
+		draw_string(font, Vector2(0, 113), "THE GENESIS CORE IS SILENT", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
+		draw_string(font, Vector2(220, 385), "THE LOCKDOWN BREAKS. THE CAPTIVE WILDLANDS ARE FREE.", HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#c8e8df"))
+		draw_string(font, Vector2(220, 430), "ABOVE THE MOUNTAIN, THE FIRST CLEAN DAWN RETURNS.", HORIZONTAL_ALIGNMENT_CENTER, 840, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(220, 500), "OPERATIVES RETURNED  %d     FINAL SCORE  %08d" % [maxi(campaign_display_lives, 0), campaign_display_score], HORIZONTAL_ALIGNMENT_CENTER, 840, 20, Color.WHITE)
+		draw_string(font, Vector2(0, 636), "TAP / ENTER FOR CREDITS", HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color("#f2c756"))
+	elif mode == "credits":
+		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.98))
+		draw_rect(Rect2(302, 56, 676, 604), Color(0.02, 0.034, 0.05, 0.96))
+		draw_rect(Rect2(302, 56, 676, 6), Color("#f2c756"))
+		draw_string(font, Vector2(302, 122), "WILDLAND STRIKE", HORIZONTAL_ALIGNMENT_CENTER, 676, 42, Color("#f2c756"))
+		draw_string(font, Vector2(302, 154), "AN ORIGINAL CLEAN-ROOM ARCADE CAMPAIGN", HORIZONTAL_ALIGNMENT_CENTER, 676, 17, Color("#9fc9bd"))
+		var credit_lines := [
+			["GAME DESIGN & DIRECTION", "WILDLAND STRIKE TEAM"],
+			["ENGINE & TOOLS", "GODOT ENGINE"],
+			["ORIGINAL ART & AUDIO", "CLEAN-ROOM PRODUCTION"],
+			["COMBAT / CAMPAIGN / MOBILE", "PROJECT CONTRIBUTORS"],
+			["QUALITY ASSURANCE", "DETERMINISTIC + WEB + iOS"],
+		]
+		for index in range(credit_lines.size()):
+			var y := 228.0 + index * 70.0
+			draw_string(font, Vector2(340, y), credit_lines[index][0], HORIZONTAL_ALIGNMENT_LEFT, 285, 16, Color("#a7d9cc"))
+			draw_string(font, Vector2(645, y), credit_lines[index][1], HORIZONTAL_ALIGNMENT_RIGHT, 295, 18, Color.WHITE)
+		draw_line(Vector2(360, 575), Vector2(920, 575), Color("#f2c756"), 2.0)
+		draw_string(font, Vector2(302, 612), "THANK YOU FOR PLAYING  //  %08d" % campaign_display_score, HORIZONTAL_ALIGNMENT_CENTER, 676, 20, Color("#f2c756"))
+		draw_string(font, Vector2(0, 694), "TAP / ENTER FOR FINAL REPORT", HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color("#d6dfdb"))
 	elif mode == "campaign_complete":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.92))
 		draw_rect(Rect2(280, 112, 720, 488), Color(0.025, 0.04, 0.055, 0.98))
 		draw_rect(Rect2(280, 112, 720, 7), Color("#f2c756"))
-		draw_string(font, Vector2(280, 202), "CAMPAIGN SECTOR SECURED", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
-		draw_string(font, Vector2(280, 245), "%d-STAGE CAMPAIGN BUILD COMPLETE" % maxi(campaign_stage_nodes.size(), campaign_completed_count), HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
+		draw_string(font, Vector2(280, 202), "CAMPAIGN COMPLETE", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
+		draw_string(font, Vector2(280, 245), "%d-STAGE WILDLAND FRONT SECURED" % maxi(campaign_stage_nodes.size(), campaign_completed_count), HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
 		draw_string(font, Vector2(355, 335), "FRONT COMPLETION BONUS", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
 		draw_string(font, Vector2(740, 335), "%08d" % campaign_final_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
 		draw_string(font, Vector2(355, 395), "REMAINING CONTINUES", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))

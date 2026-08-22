@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="LabHazardData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/stages/lab_hazard_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+object_id = &"causeway_arc_west"
+kind = 9
+position = Vector2(520, 570)
+size = Vector2(220, 132)
+contact_damage = 13
+color = Color(0.35, 0.95, 0.75, 1)
+hazard_kind = 0
+cycle_duration = 3.8
+warning_duration = 0.75
+active_duration = 0.65
+cycle_offset = 0.0

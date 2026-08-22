@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/specimen_containment.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"specimen_containment"
+trigger_x = 1750.0
+origin_x = 1900.0
+arena_left = 1540.0
+arena_right = 2480.0
+unlock_right = 2580.0
+banner_title = "SPECIMEN CONTAINMENT"
+banner_subtitle = "CLEAR THE GENE-FORGE GALLERY"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

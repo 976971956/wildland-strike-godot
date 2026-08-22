@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/encounters/quarantine_breach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/encounters/elite_gauntlet.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/causeway_arc_west.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/objects/causeway_arc_east.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/gene_forge_causeway.png" id="6"]
+[resource]
+script = ExtResource("1")
+scene_id = &"gene_forge_causeway"
+display_name = "GENE-FORGE CAUSEWAY"
+transition_subtitle = "THE QUARANTINE GATES ARE CLOSING"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"gene_forge_access"
+visual_theme = 21
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

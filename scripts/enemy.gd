@@ -38,6 +38,7 @@ const ENEMY_DEFINITIONS := {
 	"titan_warden": preload("res://data/enemies/titan_warden.tres"),
 	"vault_sentinel_orin": preload("res://data/enemies/vault_sentinel_orin.tres"),
 	"vault_sentinel_nyx": preload("res://data/enemies/vault_sentinel_nyx.tres"),
+	"architect_calder": preload("res://data/enemies/architect_calder.tres"),
 }
 
 enum BehaviorPhase {
@@ -688,6 +689,20 @@ func _execute_boss_special() -> void:
 		_record_behavior_event(&"boss_sync_crossfire")
 		_begin_recovery()
 		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.GENESIS_BARRAGE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_genesis_barrage(self, current_attack.damage)
+		_record_behavior_event(&"boss_genesis_barrage")
+		_begin_recovery()
+		return
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.CORE_COLLAPSE:
+		boss_special_pose_column = 4
+		boss_special_pose_timer = current_boss_phase.recovery_duration
+		game.spawn_genesis_collapse(self, current_attack.damage)
+		_record_behavior_event(&"boss_core_collapse")
+		_begin_recovery()
+		return
 	_start_attack()
 	_record_behavior_event(&"boss_slam")
 	_begin_recovery()
@@ -1238,7 +1253,20 @@ func _draw_behavior_cue() -> void:
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.RANGED:
 		draw_line(Vector2(facing * 18.0, -48.0), Vector2(facing * 150.0, -48.0), cue_color, 3.0)
 	elif definition.behavior_kind == EnemyDefinitionScript.BehaviorKind.BOSS:
-		if String(definition.enemy_id).begins_with("vault_sentinel"):
+		if definition.enemy_id == &"architect_calder":
+			var genesis_color := Color(0.28, 1.0, 0.64, pulse) if boss_phase_index != 2 else Color(1.0, 0.2, 0.72, pulse)
+			if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.CORE_COLLAPSE:
+				for ring_index in range(3):
+					draw_arc(Vector2.ZERO, 48.0 + ring_index * 28.0, 0.0, TAU, 32, genesis_color, 5.0)
+			elif current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.RUSH:
+				draw_line(Vector2(facing * 48.0, 2.0), Vector2(facing * 230.0, 2.0), genesis_color, 6.0)
+				for index in range(4):
+					var rush_x := facing * (92.0 + index * 38.0)
+					draw_polyline(PackedVector2Array([Vector2(rush_x - facing * 14.0, -15.0), Vector2(rush_x, 2.0), Vector2(rush_x - facing * 14.0, 19.0)]), genesis_color, 4.0)
+			else:
+				for lane_offset in [-54.0, -18.0, 18.0, 54.0]:
+					draw_line(Vector2(facing * 48.0, lane_offset), Vector2(facing * 230.0, lane_offset), genesis_color, 4.0)
+		elif String(definition.enemy_id).begins_with("vault_sentinel"):
 			var energy_color := Color(1.0, 0.58, 0.12, pulse) if "nyx" in String(definition.enemy_id) else Color(0.28, 0.92, 1.0, pulse)
 			for lane_offset in [-42.0, 0.0, 42.0]:
 				draw_line(Vector2(facing * 46.0, lane_offset), Vector2(facing * 225.0, lane_offset), energy_color, 4.0)
@@ -1304,6 +1332,12 @@ func _draw_creature_state_cue() -> void:
 
 
 func _draw_boss_overlay() -> void:
+	if definition.enemy_id == &"architect_calder":
+		var genesis_alpha := 0.32 + sin(Time.get_ticks_msec() * 0.021) * 0.12
+		for ring_index in range(boss_phase_index + 1):
+			var color := Color(0.22, 0.98, 0.62, genesis_alpha) if ring_index % 2 == 0 else Color(1.0, 0.18, 0.7, genesis_alpha)
+			draw_arc(Vector2(0.0, -72.0), 48.0 + ring_index * 18.0, -PI, 0.0, 26, color, 5.0)
+		return
 	if String(definition.enemy_id).begins_with("vault_sentinel"):
 		var vault_alpha := 0.3 + sin(Time.get_ticks_msec() * 0.02) * 0.12
 		var vault_color := Color(1.0, 0.52, 0.1, vault_alpha) if "nyx" in String(definition.enemy_id) else Color(0.2, 0.9, 1.0, vault_alpha)

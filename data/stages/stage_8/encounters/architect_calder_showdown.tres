@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/architect_calder_boss.tres" id="2"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"architect_calder_showdown"
+trigger_x = 3560.0
+origin_x = 3690.0
+arena_left = 3420.0
+arena_right = 4120.0
+unlock_right = 4200.0
+banner_title = "ARCHITECT SERA CALDER"
+banner_subtitle = "END THE GENESIS PROTOCOL"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2")])

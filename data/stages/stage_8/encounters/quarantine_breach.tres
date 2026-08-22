@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=4 format=3]
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/causeway_opening.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_8/waves/causeway_reinforcement.tres" id="3"]
+[resource]
+script = ExtResource("1")
+encounter_id = &"quarantine_breach"
+trigger_x = 340.0
+origin_x = 500.0
+arena_left = 180.0
+arena_right = 1180.0
+unlock_right = 1260.0
+banner_title = "QUARANTINE BREACH"
+banner_subtitle = "THE FINAL FACILITY IS SEALED"
+reward_id = &"score_intel"
+waves = Array[Resource]([ExtResource("2"), ExtResource("3")])

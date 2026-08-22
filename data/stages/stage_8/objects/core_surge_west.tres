@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="LabHazardData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/stages/lab_hazard_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+object_id = &"core_surge_west"
+kind = 9
+position = Vector2(3030, 575)
+size = Vector2(190, 132)
+contact_damage = 15
+move_speed = 112.0
+initial_direction = 1
+color = Color(0.28, 1, 0.62, 1)
+hazard_kind = 2
+cycle_duration = 3.5
+warning_duration = 0.7
+active_duration = 0.65
+cycle_offset = 0.4

@@ -77,6 +77,12 @@ func _draw() -> void:
 				_draw_cryogenic_vault_hall(scene)
 			20:
 				_draw_twin_core_vault(scene)
+			21:
+				_draw_gene_forge_causeway(scene)
+			22:
+				_draw_specimen_gallery(scene)
+			23:
+				_draw_genesis_core(scene)
 
 
 func _draw_ruins(scene: Resource) -> void:
@@ -301,6 +307,37 @@ func _draw_twin_core_vault(scene: Resource) -> void:
 	for index in range(7):
 		var alert := (sin(animation_time * 6.8 + index) + 1.0) * 0.5
 		draw_circle(Vector2(scene.start_x + 95.0 + index * 202.0, 422.0), 4.0 + alert * 2.0, Color(1.0, 0.14, 0.05, 0.24 + alert * 0.4))
+
+
+func _draw_gene_forge_causeway(scene: Resource) -> void:
+	for index in range(7):
+		var alarm := (sin(animation_time * 6.4 + index * 0.82) + 1.0) * 0.5
+		draw_circle(Vector2(scene.start_x + 112.0 + index * 204.0, 414.0), 4.0 + alarm * 2.0, Color(1.0, 0.16, 0.06, 0.22 + alarm * 0.42))
+	for index in range(8):
+		var sweep := fmod(animation_time * 62.0 + index * 161.0, scene.end_x - scene.start_x)
+		draw_line(Vector2(scene.start_x + sweep, 458.0), Vector2(scene.start_x + sweep + 38.0, 458.0), Color(0.34, 1.0, 0.72, 0.14), 3.0)
+
+
+func _draw_specimen_gallery(scene: Resource) -> void:
+	for index in range(10):
+		var rise := fmod(animation_time * (16.0 + index) + index * 21.0, 108.0)
+		var glow_x: float = scene.start_x + 86.0 + index * 138.0 + sin(animation_time + index) * 8.0
+		var color := Color(0.32, 1.0, 0.56, 0.18 * (1.0 - rise / 114.0)) if index % 2 == 0 else Color(0.86, 0.28, 1.0, 0.16 * (1.0 - rise / 114.0))
+		draw_circle(Vector2(glow_x, 458.0 - rise), 5.0 + index % 3 * 2.0, color)
+	var scan := fmod(animation_time * 82.0, scene.end_x - scene.start_x)
+	draw_line(Vector2(scene.start_x + scan, 462.0), Vector2(scene.start_x + scan, 650.0), Color(0.68, 0.34, 1.0, 0.14), 3.0)
+
+
+func _draw_genesis_core(scene: Resource) -> void:
+	var center := Vector2((scene.start_x + scene.end_x) * 0.5, 392.0)
+	for ring_index in range(3):
+		var pulse := (sin(animation_time * (2.7 + ring_index * 0.4) + ring_index) + 1.0) * 0.5
+		var color := Color(0.22, 1.0, 0.6, 0.08 + pulse * 0.1) if ring_index % 2 == 0 else Color(1.0, 0.18, 0.72, 0.08 + pulse * 0.1)
+		draw_arc(center, 52.0 + ring_index * 34.0 + pulse * 5.0, 0.0, TAU, 40, color, 5.0)
+	for index in range(8):
+		var spark_angle := animation_time * 0.7 + TAU * index / 8.0
+		var spark_origin := center + Vector2(cos(spark_angle) * 132.0, sin(spark_angle) * 52.0)
+		draw_line(spark_origin, spark_origin + Vector2(cos(spark_angle) * 18.0, sin(spark_angle) * 9.0), Color(1.0, 0.72, 0.26, 0.32), 3.0)
 
 
 func _ellipse_points(center: Vector2, radius_x: float, radius_y: float) -> PackedVector2Array:

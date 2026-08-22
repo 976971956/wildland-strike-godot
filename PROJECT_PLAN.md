@@ -274,13 +274,13 @@ Exit gate: desktop, Web, and iOS behave like complete consumer builds rather tha
 
 ### M9 — Balance, QA, and 1.0 release
 
-Status: **in progress**
+Status: **complete**
 
 - [x] Full solo and 2–3 player balance passes with documented difficulty curves.
 - [x] All-stage automated smoke suite and focused combat/encounter regression suite.
 - [x] Browser/device compatibility, reconnect, suspend/resume, save migration, and performance tests.
-- [ ] Asset provenance audit, license audit, release notes, clean checkout build, Pages deployment, and signed iOS run.
-- [ ] No critical/high defects; accepted medium defects documented with owner and target.
+- [x] Asset provenance audit, license audit, release notes, clean checkout build, Pages deployment, and signed iOS run.
+- [x] No critical/high defects; accepted medium defects documented with owner and target.
 
 Evidence (2026-08-22, release balance/smoke batch): the release gate now evaluates all 24 stage/player-count difficulty cells, all four solo hero profiles, and all fourteen unique solo/duo/trio hero rosters. Enemy health rises with each extra player while per-player encounter health falls; co-op damage pressure is capped at 1.16× over the same stage, solo hero TTK remains within 0.75–1.18× of Ranger, and co-op roster TTK remains inside the documented 0.52–0.82× teamwork band. A second release suite traverses all 24 scenes, 38 encounters, every wave, at least 120 resolved spawns, at least 20 referenced enemy roles, every final boss gate, and representative runtime instantiation/health scaling for all 8 stages at 1–3 players. The two new suites pass 487/487 assertions. Detailed curves and coverage are archived in `evidence/m9-balance-stage-smoke.md`.
 
@@ -288,14 +288,16 @@ Evidence (2026-08-22, compatibility/lifecycle batch): controller disconnect/reco
 
 Evidence (2026-08-22, provenance/license audit): all tracked PNGs are named in the generation/provenance log; nineteen archived generation, edit, and superseded prototype canvases are excluded from both Web and iOS. The project now has explicit MIT/CC BY 4.0 grants, the complete Noto Sans SC OFL, Godot runtime redistribution notice, v1.0.0 notes, and a zero-critical/high/medium defect ledger. Automated audit rejects unrecorded PNGs, missing dual-export exclusions, protected franchise runtime tokens, ROM/archive formats, external audio, and missing third-party notices. The audit suite passes 133 deterministic assertions and full regression passes 53 suites/3,719 assertions. Removing three superseded prototype canvases from runtime reduces the Web PCK from 79,814,916 to 76,160,164 bytes; the maximum-load browser fixture remains error-free at 8.050 ms average with zero frames over 20/33 ms. Detailed evidence is archived in `evidence/m9-release-audit.md`.
 
+Exit evidence (2026-08-22, release-candidate gate): remote commit `2f47eaa` was checked out into a new detached worktree with no inherited `.godot` or build cache. `tools/verify_release.sh` completed import, all 53 suites/3,719 assertions, Web export, iOS project export, and unsigned Xcode arm64 build. The refreshed Xcode account supplied the matching `BYSMY792J7` development profile for `com.jianghu.wildlandstrike`; a signed arm64 build succeeded, installed on the paired iPhone 14 Pro, launched, and remained visible in the device process list. GitHub Pages deployed the exact source commit successfully. Final tagged-commit reproduction and published-package checks are recorded in `evidence/m9-release-audit.md` and the annotated `v1.0.0` release.
+
 Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducible build evidence.
 
 ## Next task queue
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M9 — Release audit:** complete provenance/license inventory, release notes, defect triage, and clean-checkout reproduction.
-2. **M9 — v1.0.0 publication:** prepare release notes, publish the verified Web build, tag the accepted commit, and complete signed iOS installation when renewed provisioning and the paired phone are available.
+1. **Post-release maintenance:** accept only reproduced defects, add a failing regression first, and preserve the M0–M9 release gates.
+2. **Optional distribution:** prepare store-facing metadata and App Store/TestFlight signing only when explicitly requested; this is outside the v1.0.0 development-device gate.
 
 ## Definition of done for every task
 
@@ -323,4 +325,4 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - The reusable human/dinosaur roster is complete through M5; all eight stages now have unique boss encounters and original compositions, including the three-form final boss.
 - Stages 1–8, ending, credits, and final report are completed campaign content; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while completing the consumer arcade shell.
 - Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, stage-and-player-count spawn scaling, teammate rescue, per-player continues, linked team attacks, eight-node campaign mapping, score/life settlement, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until the M9 balance pass. Version-three local settings/high scores, legacy migration, keyboard rebinding, UI scaling, classic/compact/left-handed mobile layouts, a language-ready consumer shell, and all 24 Chinese boss subtitles are complete. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, Stage 5 fire/smoke/water-pressure hazards, Stage 6 spore/cart/stomp hazards, Stage 7 deck/laser/cryo hazards, Stage 8 arc/mutagen/core hazards, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
-- The current development provisioning profile is invalid; every stage passes an unsigned generic-device arm64 build, but a fresh signed iOS install requires renewed signing access and an available paired device.
+- The v1.0.0 candidate passes unsigned generic-device and signed physical-device arm64 builds; installation, launch, and live process presence were verified on the paired iPhone 14 Pro.

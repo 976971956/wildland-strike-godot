@@ -24,6 +24,7 @@ Wildland Strike is a clean-room, original-IP Godot arcade brawler with a complet
 - 53 deterministic suites and 3,719 assertions pass, including the final content/provenance/license audit.
 - All 24 stage/player-count difficulty cells, all 14 unique hero rosters, all campaign waves, and every final boss gate are covered.
 - Maximum-load Chromium fixture: three players, Stage 8 final boss, twelve additional enemies, hazards, 300 sampled frames, 8.050 ms average, zero frames above 20/33 ms, and no browser warnings/errors.
-- Web export, iOS project export, and unsigned Xcode generic-device arm64 build pass.
+- A new cache-free checkout passes Godot import, Web export, iOS project export, and unsigned Xcode generic-device arm64 build.
+- A development-signed arm64 build installs and launches on the paired iPhone 14 Pro; the running process is confirmed through Apple's device tooling.
 
-Final tag publication requires the clean-checkout gate, exact GitHub Pages deployment verification, and the signed physical-iPhone attempt documented in the release evidence.
+The accepted release commit is reproduced once more from a clean remote worktree before the annotated tag and public GitHub release are published.

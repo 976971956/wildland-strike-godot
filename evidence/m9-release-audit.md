@@ -22,15 +22,24 @@ Date: 2026-08-22
 
 - `RELEASE_NOTES_v1.0.0.md` covers campaign, combat, consumer shell, platforms, accessibility, migration, and qualification.
 - `KNOWN_ISSUES.md` records 0 critical, 0 high, 0 medium, and 0 low accepted product defects.
-- Signed physical-iPhone installation is explicitly separated as a release-environment dependency requiring renewed Apple provisioning and the paired phone.
+- `KNOWN_ISSUES.md` remains at zero accepted product defects after the signed physical-device gate.
 
 ## Automated and package results
 
 - Content/provenance/license audit: 133 deterministic assertions, 0 failures.
 - Full project regression: 53 suites, 3,719 assertions, 0 failures.
 - Maximum-load real Chromium fixture: 300 frames, 8.050 ms average, 0 frames over 20 ms, 0 over 33 ms, no browser warnings/errors.
-- Web package: 76,160,164 bytes, SHA-256 `2e20de3786f1f776decc02c76cfa8cd2557f6100f9f0af55c0f54af6d1080805`.
-- iOS package: 76,160,212 bytes, SHA-256 `ea7863933b569732847e122332e79ff5c756808c54dd351d1cc60546693deea5`.
+- Clean Web package: 76,162,324 bytes, SHA-256 `e4885295f5dfd68f789d5e2b9b5abbb21a0b666f71bb31dcdbd178e3afd46316`.
+- Clean iOS package: 76,162,372 bytes, SHA-256 `9df113e58d88e57c7e129d2cda82cfe196af7b71937fb8b53e0dd3e64d79a64b`.
 - Xcode generic iOS device build: `BUILD SUCCEEDED`; executable is Mach-O 64-bit arm64.
 
-The exact committed candidate will next be checked out into a new temporary directory and subjected to the clean-checkout test/export gate before final release publication. The first clean run correctly exposed that a brand-new clone must execute Godot's `--import` step before loading Texture2D resources; `tools/verify_release.sh` and the README now make that prerequisite explicit. After import, the clean test tree passed; a follow-up commit will rerun the deterministic audit count and both clean exports.
+## Clean checkout and physical-device gate
+
+- Remote source commit `2f47eaa48a65d58322375f5739a578f4a638da92` was fetched into a new detached worktree with no inherited `.godot` or build cache.
+- `tools/verify_release.sh` completed Godot import, 53 suites/3,719 assertions, Web export, iOS export, and unsigned generic-device Xcode arm64 build with exit status zero.
+- The first pre-script clean run exposed that a brand-new clone must execute Godot's `--import` step before loading Texture2D resources. The committed script and README now enforce that prerequisite, and the content audit count is independent of ignored import files.
+- PCK inventory comparison explained a 2,160-byte difference from the long-lived workspace as shorter cached UID resource references, not content drift. The published `docs/` HTML and PCK are taken from the cache-free build; Web is 76,162,324 bytes with SHA-256 `e4885295f5dfd68f789d5e2b9b5abbb21a0b666f71bb31dcdbd178e3afd46316`.
+- Real Chromium rendered that clean package at 2,560×1,440 backing resolution / 1,280×720 CSS resolution. The repeated 300-frame maximum-load probe averaged 8.236 ms (121.41 FPS), with zero frames over 20/33 ms and no warning/error console entries.
+- Xcode refreshed the matching local development profile for team `BYSMY792J7`, bundle `com.jianghu.wildlandstrike`, and the paired iPhone 14 Pro. The signed device-targeted build completed with `BUILD SUCCEEDED`.
+- `devicectl` installed and launched `com.jianghu.wildlandstrike`; the running `WildlandStrike` process was then observed on the phone. The signed app reports the expected Apple Development authority and team identifier.
+- GitHub Pages workflow run `32569625067` deployed the exact `2f47eaa` source commit successfully. The final release commit is subjected to the same clean-checkout script before the annotated `v1.0.0` tag is pushed.

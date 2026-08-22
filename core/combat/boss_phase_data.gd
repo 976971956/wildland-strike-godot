@@ -4,6 +4,7 @@ extends Resource
 enum SpecialKind {
 	GROUND_SLAM,
 	RUSH,
+	TIDAL_WAVE,
 }
 
 @export var phase_id: StringName

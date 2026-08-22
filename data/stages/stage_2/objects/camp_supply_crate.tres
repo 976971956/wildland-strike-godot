@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"camp_supply_crate"
+position = Vector2(2540, 615)
+size = Vector2(58, 64)
+health = 34
+drop_id = &"food_feast"
+defeat_score = 250
+color = Color(0.45, 0.3, 0.18, 1)

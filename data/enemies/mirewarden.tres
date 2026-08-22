@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://core/combat/enemy_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/attacks/mirewarden_strike.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mirewarden_sheet.png" id="3"]
+[ext_resource type="Script" path="res://core/combat/boss_phase_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/attacks/mirewarden_tidal_wave.tres" id="5"]
+[ext_resource type="Resource" path="res://data/attacks/mirewarden_rush.tres" id="6"]
+
+[sub_resource type="Resource" id="PhaseFloodgate"]
+script = ExtResource("4")
+phase_id = &"floodgate"
+health_threshold_ratio = 1.0
+attack = ExtResource("2")
+special_attack = ExtResource("5")
+special_kind = 2
+speed_scale = 0.96
+telegraph_duration = 0.62
+special_cooldown = 1.55
+special_min_distance = 115.0
+special_max_distance = 520.0
+recovery_duration = 0.72
+dialogue_speaker = "MIREWARDEN SABLE"
+dialogue_line = "The flood keeps what it takes."
+tint = Color(0.82, 1, 0.96, 1)
+
+[sub_resource type="Resource" id="PhaseHarpoon"]
+script = ExtResource("4")
+phase_id = &"harpoon_rush"
+health_threshold_ratio = 0.62
+attack = ExtResource("2")
+special_attack = ExtResource("6")
+special_kind = 1
+speed_scale = 1.16
+telegraph_duration = 0.4
+special_cooldown = 1.08
+special_min_distance = 145.0
+special_max_distance = 560.0
+burst_speed_scale = 2.65
+burst_duration = 0.46
+recovery_duration = 0.46
+dialogue_speaker = "MIREWARDEN SABLE"
+dialogue_line = "Then run against the current!"
+reinforcement_enemy_id = &"raptor"
+reinforcement_count = 1
+tint = Color(0.74, 1, 0.9, 1)
+
+[sub_resource type="Resource" id="PhaseDeluge"]
+script = ExtResource("4")
+phase_id = &"deluge"
+health_threshold_ratio = 0.28
+attack = ExtResource("6")
+special_attack = ExtResource("5")
+special_kind = 2
+speed_scale = 1.32
+telegraph_duration = 0.28
+special_cooldown = 0.72
+special_min_distance = 85.0
+special_max_distance = 640.0
+recovery_duration = 0.34
+dialogue_speaker = "MIREWARDEN SABLE"
+dialogue_line = "Everything breaks in the deluge!"
+reinforcement_enemy_id = &"compy"
+reinforcement_count = 2
+tint = Color(0.68, 1, 0.84, 1)
+
+[resource]
+script = ExtResource("1")
+enemy_id = &"mirewarden"
+is_boss = true
+rank = 2
+max_health = 330
+speed = 108.0
+attack = ExtResource("2")
+can_be_grabbed = false
+defeat_score = 2600
+outgoing_damage_scale = 1.08
+stun_duration_scale = 0.65
+knockdown_armor = 3
+behavior_kind = 5
+attack_distance = 78.0
+lane_tolerance = 55.0
+vertical_approach_scale = 0.84
+boss_phases = Array[Resource]([SubResource("PhaseFloodgate"), SubResource("PhaseHarpoon"), SubResource("PhaseDeluge")])
+sprite_sheet = ExtResource("3")
+sprite_columns = 8
+sprite_rows = 1
+target_size = Vector2(232, 232)
+target_bottom_offset = 18.0
+actor_scale = Vector2(1.18, 1.18)
+shadow_half_extents = Vector2(52, 12)
+tint = Color(1, 1, 1, 1)
+show_health_bar = true

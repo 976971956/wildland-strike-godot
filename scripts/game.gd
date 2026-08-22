@@ -6,12 +6,15 @@ const PickupScript = preload("res://scripts/pickup.gd")
 const ImpactScript = preload("res://scripts/impact_fx.gd")
 const StageObjectScript = preload("res://scripts/stage_object.gd")
 const WeaponProjectileScript = preload("res://scripts/weapon_projectile.gd")
+const TidalWaveScript = preload("res://scripts/tidal_wave.gd")
 const EncounterDirectorScript = preload("res://stages/encounter_director.gd")
 const MusicDirectorScript = preload("res://scripts/music_director.gd")
 const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const LocalPlayerRegistryScript = preload("res://core/input/local_player_registry.gd")
 const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
+const STAGE_2_DEFINITION = preload("res://data/stages/stage_2/stage_2.tres")
+const CAMPAIGN_STAGE_DEFINITIONS := [STAGE_1_DEFINITION, STAGE_2_DEFINITION]
 const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
@@ -41,6 +44,8 @@ var remaining_enemies: int:
 	get:
 		return encounter_director.remaining_enemies if is_instance_valid(encounter_director) else 0
 var stage_time_remaining := 0.0
+var campaign_stage_index := 0
+var active_stage_definition: Resource
 var stage_timed_out := false
 var score := 0
 var lives := 2
@@ -95,16 +100,17 @@ const TEAM_ATTACK_LINK_DISTANCE := 190.0
 
 func _ready() -> void:
 	local_player_registry.reset_with_keyboard(selected_hero_index)
+	active_stage_definition = CAMPAIGN_STAGE_DEFINITIONS[campaign_stage_index]
 	encounter_director = EncounterDirectorScript.new()
 	add_child(encounter_director)
-	encounter_director.configure(self, STAGE_1_DEFINITION)
+	encounter_director.configure(self, active_stage_definition)
 	encounter_director.encounter_started.connect(_on_encounter_started)
 	encounter_director.encounter_cleared.connect(_on_encounter_cleared)
 	encounter_director.scene_entered.connect(_on_scene_entered)
 	encounter_director.stage_completed.connect(_victory)
 	music_director = MusicDirectorScript.new()
 	add_child(music_director)
-	world_art.configure(STAGE_1_DEFINITION)
+	world_art.configure(active_stage_definition)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
 		for i in range(8):
@@ -116,7 +122,7 @@ func _ready() -> void:
 	_create_player()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_create_stage_objects()
-	stage_time_remaining = STAGE_1_DEFINITION.time_limit_seconds
+	stage_time_remaining = active_stage_definition.time_limit_seconds
 	hud.set_stage_time(stage_time_remaining)
 	_sync_hud_stage_progress()
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
@@ -167,7 +173,10 @@ func _process(delta: float) -> void:
 	if state == "victory":
 		_tick_victory(delta)
 		if victory_phase == &"complete" and Input.is_action_just_pressed("start"):
-			get_tree().reload_current_scene()
+			if campaign_stage_index + 1 < CAMPAIGN_STAGE_DEFINITIONS.size():
+				_advance_campaign_stage()
+			else:
+				get_tree().reload_current_scene()
 		return
 	if state == "gameover":
 		if Input.is_action_just_pressed("start"):
@@ -206,7 +215,7 @@ func _start_game() -> void:
 	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
 	hud.set_player_health(player.health, player.max_health)
 	hud.set_mode("playing")
-	hud.show_banner("READY", "CLEAR EVERY ENEMY IN THE BLOCK", 2.1)
+	hud.show_banner("STAGE %d  READY" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.1)
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
 	play_sfx("start")
 
@@ -552,7 +561,7 @@ func shared_camera_frame() -> Dictionary:
 	if active_players.size() == 1:
 		var half_view_width := viewport_width * 0.5
 		return {
-			"position": Vector2(clampf(active_players[0].position.x + 280.0, half_view_width, 4200.0 - half_view_width), 360.0),
+			"position": Vector2(clampf(active_players[0].position.x + 280.0, half_view_width, active_stage_definition.end_x() - half_view_width), 360.0),
 			"zoom": 1.0,
 		}
 	var minimum_x: float = active_players[0].position.x
@@ -564,7 +573,7 @@ func shared_camera_frame() -> Dictionary:
 	var target_zoom := clampf(viewport_width / maxf(required_width, viewport_width), MIN_SHARED_CAMERA_ZOOM, 1.0)
 	var half_visible_width := viewport_width * 0.5 / target_zoom
 	var target_x := (minimum_x + maximum_x) * 0.5 + 180.0
-	target_x = clampf(target_x, half_visible_width, 4200.0 - half_visible_width)
+	target_x = clampf(target_x, half_visible_width, active_stage_definition.end_x() - half_visible_width)
 	return {"position": Vector2(target_x, 360.0), "zoom": target_zoom}
 
 
@@ -641,8 +650,15 @@ func spawn_weapon_projectile(
 	return projectile
 
 
+func spawn_tidal_wave(source_actor: Node, direction: int, damage: int) -> Node:
+	var wave := TidalWaveScript.new()
+	actors.add_child(wave)
+	wave.setup(self, source_actor, direction, damage)
+	return wave
+
+
 func _create_stage_objects() -> void:
-	for scene in STAGE_1_DEFINITION.scenes:
+	for scene in active_stage_definition.scenes:
 		for object_definition in scene.environment_objects:
 			var stage_object := StageObjectScript.new()
 			actors.add_child(stage_object)
@@ -717,7 +733,7 @@ func boss_phase_changed(boss: Node, phase: Resource, phase_index: int) -> void:
 	play_sfx("boss_phase")
 	if (
 		phase.reinforcement_count <= 0
-		or not encounter_director.is_active_encounter(&"plant_boss")
+		or not encounter_director.active
 	):
 		return
 	encounter_director.register_dynamic_enemies(phase.reinforcement_count)
@@ -890,6 +906,44 @@ func _victory() -> void:
 	hud.set_victory_phase(victory_phase)
 	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
 	play_sfx("victory")
+
+
+func _advance_campaign_stage() -> void:
+	if campaign_stage_index + 1 >= CAMPAIGN_STAGE_DEFINITIONS.size():
+		return
+	campaign_stage_index += 1
+	active_stage_definition = CAMPAIGN_STAGE_DEFINITIONS[campaign_stage_index]
+	for child in actors.get_children():
+		if not players.has(child):
+			child.queue_free()
+	downed_time_remaining.clear()
+	continue_respawn_time.clear()
+	team_attack_requests.clear()
+	stage_timed_out = false
+	victory_phase = &"none"
+	victory_bonus_applied = false
+	stage_limit = 1080.0
+	encounter_director.configure(self, active_stage_definition)
+	world_art.configure(active_stage_definition)
+	for index in range(players.size()):
+		var fighter := players[index]
+		if not is_instance_valid(fighter):
+			continue
+		fighter.set_victory_pose(0)
+		fighter.position = Vector2(260.0, 570.0) + PLAYER_SPAWN_OFFSETS[clampi(index, 0, PLAYER_SPAWN_OFFSETS.size() - 1)]
+		fighter.invulnerable = 1.8
+		fighter.set_physics_process(true)
+		_sync_local_player_hud(fighter)
+	_create_stage_objects()
+	stage_time_remaining = active_stage_definition.time_limit_seconds
+	hud.set_stage_time(stage_time_remaining)
+	hud.set_boss_health(0, 0)
+	hud.set_mode("playing")
+	hud.show_banner("STAGE %d" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.4)
+	state = "playing"
+	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
+	play_sfx(&"start")
+	_sync_hud_stage_progress()
 
 
 func _tick_victory(delta: float) -> void:

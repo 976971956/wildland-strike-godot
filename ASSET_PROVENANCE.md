@@ -177,3 +177,49 @@ Rows: (1) lean slate-blue long-coat pistol hunter; (2) agile rust-orange jacket 
 The generated service output was 1254×1254 RGB with a slightly lifted opaque black field rather than the requested exact dimensions. It was retained only as reproducible source, never used directly at runtime. The splitter first converts to RGBA, removes near-black background pixels, finds the eight largest connected actors independently in each row, sorts by x position, and reconstructs normalized transparent 320×320 cells. Separate muzzle flashes and distant particles are intentionally discarded so no detached effect can replace a character component.
 
 Verification: all eight outputs retain alpha, are unique, divide into eight exact cells, and were inspected individually before integration. The exported 1280×720 ten-character fixture was rejected once because its banner covered the upper row, then rebuilt with an unobstructed two-row layout. The accepted fixture exposes standard/elite identity, weapons, shield guard bars, and elite rank cues at 119.997 FPS over 300 frames with zero frames above 20 ms or 33 ms and no browser warnings/errors.
+
+## 2026-08-22 — Flooded wilderness environments and Mirewarden Sable
+
+Tool: OpenAI built-in `image_gen` clean-room generation workflow, followed by the retained project-local `tools/build_flooded_wilderness_assets.gd` panel extraction, connected-component pose isolation, nearest-neighbor normalization, and transparent-cell reconstruction pipeline.
+
+Reference role: no external image, franchise screenshot, ROM art, logo, character, or traced animation frame was supplied. The prompts referenced only the original Wildland Strike name and a general late-1990s arcade rendering direction.
+
+### Final files
+
+- Archived three-panel environment source: `assets/backgrounds/flooded_wilderness_atlas_source.png`; 2048×768 RGB; SHA-256 `35e54dfc2cd724eb9cec94be932ce9442e41eccee379dfca37d32ac1c7bbf9e3`.
+- `assets/backgrounds/flooded_cypress_approach.png`: 1672×941 RGB; SHA-256 `874cfd9c53472b2afa58334c8527e31a32550c7b5acdf11f8726d2428018900f`.
+- `assets/backgrounds/flooded_research_camp.png`: 1672×941 RGB; SHA-256 `12e19987accc33a00f9fcb06ea62e80f5116d7aeaa27d1dcfa0e969a83dd9487`.
+- `assets/backgrounds/ancient_spillway_arena.png`: 1672×941 RGB; SHA-256 `59a7d974777579b703eb611a30e08c34a4bf91261a4e70dce02d269760d1c549`.
+- Archived Mirewarden source: `assets/sprites/mirewarden_source.png`; 2172×724 RGBA; SHA-256 `d7bd5e2243920bc6ddb8631bb33baa7f4d0b8a5a6ecc7979de0284d90963a2eb`.
+- `assets/sprites/mirewarden_sheet.png`: 2560×320 RGBA, 8×1; SHA-256 `978013992a5e442e2e797c5c088c3828c24a310441f55f4cad94ca7a6895ee7f`.
+
+Both archived source images are excluded from Web and iOS runtime exports.
+
+Environment generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: clean-room 2.5D side-scrolling arcade game background atlas
+Primary request: create one ultra-wide image divided into exactly three equal vertical panels that form a continuous flooded wilderness journey: panel 1 a storm-flooded cypress approach with broken ranger boardwalk and distant lightning; panel 2 a half-submerged research camp with tilted watchtower, sandbags, supply pontoons and rushing water channels; panel 3 a dramatic ancient spillway arena under a waterfall with stone terraces and a wide open boss battleground.
+Style/medium: polished late-1990s arcade beat-em-up environment art, crisp hand-painted pseudo-pixel rendering, original clean-room visual identity, strong silhouettes and readable depth layers.
+Composition/framing: fixed side view, each panel 16:9, horizon and gameplay floor continuous across panel seams; keep the bottom 35 percent as a broad unobstructed walkable lane with shallow reflective water, no foreground objects that hide fighters.
+Lighting/mood: blue-green monsoon dusk, warm amber camp lights in panel 2, pale waterfall mist in panel 3.
+Color palette: deep teal, slate blue, moss green, wet stone, small amber accents.
+Constraints: environment only; exactly three equal panels; no people, no dinosaurs, no characters, no UI, no text, no logos, no watermark, no copyrighted characters or franchise imagery; consistent camera and scale across all three panels.
+```
+
+Mirewarden generation prompt:
+
+```text
+Use case: stylized-concept
+Asset type: original boss sprite action atlas for a 2.5D side-scrolling arcade beat-em-up
+Primary request: one single horizontal strip containing exactly 8 equal square cells of the same original swamp warlord named MIREWARDEN SABLE: a massive weathered flood-rescue commander in dark teal waders and layered reed armor, orange rescue straps, scarred broad face, short gray-black hair, carrying an original heavy hydraulic harpoon-gauntlet on his right arm. Exact poses left to right: battle idle, heavy walk, gauntlet punch, harpoon windup telegraph, tidal ground smash, forward harpoon rush, hurt recoil, defeated fall.
+Style/medium: crisp hand-painted pseudo-pixel arcade sprite art with hard readable silhouettes, detailed but clean, consistent proportions and costume in every frame, fully original clean-room character.
+Composition/framing: exactly one centered full-body fighter per cell, side-facing to the left in every standing pose, feet aligned to a common baseline, generous transparent gutter around every silhouette, no overlap between cells, no cropped limbs or weapon.
+Lighting/mood: cool rim light with small amber equipment accents.
+Constraints: genuinely transparent background, exactly 8 cells in one row, same character identity and scale in all frames, no scenery, no floor, no shadows crossing cell boundaries, no text, no labels, no logos, no watermark, no copyrighted characters, no guns or franchise imagery.
+```
+
+The environment service output was 2048×768 rather than three independently sized runtime files. The deterministic builder rounds exact third boundaries, resizes each panel to the established 1672×941 scene contract, and leaves the broad combat lane intact. The Mirewarden output retained real alpha but did not center poses at equal mathematical intervals. The first equal-width crop was rejected because neighboring limbs crossed cell boundaries. The final builder discovers the eight largest eight-neighbor opaque components, sorts them by x position, scales each complete silhouette uniformly with nearest-neighbor interpolation, and reconstructs exact transparent 320×320 cells.
+
+Verification: typed Stage 2 scene resources validate and reference all three runtime backgrounds. The Mirewarden definition validates an exact eight-column atlas and three typed phases. The exported Cypress and Spillway fixtures were inspected at 1280×720 gameplay scale; the first boss composition was rejected for a cropped, over-dark entrance, after which spawn position and phase tint were corrected. Accepted fixtures sustain approximately 120 FPS over 300 frames with zero frames above 20 ms or 33 ms.

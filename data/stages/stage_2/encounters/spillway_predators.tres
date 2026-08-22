@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EncounterDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/waves/spillway_predators.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = &"spillway_predators"
+trigger_x = 2910.0
+origin_x = 3200.0
+arena_right = 3510.0
+unlock_right = 3680.0
+banner_title = "ANCIENT TERRITORY"
+banner_subtitle = "WAKE THE HERD AT YOUR OWN RISK"
+reward_id = &"food_meal"
+waves = Array[Resource]([ExtResource("2")])

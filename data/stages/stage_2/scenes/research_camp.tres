@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/encounters/camp_siege.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/objects/camp_current.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/objects/camp_supply_crate.tres" id="4"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/flooded_research_camp.png" id="5"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"research_camp"
+display_name = "DROWNED RESEARCH CAMP"
+transition_subtitle = "SIGNAL FIRES STILL BURN"
+start_x = 1400.0
+end_x = 2800.0
+environment_id = &"flooded_field_station"
+visual_theme = 4
+background_texture = ExtResource("5")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("4")])

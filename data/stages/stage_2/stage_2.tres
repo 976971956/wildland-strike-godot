@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StageDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/scenes/cypress_approach.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/scenes/research_camp.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/scenes/ancient_spillway.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+stage_id = &"stage_2"
+stage_number = 2
+display_name = "THE FLOODED WILDERNESS"
+time_limit_seconds = 270.0
+scenes = Array[Resource]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

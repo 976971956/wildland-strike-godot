@@ -38,6 +38,7 @@ func setup(p_game: Node, p_definition: Resource) -> void:
 		hurtbox.setup(self, definition.size * 0.45)
 	else:
 		add_to_group("stage_hazards")
+	add_to_group("stage_objects")
 	queue_redraw()
 
 
@@ -60,6 +61,12 @@ func _physics_process(delta: float) -> void:
 			return
 		if throw_timer <= 0.0:
 			_land_from_throw()
+		queue_redraw()
+		return
+	if definition.kind == EnvironmentObjectDataScript.ObjectKind.WATER_CURRENT:
+		contact_cooldown = maxf(0.0, contact_cooldown - delta)
+		roll_angle += delta * 4.0
+		_resolve_water_current(delta)
 		queue_redraw()
 		return
 	if definition.kind != EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
@@ -242,6 +249,25 @@ func _resolve_hazard_contact() -> void:
 		return
 
 
+func _resolve_water_current(delta: float) -> void:
+	var actors_in_current: Array[Node] = []
+	actors_in_current.append_array(game.get_active_players() if game.has_method("get_active_players") else [game.player])
+	actors_in_current.append_array(get_tree().get_nodes_in_group("enemies"))
+	for actor in actors_in_current:
+		if not is_instance_valid(actor) or actor.is_defeated or not _overlaps_actor(actor):
+			continue
+		actor.position.x += definition.initial_direction * definition.move_speed * delta
+		actor.position.y += sin(roll_angle + actor.get_instance_id()) * 4.0 * delta
+		if contact_cooldown > 0.0:
+			continue
+		if actor.is_in_group("player"):
+			actor.take_hit(definition.contact_damage, Vector2(definition.initial_direction * 150.0, 0.0), false, 0.0, false, MEDIUM_IMPACT)
+		else:
+			actor.take_hit(definition.contact_damage, Vector2(definition.initial_direction * 180.0, 0.0), false, false, 0.0, false)
+		contact_cooldown = 1.15
+		game.play_sfx(&"water_surge")
+
+
 func _overlaps_actor(actor: Node) -> bool:
 	return (
 		absf(actor.position.x - position.x) < definition.size.x * 0.5 + 18.0
@@ -252,6 +278,8 @@ func _overlaps_actor(actor: Node) -> bool:
 func _draw() -> void:
 	if definition.kind == EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
 		_draw_hazard()
+	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.WATER_CURRENT:
+		_draw_water_current()
 	elif definition.kind == EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
 		_draw_carryable()
 	else:
@@ -295,6 +323,15 @@ func _draw_carryable() -> void:
 		draw_colored_polygon(PackedVector2Array([Vector2(-half.x, half.y * 0.6), Vector2(-half.x * 0.55, -half.y), Vector2(half.x * 0.65, -half.y * 0.75), Vector2(half.x, half.y)]), definition.color)
 		draw_line(Vector2(-half.x * 0.6, -half.y * 0.65), Vector2(half.x * 0.65, half.y * 0.55), definition.color.lightened(0.3), 5.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_water_current() -> void:
+	var half: Vector2 = definition.size * 0.5
+	draw_rect(Rect2(-half.x, -half.y, definition.size.x, definition.size.y), Color(0.08, 0.45, 0.56, 0.16))
+	var flow := fmod(roll_angle * 20.0, 72.0)
+	for index in range(6):
+		var x: float = -half.x + fmod(index * 74.0 + flow, definition.size.x)
+		draw_line(Vector2(x, -half.y * 0.45), Vector2(x + definition.initial_direction * 34.0, half.y * 0.35), Color(0.58, 0.9, 0.94, 0.36), 3.0)
 
 
 func _draw_oval(center: Vector2, rx: float, ry: float, color: Color) -> void:

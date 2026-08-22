@@ -5,6 +5,9 @@ enum VisualTheme {
 	RUINS,
 	COURTYARD,
 	PLANT,
+	FLOODED_CYPRESS,
+	FLOODED_CAMP,
+	SPILLWAY,
 }
 
 @export var scene_id: StringName

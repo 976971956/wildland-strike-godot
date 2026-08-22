@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EncounterWaveData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/encounter_wave_data.gd" id="1"]
+[ext_resource type="Script" path="res://core/stages/enemy_spawn_data.gd" id="2"]
+
+[sub_resource type="Resource" id="Demolition"]
+script = ExtResource("2")
+enemy_id = &"demolitionist"
+offset = Vector2(270, 485)
+
+[sub_resource type="Resource" id="Shield"]
+script = ExtResource("2")
+enemy_id = &"shield_guard"
+offset = Vector2(-245, 565)
+
+[sub_resource type="Resource" id="Ankylosaur"]
+script = ExtResource("2")
+enemy_id = &"ankylosaur"
+offset = Vector2(125, 635)
+
+[resource]
+script = ExtResource("1")
+wave_id = &"camp_opening"
+spawns = Array[Resource]([SubResource("Demolition"), SubResource("Shield"), SubResource("Ankylosaur")])

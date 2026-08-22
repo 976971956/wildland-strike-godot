@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/encounters/spillway_predators.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/encounters/mirewarden_showdown.tres" id="3"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/objects/spillway_current.tres" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/objects/spillway_canister.tres" id="5"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/ancient_spillway_arena.png" id="6"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"ancient_spillway"
+display_name = "ANCIENT SPILLWAY"
+transition_subtitle = "THE FLOODGATE IS AHEAD"
+start_x = 2800.0
+end_x = 4200.0
+environment_id = &"waterfall_spillway"
+visual_theme = 5
+background_texture = ExtResource("6")
+encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])

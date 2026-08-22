@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"spillway_canister"
+kind = 2
+position = Vector2(3610, 615)
+size = Vector2(42, 58)
+health = 28
+drop_id = &"score_relic"
+defeat_score = 300
+throw_damage = 32
+throw_speed = 690.0
+throw_lifetime = 1.0
+break_on_throw_hit = true
+color = Color(0.18, 0.56, 0.61, 1)

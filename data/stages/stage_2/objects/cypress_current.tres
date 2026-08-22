@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"cypress_current"
+kind = 3
+position = Vector2(880, 560)
+size = Vector2(430, 170)
+health = 1
+contact_damage = 5
+move_speed = 76.0
+initial_direction = -1
+color = Color(0.12, 0.58, 0.67, 0.4)

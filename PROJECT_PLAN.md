@@ -219,12 +219,14 @@ Exit evidence (2026-08-22, standard/elite roster batch): the human catalog now c
 
 ### M6 — Stages 2–4 and vehicle set piece
 
-Status: **not started**
+Status: **in progress (25%)**
 
-- [ ] Flooded wilderness stage and boss.
+- [x] Flooded wilderness stage and boss.
 - [ ] Highway vehicle stage with complete driving and vehicle-boss mechanics.
 - [ ] Garage/industrial multi-scene stage and boss.
 - [ ] Stage map flow, persistent score/lives, completion bonuses, and difficulty progression.
+
+Evidence (2026-08-22, flooded-wilderness batch): Stage 2 is a complete 4,200 px data-driven route through Cypress Floodplain, Drowned Research Camp, and Ancient Spillway, each with independent original 1672×941 scene art and monsoon/mist/lighting ambience. Four ordered encounters combine the complete M5 human roster with neutral Compy, raptor, ankylosaur, and triceratops ecology across fourteen authored initial/reinforcement spawns. Three typed water-current hazards push and periodically damage either faction, allowing the environment to change real combat outcomes. Mirewarden Sable is an original 330-health three-phase boss with an isolated 2560×320 eight-state atlas: Floodgate launches a traveling tidal-wave hit volume, Harpoon Rush switches to a burst state and adds a raptor, and Deluge accelerates tidal pressure while adding two Compys; all phase gates, dialogue, HUD identity, dynamic director accounting, recovery, and completion behavior are resource-driven. The campaign now transitions from Stage 1 to Stage 2 in place while preserving score, lives, selected heroes, and all three local-player slots, reconfiguring the director, art, hazards, timer, and camera bounds. Thirty-nine deterministic suites pass 2329/2329 assertions. Exported environment and boss fixtures average 120.04 and 120.00 FPS over 300 frames with zero frames above 20 ms or 33 ms. Web release export, iOS project export, and unsigned generic-device Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m6-flooded-wilderness.md`.
 
 Exit gate: first half of the campaign is content-complete and playable by all supported player counts.
 
@@ -266,7 +268,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M6 — Flooded wilderness stage:** author the first post-Stage-1 multi-scene environment, encounter progression, ecological hazards, and a unique typed boss state machine while preserving the M0–M5 gates.
+1. **M6 — Highway vehicle stage:** build acceleration, lane steering, collision/ram rules, roadside hazards, mounted attacks, a vehicle-boss state machine, and a complete Stage 3 route while preserving the M0–M6 gates.
 
 ## Definition of done for every task
 
@@ -291,7 +293,7 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 
 - The current 1,280×720 assets use a high-resolution pseudo-pixel style rather than a controlled low-resolution pixel pipeline.
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
-- The reusable human/dinosaur roster is complete through M5; the remaining seven campaign stages still require their unique boss state machines and stage-specific encounter composition.
-- Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete through M5.
+- The reusable human/dinosaur roster is complete through M5; Stages 1–2 have unique bosses and encounter composition, while the remaining six campaign stages still require theirs.
+- Stages 1–2 are the completed release-quality references for later campaign production; subsequent milestones must preserve their combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog, Stage 1 carryable/breakable/hazard and typed pickup distribution, Stage 2 systemic currents, four-species ecology, six standard enemies, four elites, and reusable encounter recipes are complete.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/encounters/cypress_ambush.tres" id="2"]
+[ext_resource type="Resource" path="res://data/stages/stage_2/objects/cypress_current.tres" id="3"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/flooded_cypress_approach.png" id="4"]
+
+[resource]
+script = ExtResource("1")
+scene_id = &"cypress_approach"
+display_name = "CYPRESS FLOODPLAIN"
+transition_subtitle = "THE STORM HAS ERASED THE ROAD"
+start_x = 0.0
+end_x = 1400.0
+environment_id = &"monsoon_cypress_flood"
+visual_theme = 3
+background_texture = ExtResource("4")
+encounters = Array[Resource]([ExtResource("2")])
+environment_objects = Array[Resource]([ExtResource("3")])

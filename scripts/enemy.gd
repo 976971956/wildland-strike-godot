@@ -31,6 +31,7 @@ const ENEMY_DEFINITIONS := {
 	"elite_bombardier": preload("res://data/enemies/elite_bombardier.tres"),
 	"elite_bulwark": preload("res://data/enemies/elite_bulwark.tres"),
 	"boss": preload("res://data/enemies/boss.tres"),
+	"mirewarden": preload("res://data/enemies/mirewarden.tres"),
 }
 
 enum BehaviorPhase {
@@ -592,6 +593,12 @@ func _fire_ranged_weapon() -> void:
 
 func _execute_boss_special() -> void:
 	current_attack = current_boss_phase.special_attack
+	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.TIDAL_WAVE:
+		game.spawn_tidal_wave(self, facing, current_attack.damage)
+		game.play_sfx(&"water_surge")
+		_record_behavior_event(&"boss_tidal_wave")
+		_begin_recovery()
+		return
 	if current_boss_phase.special_kind == BossPhaseDataScript.SpecialKind.RUSH:
 		behavior_phase = BehaviorPhase.BURST
 		behavior_timer = current_boss_phase.burst_duration

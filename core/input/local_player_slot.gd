@@ -6,6 +6,7 @@ const KEYBOARD_DEVICE := -1
 var slot_index := 0
 var device_id := KEYBOARD_DEVICE
 var hero_index := 0
+var selection_ready := false
 
 
 func _init(p_slot_index: int = 0, p_device_id: int = KEYBOARD_DEVICE, p_hero_index: int = 0) -> void:

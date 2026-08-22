@@ -20,6 +20,9 @@ func _ready() -> void:
 		if "local_coop_preview=3" in query_string:
 			scenario = "local_coop_preview"
 			call_deferred("_start_local_coop_preview")
+		elif "local_coop_select=3" in query_string:
+			scenario = "local_coop_select"
+			call_deferred("_start_local_coop_select_preview")
 		elif "hero_animation_preview=" in query_string:
 			scenario = "hero_animation_preview"
 			var hero_index := 1
@@ -133,6 +136,23 @@ func _start_local_coop_preview() -> void:
 		preview_players[index].set_physics_process(false)
 	game._update_shared_camera(1.0)
 	game.hud.show_banner("3 PLAYER LOCAL CO-OP", "KEYBOARD + TWO GAMEPADS", 999.0)
+	game.set_process(false)
+
+
+func _start_local_coop_select_preview() -> void:
+	var game := get_parent()
+	var second: Node = game.join_local_player(0, 1)
+	var third: Node = game.join_local_player(1, 2)
+	if second == null or third == null:
+		scenario = "local_coop_select_setup_failed"
+		return
+	game._open_character_select()
+	game.select_hero_for_slot(0, 0)
+	game.select_hero_for_slot(1, 1)
+	game.select_hero_for_slot(2, 2)
+	game.local_player_registry.set_ready(0, true)
+	game.local_player_registry.set_ready(1, true)
+	game._sync_selection_hud()
 	game.set_process(false)
 
 

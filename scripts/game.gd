@@ -68,6 +68,7 @@ var victory_life_bonus := 0
 var victory_clear_bonus := 0
 var victory_bonus_applied := false
 var shared_camera_zoom := 1.0
+var joy_selection_axis_latch := {}
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -104,6 +105,7 @@ func _ready() -> void:
 	hud.set_stage_time(stage_time_remaining)
 	_sync_hud_stage_progress()
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	_sync_selection_hud()
 	hud.set_mode("title")
 	set_process(true)
 
@@ -129,6 +131,7 @@ func _create_local_player(slot) -> Node:
 	fighter.set_physics_process(state == "playing")
 	players.append(fighter)
 	players.sort_custom(func(a, b): return a.local_slot_index < b.local_slot_index)
+	_sync_local_player_hud(fighter)
 	return fighter
 
 func _process(delta: float) -> void:
@@ -140,11 +143,11 @@ func _process(delta: float) -> void:
 	if state == "select":
 		_set_local_players_physics(false)
 		if Input.is_action_just_pressed("move_left"):
-			shift_hero_selection(-1)
+			shift_hero_selection_for_slot(0, -1)
 		elif Input.is_action_just_pressed("move_right"):
-			shift_hero_selection(1)
+			shift_hero_selection_for_slot(0, 1)
 		if Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("start"):
-			confirm_hero_selection()
+			confirm_hero_selection_for_slot(0)
 		return
 	if state == "victory":
 		_tick_victory(delta)
@@ -174,13 +177,13 @@ func _process(delta: float) -> void:
 	_sync_hud_stage_progress()
 
 func _start_game() -> void:
-	local_player_registry.set_hero(0, selected_hero_index)
 	for fighter in players:
 		if not is_instance_valid(fighter):
 			continue
 		var slot = local_player_registry.slot_at(fighter.local_slot_index)
 		if slot != null:
 			fighter.apply_hero_definition(HERO_DEFINITIONS[posmod(slot.hero_index, HERO_DEFINITIONS.size())])
+			_sync_local_player_hud(fighter)
 	state = "playing"
 	_set_local_players_physics(true)
 	hud.set_player_identity(player.hero_display_name, selected_hero().primary_color)
@@ -197,36 +200,119 @@ func selected_hero() -> Resource:
 
 func _open_character_select() -> void:
 	state = "select"
+	local_player_registry.reset_ready()
 	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	_sync_selection_hud()
 	hud.set_mode("select")
 	play_sfx(&"ui_confirm")
 
 
 func select_hero(index: int) -> void:
-	selected_hero_index = posmod(index, HERO_DEFINITIONS.size())
-	local_player_registry.set_hero(0, selected_hero_index)
-	hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
-	play_sfx(&"ui_confirm")
+	select_hero_for_slot(0, index)
 
 
 func shift_hero_selection(direction: int) -> void:
-	select_hero(selected_hero_index + signi(direction))
+	shift_hero_selection_for_slot(0, direction)
 
 
 func confirm_hero_selection() -> void:
-	if state != "select":
+	confirm_hero_selection_for_slot(0)
+
+
+func selected_hero_for_slot(slot_index: int) -> Resource:
+	var slot = local_player_registry.slot_at(slot_index)
+	if slot == null:
+		return null
+	return HERO_DEFINITIONS[posmod(slot.hero_index, HERO_DEFINITIONS.size())]
+
+
+func select_hero_for_slot(slot_index: int, hero_index: int) -> bool:
+	var slot = local_player_registry.slot_at(slot_index)
+	if slot == null:
+		return false
+	var resolved_index := posmod(hero_index, HERO_DEFINITIONS.size())
+	local_player_registry.set_hero(slot_index, resolved_index)
+	if slot_index == 0:
+		selected_hero_index = resolved_index
+		hud.set_hero_roster(HERO_DEFINITIONS, selected_hero_index)
+	_sync_selection_hud()
+	play_sfx(&"ui_confirm")
+	return true
+
+
+func shift_hero_selection_for_slot(slot_index: int, direction: int) -> bool:
+	var slot = local_player_registry.slot_at(slot_index)
+	if slot == null or direction == 0:
+		return false
+	return select_hero_for_slot(slot_index, slot.hero_index + signi(direction))
+
+
+func confirm_hero_selection_for_slot(slot_index: int) -> bool:
+	if state != "select" or not local_player_registry.set_ready(slot_index, true):
+		return false
+	_sync_selection_hud()
+	play_sfx(&"ui_confirm")
+	if local_player_registry.all_ready():
+		_start_game()
+	return true
+
+
+func cancel_hero_selection_for_slot(slot_index: int) -> bool:
+	if state != "select" or not local_player_registry.set_ready(slot_index, false):
+		return false
+	_sync_selection_hud()
+	return true
+
+
+func _sync_selection_hud() -> void:
+	if not is_instance_valid(hud):
 		return
-	_start_game()
+	var selections: Array[Dictionary] = []
+	for slot in local_player_registry.active_slots():
+		var hero: Resource = HERO_DEFINITIONS[posmod(slot.hero_index, HERO_DEFINITIONS.size())]
+		selections.append({
+			"slot_index": slot.slot_index,
+			"hero_index": slot.hero_index,
+			"ready": slot.selection_ready,
+			"color": hero.primary_color,
+		})
+	hud.set_local_player_selections(selections)
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_LEFT_X:
+		var direction := 0
+		if event.axis_value <= -0.65:
+			direction = -1
+		elif event.axis_value >= 0.65:
+			direction = 1
+		var previous: int = int(joy_selection_axis_latch.get(event.device, 0))
+		joy_selection_axis_latch[event.device] = direction
+		if state == "select" and direction != 0 and direction != previous:
+			var axis_slot = local_player_registry.slot_for_device(event.device)
+			if axis_slot != null:
+				shift_hero_selection_for_slot(axis_slot.slot_index, direction)
+		return
 	if not (event is InputEventJoypadButton) or not event.pressed:
 		return
+	var slot = local_player_registry.slot_for_device(event.device)
 	if event.button_index == JOY_BUTTON_START:
-		if local_player_registry.slot_for_device(event.device) == null:
+		if slot == null:
 			join_local_player(event.device)
+		elif state == "select":
+			confirm_hero_selection_for_slot(slot.slot_index)
 	elif event.button_index == JOY_BUTTON_BACK:
-		leave_local_player(event.device)
+		if state == "select" and slot != null and slot.selection_ready:
+			cancel_hero_selection_for_slot(slot.slot_index)
+		else:
+			leave_local_player(event.device)
+	elif state == "select" and slot != null:
+		if event.button_index == JOY_BUTTON_DPAD_LEFT:
+			shift_hero_selection_for_slot(slot.slot_index, -1)
+		elif event.button_index == JOY_BUTTON_DPAD_RIGHT:
+			shift_hero_selection_for_slot(slot.slot_index, 1)
+		elif event.button_index == JOY_BUTTON_A:
+			confirm_hero_selection_for_slot(slot.slot_index)
 
 
 func join_local_player(device_id: int, hero_index := -1) -> Node:
@@ -248,6 +334,8 @@ func join_local_player(device_id: int, hero_index := -1) -> Node:
 		fighter.invulnerable = 2.2
 		hud.show_banner("PLAYER %d JOINED" % (slot.slot_index + 1), fighter.hero_display_name, 1.2)
 		play_sfx(&"ui_confirm")
+	else:
+		_sync_selection_hud()
 	return fighter
 
 
@@ -257,10 +345,12 @@ func leave_local_player(device_id: int) -> bool:
 		return false
 	var fighter := player_for_slot(slot.slot_index)
 	local_player_registry.leave_device(device_id)
+	hud.remove_local_player_state(slot.slot_index)
 	if is_instance_valid(fighter):
 		players.erase(fighter)
 		fighter.prepare_local_leave()
 		fighter.queue_free()
+	_sync_selection_hud()
 	return true
 
 
@@ -285,6 +375,25 @@ func get_active_players() -> Array[Node]:
 		if is_instance_valid(fighter) and not fighter.is_defeated:
 			result.append(fighter)
 	return result
+
+
+func _sync_local_player_hud(fighter: Node) -> void:
+	if not is_instance_valid(hud) or not is_instance_valid(fighter):
+		return
+	var weapon_display_name := ""
+	if fighter.equipped_weapon != null:
+		weapon_display_name = fighter.equipped_weapon.display_name
+	hud.set_local_player_state(
+		fighter.local_slot_index,
+		fighter.hero_display_name,
+		fighter.hero_definition.primary_color,
+		fighter.health,
+		fighter.max_health,
+		lives,
+		weapon_display_name,
+		fighter.weapon_ammo,
+		fighter.is_defeated
+	)
 
 
 func lead_player_x() -> float:
@@ -436,8 +545,10 @@ func add_score(amount: int) -> void:
 
 
 func weapon_changed(weapon_definition: Resource, ammo: int, source_player: Node = null) -> void:
-	if source_player != null and source_player != player:
-		return
+	if source_player != null:
+		_sync_local_player_hud(source_player)
+		if source_player != player:
+			return
 	if weapon_definition == null:
 		hud.set_weapon("", 0)
 		return
@@ -490,6 +601,7 @@ func _on_player_health(current: int, maximum: int) -> void:
 
 
 func _on_local_player_health(current: int, maximum: int, fighter: Node) -> void:
+	_sync_local_player_hud(fighter)
 	if fighter == player:
 		_on_player_health(current, maximum)
 
@@ -509,6 +621,7 @@ func _on_player_defeated() -> void:
 
 
 func _on_local_player_defeated(fighter: Node) -> void:
+	_sync_local_player_hud(fighter)
 	if fighter == player:
 		_on_player_defeated()
 		return

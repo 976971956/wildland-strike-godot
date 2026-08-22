@@ -63,6 +63,29 @@ func set_hero(slot_index: int, hero_index: int) -> bool:
 	if slot == null:
 		return false
 	slot.hero_index = maxi(hero_index, 0)
+	slot.selection_ready = false
+	return true
+
+
+func set_ready(slot_index: int, ready: bool) -> bool:
+	var slot := slot_at(slot_index)
+	if slot == null:
+		return false
+	slot.selection_ready = ready
+	return true
+
+
+func reset_ready() -> void:
+	for slot in slots:
+		slot.selection_ready = false
+
+
+func all_ready() -> bool:
+	if slots.is_empty():
+		return false
+	for slot in slots:
+		if not slot.selection_ready:
+			return false
 	return true
 
 

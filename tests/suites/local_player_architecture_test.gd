@@ -18,6 +18,12 @@ func run(test) -> void:
 	var replacement = registry.join_device(12, 3)
 	test.check(replacement != null and replacement.slot_index == 1, "vacated local-player slot was not reused deterministically")
 	test.check(registry.set_hero(1, 2) and replacement.hero_index == 2, "slot hero ownership did not update")
+	test.check(registry.set_ready(0, true) and not registry.all_ready(), "registry reported ready before every joined slot confirmed")
+	test.check(registry.set_ready(1, true) and registry.set_ready(2, true) and registry.all_ready(), "registry did not preserve independent ready state")
+	registry.set_hero(1, 3)
+	test.check(not replacement.selection_ready, "changing a hero did not invalidate that player's ready state")
+	registry.reset_ready()
+	test.check(not keyboard.selection_ready and not pad_two.selection_ready, "ready reset did not cover every local slot")
 
 	var source := DeviceInputSourceScript.new()
 	source.configure(7)
@@ -59,7 +65,15 @@ func run(test) -> void:
 	]
 	test.check(spawn_distances.min() >= game.MIN_SAFE_SPAWN_DISTANCE, "local players spawned inside the safety radius")
 
-	game._start_game()
+	game._open_character_select()
+	test.check(game.hud.local_player_selections.size() == 3, "character select did not expose every joined player")
+	test.check(game.select_hero_for_slot(1, 3) and game.selected_hero_for_slot(1).hero_id == &"atlas", "player two could not own an independent hero selection")
+	test.check(game.select_hero_for_slot(2, 1) and game.selected_hero_for_slot(2).hero_id == &"mara", "player three could not own an independent hero selection")
+	test.check(game.confirm_hero_selection_for_slot(0) and game.state == "select", "player one confirmation incorrectly deployed an unready team")
+	test.check(game.confirm_hero_selection_for_slot(1) and game.state == "select", "player two confirmation incorrectly deployed an unready team")
+	test.check(game.confirm_hero_selection_for_slot(2) and game.state == "playing", "all ready local players did not deploy together")
+	test.check(game.hud.local_player_states.size() == 3, "gameplay HUD did not retain one panel per local player")
+	test.check(game.player.hero_id == &"ranger" and second.hero_id == &"atlas" and third.hero_id == &"mara", "slot-owned selections were not applied to the correct fighters")
 	test.check(game.get_active_players().size() == 3, "starting play did not activate all joined players")
 	test.check(game.player.is_physics_processing() and second.is_physics_processing() and third.is_physics_processing(), "joined players were not enabled together")
 	game.player.set_physics_process(false)
@@ -95,4 +109,5 @@ func run(test) -> void:
 
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
 	test.check(probe_source.contains("local_coop_preview=3"), "reproducible three-player Web preview is missing")
+	test.check(probe_source.contains("local_coop_select=3"), "reproducible per-player character-select preview is missing")
 	await test.dispose(game)

@@ -32,6 +32,8 @@ var player_name := "RANGER"
 var player_color := Color("#f5dc7c")
 var hero_roster: Array[Resource] = []
 var selected_hero_index := 0
+var local_player_states: Array[Dictionary] = []
+var local_player_selections: Array[Dictionary] = []
 var animation_preview_hero: Resource
 var font: Font
 
@@ -54,6 +56,7 @@ func _process(delta: float) -> void:
 func set_player_health(current: int, maximum: int) -> void:
 	health = current
 	max_health = maximum
+	_update_primary_player_state({"health": current, "max_health": maximum})
 	queue_redraw()
 
 func set_score(value: int) -> void:
@@ -62,6 +65,7 @@ func set_score(value: int) -> void:
 
 func set_lives(value: int) -> void:
 	lives = value
+	_update_primary_player_state({"lives": value})
 	queue_redraw()
 
 func set_boss_health(current: int, maximum: int) -> void:
@@ -96,6 +100,7 @@ func set_mode(value: String) -> void:
 func set_player_identity(display_name: String, color: Color) -> void:
 	player_name = display_name
 	player_color = color
+	_update_primary_player_state({"name": display_name, "color": color})
 	queue_redraw()
 
 
@@ -106,6 +111,75 @@ func set_hero_roster(definitions: Array, selected_index: int) -> void:
 			hero_roster.append(definition)
 	selected_hero_index = clampi(selected_index, 0, maxi(hero_roster.size() - 1, 0))
 	queue_redraw()
+
+
+func set_local_player_selections(selections: Array) -> void:
+	local_player_selections.clear()
+	for selection in selections:
+		local_player_selections.append(selection.duplicate())
+	local_player_selections.sort_custom(func(a, b): return int(a.slot_index) < int(b.slot_index))
+	queue_redraw()
+
+
+func set_local_player_state(
+	slot_index: int,
+	display_name: String,
+	color: Color,
+	current_health: int,
+	maximum_health: int,
+	remaining_lives: int,
+	current_weapon_name := "",
+	current_weapon_ammo := 0,
+	down := false
+) -> void:
+	var state := {
+		"slot_index": slot_index,
+		"name": display_name,
+		"color": color,
+		"health": current_health,
+		"max_health": maximum_health,
+		"lives": remaining_lives,
+		"weapon_name": current_weapon_name,
+		"weapon_ammo": current_weapon_ammo,
+		"down": down,
+	}
+	var existing_index := _local_player_state_index(slot_index)
+	if existing_index >= 0:
+		local_player_states[existing_index] = state
+	else:
+		local_player_states.append(state)
+	local_player_states.sort_custom(func(a, b): return int(a.slot_index) < int(b.slot_index))
+	if slot_index == 0:
+		player_name = display_name
+		player_color = color
+		health = current_health
+		max_health = maximum_health
+		lives = remaining_lives
+		weapon_name = current_weapon_name
+		weapon_ammo = current_weapon_ammo
+	queue_redraw()
+
+
+func remove_local_player_state(slot_index: int) -> void:
+	var existing_index := _local_player_state_index(slot_index)
+	if existing_index >= 0:
+		local_player_states.remove_at(existing_index)
+	queue_redraw()
+
+
+func _local_player_state_index(slot_index: int) -> int:
+	for index in range(local_player_states.size()):
+		if int(local_player_states[index].slot_index) == slot_index:
+			return index
+	return -1
+
+
+func _update_primary_player_state(changes: Dictionary) -> void:
+	var index := _local_player_state_index(0)
+	if index < 0:
+		return
+	for key in changes:
+		local_player_states[index][key] = changes[key]
 
 
 func set_hero_animation_preview(hero: Resource) -> void:
@@ -121,6 +195,7 @@ func set_stage_time(seconds: float) -> void:
 func set_weapon(display_name: String, ammo: int) -> void:
 	weapon_name = display_name
 	weapon_ammo = maxi(ammo, 0)
+	_update_primary_player_state({"weapon_name": display_name, "weapon_ammo": weapon_ammo})
 	queue_redraw()
 
 
@@ -164,40 +239,35 @@ func set_victory_phase(value: StringName) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Arcade HUD panel.
-	draw_rect(Rect2(22,20,430,82), Color(0.035,0.045,0.07,0.88))
-	draw_rect(Rect2(22,20,430,5), Color("#efbf4d"))
-	draw_string(font, Vector2(39,48), "%s  1" % player_name, HORIZONTAL_ALIGNMENT_LEFT, 250, 22, player_color.lightened(0.32))
-	draw_string(font, Vector2(315,48), "%08d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
-	draw_rect(Rect2(39,61,360,23), Color("#271b25"))
 	var ratio := clampf(float(health)/maxf(max_health,1),0.0,1.0)
 	var danger_pulse := 0.72 + sin(Time.get_ticks_msec() * 0.012) * 0.28
-	var health_color := Color(1.0, 0.18 + danger_pulse * 0.12, 0.12, 1.0) if ratio < 0.3 else Color("#e8b844")
-	draw_rect(Rect2(43,65,352*ratio,15), health_color)
-	for x in range(43,396,22):
-		draw_line(Vector2(x,65),Vector2(x,80),Color(0,0,0,0.18),2)
-	draw_string(font,Vector2(406,82),"×%d"%lives,HORIZONTAL_ALIGNMENT_LEFT,-1,19,Color("#b7e8df"))
+	_draw_local_player_panels(danger_pulse)
 	if mode == "playing":
 		var total_seconds := ceili(stage_time_remaining)
 		var minutes := int(total_seconds / 60)
 		var seconds := total_seconds % 60
 		var timer_color := Color("#ef5b50") if total_seconds <= 30 else Color("#f4dc83")
-		draw_rect(Rect2(578, 20, 124, 48), Color(0.035, 0.045, 0.07, 0.88))
-		draw_rect(Rect2(578, 20, 124, 4), timer_color)
-		draw_string(font, Vector2(578, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, 124, 24, timer_color)
-		if not weapon_name.is_empty() and weapon_ammo > 0:
+		var multiplayer_hud := local_player_states.size() > 1
+		var timer_x := 800.0 if multiplayer_hud else 578.0
+		var timer_width := 108.0 if multiplayer_hud else 124.0
+		draw_rect(Rect2(timer_x, 20, timer_width, 48), Color(0.035, 0.045, 0.07, 0.88))
+		draw_rect(Rect2(timer_x, 20, timer_width, 4), timer_color)
+		draw_string(font, Vector2(timer_x, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, timer_width, 24, timer_color)
+		if not multiplayer_hud and not weapon_name.is_empty() and weapon_ammo > 0:
 			draw_rect(Rect2(474, 20, 92, 48), Color(0.035, 0.045, 0.07, 0.88))
 			draw_rect(Rect2(474, 20, 92, 4), Color("#74c9aa"))
 			draw_string(font, Vector2(478, 42), weapon_name, HORIZONTAL_ALIGNMENT_CENTER, 84, 13, Color("#d8efe7"))
 			draw_string(font, Vector2(478, 61), "×%02d" % weapon_ammo, HORIZONTAL_ALIGNMENT_CENTER, 84, 16, Color.WHITE)
 		if boss_max <= 0 or boss_health <= 0:
 			var status_color := Color("#ef6a56") if arena_locked else Color("#70d0ad")
-			draw_rect(Rect2(882, 20, 362, 64), Color(0.035, 0.045, 0.07, 0.9))
-			draw_rect(Rect2(882, 20, 362, 4), status_color)
-			draw_string(font, Vector2(900, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 150, 19, Color("#f4dc83"))
+			var objective_x := 922.0 if multiplayer_hud else 882.0
+			var objective_width := 322.0 if multiplayer_hud else 362.0
+			draw_rect(Rect2(objective_x, 20, objective_width, 64), Color(0.035, 0.045, 0.07, 0.9))
+			draw_rect(Rect2(objective_x, 20, objective_width, 4), status_color)
+			draw_string(font, Vector2(objective_x + 18, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 125, 19, Color("#f4dc83"))
 			var objective := "HOSTILES  %02d" % stage_hostiles if arena_locked else "ADVANCE  →"
-			draw_string(font, Vector2(1045, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, 180, 19, status_color)
-			draw_string(font, Vector2(900, 72), "COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN", HORIZONTAL_ALIGNMENT_LEFT, 325, 13, Color("#b8c8c3"))
+			draw_string(font, Vector2(objective_x + 137, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, objective_width - 155, 19, status_color)
+			draw_string(font, Vector2(objective_x + 18, 72), "COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN", HORIZONTAL_ALIGNMENT_LEFT, objective_width - 36, 13, Color("#b8c8c3"))
 		if ratio < 0.3:
 			draw_string(font, Vector2(350, 99), "DANGER", HORIZONTAL_ALIGNMENT_RIGHT, 48, 13, Color(1.0, 0.32, 0.24, danger_pulse))
 
@@ -239,8 +309,8 @@ func _draw() -> void:
 		draw_string(font, Vector2(0, 72), "SELECT OPERATIVE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
 		draw_string(font, Vector2(0, 105), "FOUR ROLES // ONE MISSION", HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
 		for index in range(hero_roster.size()):
-			_draw_hero_card(hero_roster[index], index, index == selected_hero_index)
-		var select_hint := "TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "LEFT / RIGHT  CHOOSE     ATTACK / ENTER  DEPLOY"
+			_draw_hero_card(hero_roster[index], index, _hero_card_selected(index))
+		var select_hint := "TAP A CARD TWICE TO DEPLOY" if _touch_layout_active() else "EACH PLAYER CHOOSES     A / START  READY     BACK  CANCEL"
 		draw_string(font, Vector2(0, 664), select_hint, HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color.WHITE)
 	elif mode == "hero_animation":
 		_draw_hero_animation_preview()
@@ -267,6 +337,64 @@ func _draw() -> void:
 		draw_string(font,Vector2(0,278),"GAME OVER",HORIZONTAL_ALIGNMENT_CENTER,size.x,54,Color("#ed5a4c"))
 		draw_string(font,Vector2(0,338),"FINAL SCORE  %08d"%score,HORIZONTAL_ALIGNMENT_CENTER,size.x,25,Color.WHITE)
 		draw_string(font,Vector2(0,402),"TAP / ENTER TO RESTART",HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))
+
+
+func _draw_local_player_panels(danger_pulse: float) -> void:
+	if local_player_states.size() <= 1:
+		_draw_player_panel({
+			"slot_index": 0,
+			"name": player_name,
+			"color": player_color,
+			"health": health,
+			"max_health": max_health,
+			"lives": lives,
+			"weapon_name": weapon_name,
+			"weapon_ammo": weapon_ammo,
+			"down": false,
+		}, Rect2(22, 20, 430, 82), danger_pulse, true)
+		return
+	var panel_width := 250.0
+	for index in range(local_player_states.size()):
+		_draw_player_panel(local_player_states[index], Rect2(14 + index * 260, 20, panel_width, 64), danger_pulse, false)
+
+
+func _draw_player_panel(state_data: Dictionary, panel: Rect2, danger_pulse: float, full_size: bool) -> void:
+	var color: Color = state_data.color
+	var current_health: int = int(state_data.health)
+	var maximum_health: int = maxi(int(state_data.max_health), 1)
+	var health_ratio := clampf(float(current_health) / maximum_health, 0.0, 1.0)
+	var down: bool = bool(state_data.down)
+	draw_rect(panel, Color(0.035, 0.045, 0.07, 0.9))
+	draw_rect(Rect2(panel.position, Vector2(panel.size.x, 5 if full_size else 4)), color if not down else Color("#a73535"))
+	var compact_primary := not full_size and int(state_data.slot_index) == 0
+	var name_width := panel.size.x - (128.0 if full_size else (112.0 if compact_primary else 70.0))
+	draw_string(font, panel.position + Vector2(14, 28), "P%d  %s" % [int(state_data.slot_index) + 1, state_data.name], HORIZONTAL_ALIGNMENT_LEFT, name_width, 16 if not full_size else 20, color.lightened(0.3))
+	if full_size:
+		draw_string(font, panel.position + Vector2(293, 28), "%08d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
+	elif compact_primary:
+		draw_string(font, panel.position + Vector2(142, 28), "%08d" % score, HORIZONTAL_ALIGNMENT_RIGHT, 95, 13, Color.WHITE)
+	var bar_x := panel.position.x + 14.0
+	var bar_y := panel.position.y + (41.0 if full_size else 38.0)
+	var bar_width := panel.size.x - (78.0 if full_size else 52.0)
+	draw_rect(Rect2(bar_x, bar_y, bar_width, 18 if full_size else 13), Color("#271b25"))
+	var health_color := Color(1.0, 0.18 + danger_pulse * 0.12, 0.12, 1.0) if health_ratio < 0.3 else color.lightened(0.12)
+	if down:
+		health_color = Color("#8a3030")
+	draw_rect(Rect2(bar_x + 3, bar_y + 3, (bar_width - 6) * health_ratio, 12 if full_size else 7), health_color)
+	draw_string(font, panel.position + Vector2(panel.size.x - 48, panel.size.y - 17), "×%d" % int(state_data.lives), HORIZONTAL_ALIGNMENT_LEFT, -1, 15 if not full_size else 18, Color("#b7e8df"))
+	if down:
+		draw_string(font, panel.position + Vector2(panel.size.x - 74, 28), "DOWN", HORIZONTAL_ALIGNMENT_RIGHT, 62, 13, Color("#ff7568"))
+	elif not String(state_data.weapon_name).is_empty() and int(state_data.weapon_ammo) > 0:
+		draw_string(font, panel.position + Vector2(panel.size.x - 82, 28), "%s %02d" % [state_data.weapon_name, int(state_data.weapon_ammo)], HORIZONTAL_ALIGNMENT_RIGHT, 70, 11, Color("#b7e8df"))
+
+
+func _hero_card_selected(hero_index: int) -> bool:
+	if local_player_selections.is_empty():
+		return hero_index == selected_hero_index
+	for selection in local_player_selections:
+		if int(selection.hero_index) == hero_index:
+			return true
+	return false
 
 
 func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
@@ -297,7 +425,13 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 	_draw_hero_stat(card_x + 32, 512, "PWR", hero.damage_scale / 1.3, hero.primary_color)
 	_draw_hero_stat(card_x + 32, 542, "TECH", hero.item_efficiency / 1.5, hero.primary_color)
 	if selected:
-		draw_string(font, Vector2(card_x, 590), "READY", HORIZONTAL_ALIGNMENT_CENTER, card_width, 17, hero.accent_color.lightened(0.25))
+		var badges: Array[String] = []
+		for selection in local_player_selections:
+			if int(selection.hero_index) == index:
+				badges.append("P%d %s" % [int(selection.slot_index) + 1, "READY" if bool(selection.ready) else "SELECTING"])
+		if badges.is_empty():
+			badges.append("P1 SELECTING")
+		draw_string(font, Vector2(card_x + 8, 590), "  •  ".join(PackedStringArray(badges)), HORIZONTAL_ALIGNMENT_CENTER, card_width - 16, 15, hero.accent_color.lightened(0.25))
 
 
 func _draw_hero_stat(x: float, y: float, label: String, value: float, color: Color) -> void:

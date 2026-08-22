@@ -34,6 +34,8 @@ var settings: Dictionary = DEFAULT_SETTINGS.duplicate(true)
 var high_scores: Array[Dictionary] = []
 var bindings: Dictionary = DEFAULT_BINDINGS.duplicate(true)
 var loaded_version := CURRENT_VERSION
+var recovered_from_backup := false
+var recovered_from_corruption := false
 
 
 func _init(path := DEFAULT_PATH) -> void:
@@ -45,14 +47,23 @@ func load_profile() -> int:
 	bindings = DEFAULT_BINDINGS.duplicate(true)
 	high_scores.clear()
 	loaded_version = CURRENT_VERSION
+	recovered_from_backup = false
+	recovered_from_corruption = false
 	if file_path.is_empty():
 		return OK
 	var config := ConfigFile.new()
 	var error := config.load(file_path)
 	if error == ERR_FILE_NOT_FOUND:
 		return OK
-	if error != OK:
-		return error
+	var missing_schema := error == OK and config.get_sections().is_empty()
+	if error != OK or missing_schema:
+		var backup := ConfigFile.new()
+		if backup.load(file_path + ".bak") == OK:
+			config = backup
+			recovered_from_backup = true
+		else:
+			recovered_from_corruption = true
+			return OK
 	loaded_version = int(config.get_value("profile", "version", 0))
 	if loaded_version <= 0:
 		_load_legacy_settings(config)
@@ -85,6 +96,10 @@ func save_profile() -> int:
 	for action in DEFAULT_BINDINGS:
 		config.set_value("bindings", action, bindings[action])
 	config.set_value("scores", "entries", high_scores)
+	if FileAccess.file_exists(file_path):
+		var existing := ConfigFile.new()
+		if existing.load(file_path) == OK:
+			existing.save(file_path + ".bak")
 	return config.save(file_path)
 
 

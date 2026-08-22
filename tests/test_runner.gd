@@ -53,6 +53,7 @@ const SUITES := [
 	{"name": "audio_localization", "path": "res://tests/suites/audio_localization_test.gd"},
 	{"name": "release_balance_matrix", "path": "res://tests/suites/release_balance_matrix_test.gd"},
 	{"name": "release_stage_smoke", "path": "res://tests/suites/release_stage_smoke_test.gd"},
+	{"name": "release_compatibility", "path": "res://tests/suites/release_compatibility_test.gd"},
 ]
 
 

@@ -112,6 +112,8 @@ var final_score_rank := -1
 var control_selected_index := 0
 var pending_rebind_action := ""
 var original_key_events := {}
+var disconnected_player_snapshots := {}
+var suspended_by_os := false
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -172,6 +174,19 @@ func _ready() -> void:
 	_apply_settings()
 	music_director.play_cue(MusicDirectorScript.Cue.TITLE)
 	set_process(true)
+
+
+func _notification(what: int) -> void:
+	if not is_node_ready():
+		return
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		suspended_by_os = true
+		_save_profile()
+		handle_application_focus_lost()
+		if is_instance_valid(touch_controls):
+			touch_controls._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		suspended_by_os = false
 
 func _create_player() -> void:
 	var primary_slot = local_player_registry.slot_at(0)
@@ -699,6 +714,58 @@ func join_local_player(device_id: int, hero_index := -1) -> Node:
 	return fighter
 
 
+func _disconnect_local_player(device_id: int) -> bool:
+	var slot = local_player_registry.slot_for_device(device_id)
+	if slot == null or slot.slot_index == 0:
+		return false
+	var fighter := player_for_slot(slot.slot_index)
+	var snapshot := {
+		"slot_index": slot.slot_index,
+		"hero_index": slot.hero_index,
+		"selection_ready": slot.selection_ready,
+		"remaining_lives": slot.remaining_lives,
+		"position": fighter.position if is_instance_valid(fighter) else Vector2.ZERO,
+		"health": fighter.health if is_instance_valid(fighter) else 1,
+	}
+	disconnected_player_snapshots[device_id] = snapshot
+	if not leave_local_player(device_id):
+		disconnected_player_snapshots.erase(device_id)
+		return false
+	if is_instance_valid(hud):
+		hud.show_banner("CONTROLLER DISCONNECTED", "PLAYER %d RESERVED" % (int(snapshot.slot_index) + 1), 2.0)
+	return true
+
+
+func _reconnect_local_player(device_id: int) -> Node:
+	if not disconnected_player_snapshots.has(device_id):
+		return null
+	var snapshot: Dictionary = disconnected_player_snapshots[device_id]
+	var slot = local_player_registry.join_device_at_slot(device_id, int(snapshot.slot_index), int(snapshot.hero_index))
+	if slot == null:
+		return null
+	slot.selection_ready = bool(snapshot.selection_ready)
+	slot.remaining_lives = int(snapshot.remaining_lives)
+	var fighter := _create_local_player(slot)
+	if fighter == null:
+		local_player_registry.leave_device(device_id)
+		return null
+	fighter.health = clampi(int(snapshot.health), 1, fighter.max_health)
+	if state in ["playing", "options"]:
+		fighter.position = Vector2(snapshot.position)
+		fighter.invulnerable = 2.2
+		fighter.set_physics_process(state == "playing" and not get_tree().paused)
+		if is_instance_valid(highway_vehicle):
+			fighter.set_physics_process(false)
+			highway_vehicle._mount_players()
+	_sync_local_player_hud(fighter)
+	_sync_selection_hud()
+	disconnected_player_snapshots.erase(device_id)
+	if is_instance_valid(hud):
+		hud.show_banner("CONTROLLER RECONNECTED", "PLAYER %d RESTORED" % (slot.slot_index + 1), 1.5)
+	play_sfx(&"ui_confirm")
+	return fighter
+
+
 func leave_local_player(device_id: int) -> bool:
 	var slot = local_player_registry.slot_for_device(device_id)
 	if slot == null or slot.slot_index == 0:
@@ -953,8 +1020,10 @@ func _set_local_players_physics(enabled: bool) -> void:
 
 
 func _on_joy_connection_changed(device_id: int, connected: bool) -> void:
-	if not connected:
-		leave_local_player(device_id)
+	if connected:
+		_reconnect_local_player(device_id)
+	else:
+		_disconnect_local_player(device_id)
 
 func spawn_enemy(pos: Vector2, type: String) -> void:
 	var enemy := EnemyScript.new()

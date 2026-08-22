@@ -274,15 +274,17 @@ Exit gate: desktop, Web, and iOS behave like complete consumer builds rather tha
 
 ### M9 — Balance, QA, and 1.0 release
 
-Status: **not started**
+Status: **in progress**
 
 - [x] Full solo and 2–3 player balance passes with documented difficulty curves.
 - [x] All-stage automated smoke suite and focused combat/encounter regression suite.
-- [ ] Browser/device compatibility, reconnect, suspend/resume, save migration, and performance tests.
+- [x] Browser/device compatibility, reconnect, suspend/resume, save migration, and performance tests.
 - [ ] Asset provenance audit, license audit, release notes, clean checkout build, Pages deployment, and signed iOS run.
 - [ ] No critical/high defects; accepted medium defects documented with owner and target.
 
 Evidence (2026-08-22, release balance/smoke batch): the release gate now evaluates all 24 stage/player-count difficulty cells, all four solo hero profiles, and all fourteen unique solo/duo/trio hero rosters. Enemy health rises with each extra player while per-player encounter health falls; co-op damage pressure is capped at 1.16× over the same stage, solo hero TTK remains within 0.75–1.18× of Ranger, and co-op roster TTK remains inside the documented 0.52–0.82× teamwork band. A second release suite traverses all 24 scenes, 38 encounters, every wave, at least 120 resolved spawns, at least 20 referenced enemy roles, every final boss gate, and representative runtime instantiation/health scaling for all 8 stages at 1–3 players. The two new suites pass 487/487 assertions. Detailed curves and coverage are archived in `evidence/m9-balance-stage-smoke.md`.
+
+Evidence (2026-08-22, compatibility/lifecycle batch): controller disconnect/reconnect now restores the reserved slot, hero, health, position, continues, and safety invulnerability; application suspend persists the profile and enters the normal pause-confirmation flow. Profile release tests cover v1, v2, current/future schemas, defaults for new localization fields, last-known-good backup recovery, and clean fallback from an unrecoverable primary file. Automated platform checks hold Web to the compatibility renderer without thread/isolation requirements and iOS to arm64/iOS 15+. A real Chromium maximum-load fixture renders three players, the Stage 8 final boss, twelve additional enemies, and active stage hazards at 8.050 ms average with zero sampled frames above 20/33 ms and no browser warnings/errors. Full regression passes 52 suites and 3,586 assertions; Web and unsigned iOS packages plus Xcode arm64 build pass. Detailed evidence is archived in `evidence/m9-compatibility-lifecycle-performance.md`.
 
 Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducible build evidence.
 
@@ -290,7 +292,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M9 — Compatibility and release audit:** execute browser/device, reconnect, suspend/resume, migration, provenance/license, clean-checkout, defect, and performance gates.
+1. **M9 — Release audit:** complete provenance/license inventory, release notes, defect triage, and clean-checkout reproduction.
 2. **M9 — v1.0.0 publication:** prepare release notes, publish the verified Web build, tag the accepted commit, and complete signed iOS installation when renewed provisioning and the paired phone are available.
 
 ## Definition of done for every task

@@ -35,6 +35,18 @@ func join_device(device_id: int, hero_index := 0) -> RefCounted:
 	return slot
 
 
+func join_device_at_slot(device_id: int, slot_index: int, hero_index := 0) -> RefCounted:
+	var existing := slot_for_device(device_id)
+	if existing != null:
+		return existing
+	if slots.size() >= MAX_PLAYERS or slot_index < 0 or slot_index >= MAX_PLAYERS or slot_at(slot_index) != null:
+		return null
+	var slot := LocalPlayerSlotScript.new(slot_index, device_id, maxi(hero_index, 0))
+	slots.append(slot)
+	slots.sort_custom(func(a, b): return a.slot_index < b.slot_index)
+	return slot
+
+
 func leave_device(device_id: int) -> RefCounted:
 	for index in range(slots.size()):
 		if slots[index].device_id == device_id:

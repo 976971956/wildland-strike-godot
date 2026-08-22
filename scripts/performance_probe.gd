@@ -19,7 +19,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "audio_localization_preview=2" in query_string:
+		if "release_stress_preview=1" in query_string:
+			scenario = "release_three_player_stage_8_stress"
+			call_deferred("_start_release_stress_preview")
+		elif "audio_localization_preview=2" in query_string:
 			scenario = "chinese_boss_subtitle_preview"
 			call_deferred("_start_audio_localization_preview", true)
 		elif "audio_localization_preview=1" in query_string:
@@ -1038,6 +1041,41 @@ func _start_stage_8_preview(show_boss: bool) -> void:
 	game.hud.banner_time = 0.0
 	game.hud.dialogue_time = 0.0
 	game.set_process(false)
+
+
+func _start_release_stress_preview() -> void:
+	var game := get_parent()
+	var second: Node = game.join_local_player(0, 1)
+	var third: Node = game.join_local_player(1, 3)
+	if second == null or third == null:
+		scenario = "release_stress_setup_failed"
+		return
+	game._start_game()
+	for _stage in range(7):
+		game._advance_campaign_stage()
+	if game.active_stage_definition.stage_id != &"stage_8":
+		scenario = "release_stress_setup_failed"
+		return
+	var stress_players: Array[Node] = game.get_local_players()
+	for index in range(stress_players.size()):
+		stress_players[index].position = Vector2(3490.0 + index * 82.0, 520.0 + index * 48.0)
+		stress_players[index].invulnerable = 999.0
+	game.camera.position.x = 3660.0
+	game.encounter_director._update_scene(3600.0)
+	game.encounter_director.force_start_encounter(4)
+	var stress_roster := [
+		"elite_enforcer", "elite_blade", "elite_bombardier", "elite_bulwark",
+		"mutant_brute", "mutant_stalker", "raptor", "compy",
+		"grunt", "hunter", "demolitionist", "shield_guard",
+	]
+	for index in range(stress_roster.size()):
+		var column := index % 6
+		var row := index / 6
+		game.spawn_enemy(Vector2(3400.0 + column * 105.0, 500.0 + row * 105.0), stress_roster[index])
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		enemy.invulnerable = 999.0
+	game.hud.banner_time = 0.0
+	game.hud.dialogue_time = 0.0
 
 
 func _start_scene_preview(scene_index: int) -> void:

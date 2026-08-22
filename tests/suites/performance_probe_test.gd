@@ -28,3 +28,6 @@ func run(test) -> void:
 	test.check(probe_source.contains("victory_preview=1"), "reproducible victory presentation preview is missing")
 	test.check(probe_source.contains("roster_preview=1"), "reproducible enemy-roster preview is missing")
 	test.check(probe_source.contains("hud_preview=1") and probe_source.contains("hud_preview=2"), "desktop/touch HUD previews are missing")
+	test.check(probe_source.contains("stage_acceptance=1"), "reproducible Web Stage 1 acceptance entry is missing")
+	test.check(probe_source.contains("__wildlandStageAcceptanceJson"), "Web Stage 1 acceptance result is not observable")
+	test.check(probe_source.contains("formation_acceptance=1"), "reproducible Web enemy-formation acceptance entry is missing")

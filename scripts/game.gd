@@ -43,6 +43,7 @@ var sfx_stream_cache := {}
 var sfx_voice_priorities: Array[int] = []
 var sfx_voice_serials: Array[int] = []
 var sfx_voice_serial := 0
+var enemy_spawn_serial := 0
 var sfx_event_history: Array[StringName] = []
 var last_impact_profile_id: StringName
 var last_hit_stop_duration := 0.0
@@ -138,7 +139,8 @@ func spawn_enemy(pos: Vector2, type: String) -> void:
 	var enemy := EnemyScript.new()
 	actors.add_child(enemy)
 	enemy.position = pos
-	enemy.setup(self,player,type)
+	enemy.setup(self, player, type, enemy_spawn_serial)
+	enemy_spawn_serial += 1
 	_sync_hud_stage_progress()
 
 

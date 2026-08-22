@@ -10,6 +10,10 @@ const EnemyDefinitionScript = preload("res://core/combat/enemy_definition.gd")
 const BossPhaseDataScript = preload("res://core/combat/boss_phase_data.gd")
 const MAX_CHAIN_HITS := 6
 const CHAIN_RESET_DURATION := 0.85
+const FORMATION_LANES := [0.0, -1.0, 1.0, -2.0, 2.0, -3.0, 3.0]
+const FORMATION_LANE_SPACING := 36.0
+const SEPARATION_DISTANCE := 92.0
+const MIN_ENEMY_CENTER_DISTANCE := 56.0
 const CLASH_IMPACT = preload("res://data/impacts/clash.tres")
 const ENEMY_DEFINITIONS := {
 	"grunt": preload("res://data/enemies/grunt.tres"),
@@ -52,6 +56,7 @@ var death_timer := 0.0
 var walk_phase := 0.0
 var visual_clock := 0.0
 var approach_lane_offset := 0.0
+var formation_slot := 0
 var knockdown_state := false
 var wake_up_timer := 0.0
 var chain_hit_count := 0
@@ -80,7 +85,7 @@ var fighter_state: int:
 	get:
 		return state_machine.current_state
 
-func setup(p_game: Node, p_player: Node, p_type: String) -> void:
+func setup(p_game: Node, p_player: Node, p_type: String, p_formation_slot: int = -1) -> void:
 	game = p_game
 	player = p_player
 	combat_target = p_player
@@ -98,7 +103,8 @@ func setup(p_game: Node, p_player: Node, p_type: String) -> void:
 	# push each other around as one joined body.
 	collision_layer = 2
 	collision_mask = 1
-	approach_lane_offset = float(posmod(int(get_instance_id()), 5) - 2) * 9.0
+	formation_slot = p_formation_slot if p_formation_slot >= 0 else posmod(int(get_instance_id()), FORMATION_LANES.size())
+	approach_lane_offset = FORMATION_LANES[formation_slot % FORMATION_LANES.size()] * FORMATION_LANE_SPACING
 	var shape := CollisionShape2D.new()
 	var capsule := CapsuleShape2D.new()
 	capsule.radius = 17.0
@@ -182,6 +188,7 @@ func _physics_process(delta: float) -> void:
 	elif hurt_timer <= 0.0 and wake_up_timer <= 0.0 and stun_timer <= 0.0 and boss_transition_timer <= 0.0:
 		velocity = Vector2.ZERO
 	move_and_slide()
+	_resolve_visible_overlap()
 	_resolve_throw_collisions()
 	position.y = clampf(position.y, 455.0, 665.0)
 	position.x = clampf(position.x, 60.0, game.stage_limit + 80.0)
@@ -324,11 +331,20 @@ func _approach_player(player_offset: Vector2, use_lane_offset: bool) -> void:
 	if absf(player_offset.x) > definition.attack_distance * 0.78:
 		target.x = signf(offset.x)
 	if absf(offset.y) > definition.lane_tolerance * 0.5:
-		target.y = signf(offset.y) * definition.vertical_approach_scale
+		# Preserve the magnitude of each formation lane. A sign-only steer gives
+		# two enemies on the same side identical velocities, which makes them
+		# appear glued together even when soft separation is active.
+		var lane_weight := clampf(absf(offset.y) / 96.0, 0.25, 1.0)
+		target.y = signf(offset.y) * definition.vertical_approach_scale * lane_weight
 	var desired_velocity := target.normalized() * speed
 	var separation := _enemy_separation()
 	if separation != Vector2.ZERO:
-		desired_velocity += separation * speed * 0.92
+		# Separation breaks initial overlap, while the persistent formation lane
+		# remains dominant so two agents do not swap into the same moving slot.
+		desired_velocity += separation * speed * 0.72
+	if use_lane_offset:
+		var lane_correction := clampf(offset.y * 2.2, -speed * 0.9, speed * 0.9)
+		desired_velocity.y += lane_correction
 	velocity = desired_velocity.limit_length(speed)
 
 
@@ -540,13 +556,12 @@ func _update_combat_target() -> void:
 
 func _enemy_separation() -> Vector2:
 	var separation := Vector2.ZERO
-	const COMFORT_DISTANCE := 58.0
 	for other in get_tree().get_nodes_in_group("enemies"):
 		if other == self or not is_instance_valid(other) or other.is_defeated or other.grabbed:
 			continue
 		var away: Vector2 = position - other.position
 		var distance := away.length()
-		if distance >= COMFORT_DISTANCE:
+		if distance >= SEPARATION_DISTANCE:
 			continue
 		if distance < 0.01:
 			var side := -1.0 if get_instance_id() < other.get_instance_id() else 1.0
@@ -555,8 +570,36 @@ func _enemy_separation() -> Vector2:
 		# Favor vertical spreading so enemies still approach from both sides
 		# without stacking their sprites on the same depth lane.
 		away = Vector2(away.x * 0.48, away.y * 1.35).normalized()
-		separation += away * (1.0 - distance / COMFORT_DISTANCE)
+		var proximity_weight := pow(1.0 - distance / SEPARATION_DISTANCE, 1.35)
+		separation += away * proximity_weight
 	return separation.limit_length(1.0)
+
+
+func _resolve_visible_overlap() -> void:
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if (
+			other == self
+			or not is_instance_valid(other)
+			or other.is_defeated
+			or other.grabbed
+			or get_instance_id() > other.get_instance_id()
+		):
+			continue
+		var away: Vector2 = position - other.position
+		var distance := away.length()
+		if distance >= MIN_ENEMY_CENTER_DISTANCE:
+			continue
+		if distance < 0.01:
+			var lane_delta: float = approach_lane_offset - other.approach_lane_offset
+			var vertical_side := signf(lane_delta)
+			if is_zero_approx(vertical_side):
+				vertical_side = -1.0 if formation_slot < other.formation_slot else 1.0
+			away = Vector2(0.18, vertical_side).normalized()
+		else:
+			away = Vector2(away.x * 0.35, away.y * 1.25).normalized()
+		var correction := (MIN_ENEMY_CENTER_DISTANCE - distance) * 0.5
+		position += away * correction
+		other.position -= away * correction
 
 func _check_attack() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or not is_instance_valid(combat_target):

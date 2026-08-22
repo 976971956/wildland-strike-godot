@@ -101,10 +101,49 @@ func run(test) -> void:
 	hunter._think(1.0 / 60.0)
 	test.check(hunter.velocity.x < 0.0, "distant hunter did not close to firing range")
 
+	var formation: Array[Node] = []
+	for index in range(4):
+		var member := _spawn_frozen(game, Vector2(1180.0, 560.0), "grunt")
+		formation.append(member)
+	var lane_offsets := {}
+	for member in formation:
+		lane_offsets[member.approach_lane_offset] = true
+	test.check(lane_offsets.size() == 4, "simultaneous enemies were assigned duplicate formation lanes")
+	for _frame in range(90):
+		for member in formation:
+			member._think(1.0 / 60.0)
+		for member in formation:
+			member.position += member.velocity * (1.0 / 60.0)
+	var minimum_formation_distance := INF
+	for first_index in range(formation.size()):
+		for second_index in range(first_index + 1, formation.size()):
+			minimum_formation_distance = minf(
+				minimum_formation_distance,
+				formation[first_index].position.distance_to(formation[second_index].position)
+			)
+	test.check(
+		minimum_formation_distance >= 45.0,
+		"same-side enemies still travel as a visibly attached clump (minimum %.2f, lanes %s, positions %s)" % [
+			minimum_formation_distance,
+			formation.map(func(member): return member.approach_lane_offset),
+			formation.map(func(member): return member.position),
+		]
+	)
+	var velocity_signs := {}
+	for member in formation:
+		velocity_signs[signf(member.velocity.y)] = true
+	test.check(velocity_signs.size() >= 2, "formation steering did not split enemy depth movement")
+
 	var enemy_source := FileAccess.get_file_as_string("res://scripts/enemy.gd")
 	test.check(not enemy_source.contains("enemy_type =="), "enemy behavior branches on enemy id")
 	test.check(not enemy_source.contains("enemy_type !="), "enemy behavior branches on enemy id")
 	test.check(enemy_source.contains("definition.behavior_kind"), "enemy AI is not driven by typed definition data")
+	test.check(
+		enemy_source.contains("FORMATION_LANES")
+		and enemy_source.contains("SEPARATION_DISTANCE")
+		and enemy_source.contains("MIN_ENEMY_CENTER_DISTANCE"),
+		"enemy formation spacing is no longer explicit"
+	)
 	await test.dispose(game)
 
 

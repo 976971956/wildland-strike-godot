@@ -4,6 +4,8 @@ extends Node
 const WARMUP_FRAMES := 60
 const SAMPLE_FRAMES := 300
 const LOG_PREFIX := "WEB_PERFORMANCE_BASELINE "
+const ACCEPTANCE_LOG_PREFIX := "WEB_STAGE_ACCEPTANCE "
+const FORMATION_LOG_PREFIX := "WEB_FORMATION_ACCEPTANCE "
 
 var warmup_frames := 0
 var frame_times_ms := PackedFloat64Array()
@@ -15,7 +17,15 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "hud_preview=2" in query_string:
+		if "formation_acceptance=1" in query_string:
+			scenario = "enemy_formation_acceptance"
+			set_process(false)
+			call_deferred("_start_formation_acceptance")
+		elif "stage_acceptance=1" in query_string:
+			scenario = "stage_1_acceptance"
+			set_process(false)
+			call_deferred("_start_stage_acceptance")
+		elif "hud_preview=2" in query_string:
 			scenario = "touch_hud_preview"
 			call_deferred("_start_hud_preview", true)
 		elif "hud_preview=1" in query_string:
@@ -72,6 +82,127 @@ func _start_combat_benchmark() -> void:
 	var encounter: Resource = game.encounter_director.get_encounter(2)
 	game.player.position = Vector2(encounter.origin_x, 560.0)
 	game.encounter_director.force_start_encounter(2)
+
+
+func _start_stage_acceptance() -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game") or game.encounter_director.get_encounter_count() != 4:
+		_publish_stage_acceptance({"passed": false, "reason": "setup_failed"})
+		return
+	game._start_game()
+	game.set_process(false)
+	game.player.invulnerable = 999.0
+	game.player.set_physics_process(false)
+	var started_ids: Array[String] = []
+	var cleared_ids: Array[String] = []
+	game.encounter_director.encounter_started.connect(
+		func(encounter: Resource, _index: int) -> void: started_ids.append(String(encounter.encounter_id))
+	)
+	game.encounter_director.encounter_cleared.connect(
+		func(encounter: Resource, _index: int) -> void: cleared_ids.append(String(encounter.encounter_id))
+	)
+	for encounter_index in range(game.encounter_director.get_encounter_count()):
+		var encounter: Resource = game.encounter_director.get_encounter(encounter_index)
+		game.player.position.x = encounter.trigger_x
+		game.encounter_director.tick(1.0 / 60.0, game.player.position.x)
+		for wave_index in range(encounter.waves.size()):
+			if wave_index > 0:
+				game.encounter_director.tick(1.0, game.player.position.x)
+			await _defeat_acceptance_group(game)
+		if encounter_index == game.encounter_director.get_encounter_count() - 1:
+			await _defeat_acceptance_group(game)
+	game.encounter_director.tick(1.0 / 60.0, game.encounter_director.stage_definition.end_x())
+	game._tick_victory(1.6)
+	game._tick_victory(2.4)
+	var expected_ids := ["ruins_intro", "courtyard_reinforcement", "factory_pressure", "plant_boss"]
+	var passed: bool = (
+		game.encounter_director.completed
+		and game.state == "victory"
+		and game.victory_phase == &"complete"
+		and game.remaining_enemies == 0
+		and game.boss_phase_history == [&"command", &"overdrive"]
+		and started_ids == expected_ids
+		and cleared_ids == expected_ids
+		and game.score == 16900
+	)
+	_publish_stage_acceptance({
+		"passed": passed,
+		"encounters_started": started_ids,
+		"encounters_cleared": cleared_ids,
+		"boss_phases": Array(game.boss_phase_history).map(func(value): return String(value)),
+		"combat_score": 7500,
+		"final_score": game.score,
+		"remaining_enemies": game.remaining_enemies,
+		"player_health": game.player.health,
+		"victory_phase": String(game.victory_phase),
+	})
+
+
+func _start_formation_acceptance() -> void:
+	var game := get_parent()
+	if not game.has_method("_start_game") or not game.has_method("spawn_enemy"):
+		_publish_formation_acceptance({"passed": false, "reason": "setup_failed"})
+		return
+	game._start_game()
+	game.set_process(false)
+	game.encounter_director.completed = true
+	game.player.position = Vector2(500.0, 560.0)
+	game.player.invulnerable = 999.0
+	game.player.set_physics_process(false)
+	for _index in range(4):
+		game.spawn_enemy(Vector2(1180.0, 560.0), "grunt")
+	for _frame in range(90):
+		await get_tree().physics_frame
+	var formation: Array[Node] = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy.is_defeated:
+			formation.append(enemy)
+	var minimum_distance := INF
+	var lane_offsets := {}
+	for first_index in range(formation.size()):
+		lane_offsets[formation[first_index].approach_lane_offset] = true
+		for second_index in range(first_index + 1, formation.size()):
+			minimum_distance = minf(
+				minimum_distance,
+				formation[first_index].position.distance_to(formation[second_index].position)
+			)
+	_publish_formation_acceptance({
+		"passed": formation.size() == 4 and lane_offsets.size() == 4 and minimum_distance >= 45.0,
+		"enemy_count": formation.size(),
+		"unique_lanes": lane_offsets.size(),
+		"minimum_distance": snappedf(minimum_distance, 0.01),
+	})
+
+
+func _defeat_acceptance_group(game: Node) -> void:
+	var targets: Array[Node] = []
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not enemy.is_defeated:
+			targets.append(enemy)
+	for enemy in targets:
+		enemy.set_physics_process(true)
+		enemy.invulnerable = 0.0
+		enemy.take_hit(9999, Vector2(300.0, -45.0), true)
+	for _frame in range(52):
+		await get_tree().physics_frame
+
+
+func _publish_stage_acceptance(result: Dictionary) -> void:
+	var result_json := JSON.stringify(result)
+	print(ACCEPTANCE_LOG_PREFIX + result_json)
+	var browser_window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+	browser_window.__wildlandStageAcceptanceJson = result_json
+	var browser_document: JavaScriptObject = JavaScriptBridge.get_interface("document")
+	browser_document.body.setAttribute("data-wildland-stage-acceptance", result_json)
+
+
+func _publish_formation_acceptance(result: Dictionary) -> void:
+	var result_json := JSON.stringify(result)
+	print(FORMATION_LOG_PREFIX + result_json)
+	var browser_window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+	browser_window.__wildlandFormationAcceptanceJson = result_json
+	var browser_document: JavaScriptObject = JavaScriptBridge.get_interface("document")
+	browser_document.body.setAttribute("data-wildland-formation-acceptance", result_json)
 
 
 func _start_hud_preview(touch_layout: bool) -> void:

@@ -168,7 +168,7 @@ Evidence (2026-08-22): Stage 1 content now loads through typed stage, scene, enc
 
 ### M4 — Four heroes and local cooperation
 
-Status: **in progress**
+Status: **complete**
 
 - [x] Character-select and four complete typed hero definitions.
 - [x] Complete original animation sets for all four heroes.
@@ -178,7 +178,7 @@ Status: **in progress**
 - [x] Explicit combat ownership/faction filtering and player-count enemy scaling.
 - [x] Teammate revive window, per-player continues, safe respawn, and all-team game-over gating.
 - [x] Team attack.
-- [ ] Mobile retains a complete, tuned single-player control path.
+- [x] Mobile retains a complete, tuned single-player control path.
 
 Exit gate: all four heroes finish Stage 1 solo, and every 2–3 player combination can complete it locally.
 
@@ -195,6 +195,8 @@ Evidence (2026-08-22, co-op ownership/scaling batch): players, human enemies, ne
 Evidence (2026-08-22, revive/continue batch): a defeated co-op fighter now enters an eight-second down window without immediately spending a life. Any active teammate can move within 96 pixels and press attack to revive them at 35% health with temporary invulnerability; the rescue input is consumed instead of leaking into an attack. Expiry consumes only that slot's continue, then respawns it after 1.1 seconds at a safe candidate near the surviving team. Simultaneous knockdowns preserve a pending continue instead of deadlocking, eliminated teammates no longer end the run while another player survives, and game over occurs only after every player is down with no rescue window or continue remaining. Solo retains the original three-attempt timing. Compact HUD panels expose `DOWN` countdowns and `OUT` state, with banners and a dedicated revive cue. A reproducible Web fixture visually verifies the fallen pose, timer, and interaction prompt; it averaged 120.01 FPS across 300 frames with no frame above 20 ms and zero browser warnings/errors. Thirty-two deterministic suites pass 1485/1485 assertions. Web export, iOS project export, and unsigned arm64 Xcode build pass.
 
 Evidence (2026-08-22, team-attack batch): any two active nearby teammates can press special within a 0.24-second link window and a 190-pixel radius to trigger one typed radial team attack. Its damage uses the participants' average hero damage scale, hits each eligible hostile at most once, grants both participants the configured invulnerability, and charges the configured health cost exactly once per participant only after a valid target is damaged. Friendly fire remains impossible. Unmatched and out-of-range requests fall back to each fighter's ordinary special instead of swallowing input, while hurt, down, leave, and timeout paths clear stale requests safely. Distinct linked rings, launch/impact behavior, synthesized audio, and a team banner make the result readable. Thirty-three deterministic suites pass 1515/1515 assertions. The exported Web fixture was visually inspected at 120.04 FPS over 300 frames with no frame above 20 ms and zero browser warnings/errors. Web export, iOS project export, and the unsigned Mach-O arm64 Xcode build pass.
+
+Exit evidence (2026-08-22): the deterministic M4 matrix completes Stage 1 with all four solo heroes, all six unique two-player hero pairs, and all four unique three-player hero trios. Every one of the fourteen runs retains its selected roster and player count, clears all four encounters, passes both boss phases and dynamic reinforcements, reaches victory at 7,500 combat score, and completes settlement at 16,900 final score. The same gate routes real touch events through title start, direct hero selection/confirmation, eight-way movement, attack, jump, special, release, and focus-loss cleanup. Thirty-four suites pass 1740/1740 assertions. The exported mobile HUD/dialogue/control layout was visually accepted with zero browser warnings/errors and averaged 120.00 FPS over 300 frames with no frame above 20 ms or 33 ms. M4 Web export, Pages deployment, and unsigned iOS arm64 build pass. Detailed matrix evidence is archived in `evidence/m4-coop-acceptance.md`.
 
 ### M5 — Weapon sandbox and dinosaur ecology
 
@@ -256,7 +258,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M4 — Exit acceptance:** run all four solo heroes and every unique 2–3 player hero combination through Stage 1, then verify the complete mobile single-player path and close the M4 exit gate.
+1. **M5 — Weapon sandbox foundation:** expand the three Stage 1 weapon families into at least twelve distinct typed behaviors with explicit ammo/durability/drop rules and systemic cross-faction interactions.
 
 ## Definition of done for every task
 
@@ -283,5 +285,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The enemy roster still lacks explosive specialists, knife specialists, elites, additional dinosaur archetypes, and the remaining seven unique campaign boss state machines.
 - Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, and linked team attacks exist for all four heroes. Their timing contract remains shared until later role-balance passes, and the complete M4 solo/co-op Stage 1 combination matrix is the next acceptance gate. Vehicle and high-score persistence do not exist yet; the procedural Stage 1 score and three-family weapon set are foundations for the final soundtrack and weapon sandbox rather than complete campaign coverage.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet; the procedural Stage 1 score and three-family weapon set are foundations for the final soundtrack and the next M5 weapon sandbox rather than complete campaign coverage.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

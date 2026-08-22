@@ -56,10 +56,11 @@ func run(test) -> void:
 	player.current_attack = COMBO_1
 	player.equipped_weapon = MACHETE
 	player.weapon_ammo = 3
-	test.check(player._visual_frame() == Vector2i(2, 3), "machete attack frame drifted")
+	test.check(player._visual_frame() == Vector2i(0, 1), "machete startup reused the hero sheet's baked duplicate weapon frame")
 	player.equipped_weapon = PISTOL
 	player.weapon_ammo = 4
-	test.check(player._visual_frame() == Vector2i(3, 3), "pistol firing frame drifted")
+	player.attack_timer = 0.1
+	test.check(player._visual_frame() == Vector2i(1, 1), "pistol contact reused the hero sheet's baked duplicate firearm frame")
 	player.attack_timer = 0.0
 	player.weapon_ammo = 0
 	player.equipped_weapon = null

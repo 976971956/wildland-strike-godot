@@ -518,6 +518,7 @@ func _check_attack_hit() -> void:
 			return
 		var will_grab: bool = (
 			current_attack.can_grab
+			and not _has_melee_weapon()
 			and z_height <= 0.0
 			and best.can_be_grabbed()
 			and best_dist < current_attack.grab_range
@@ -922,6 +923,9 @@ func _draw() -> void:
 	var jump_offset := Vector2(0, -z_height)
 	# Ground shadow remains anchored while the sprite rises during jumps.
 	_draw_oval(Vector2(0, 1), 29.0, 9.0, Color(0.02,0.03,0.04,0.42))
+	var held_visual := held_weapon_visual()
+	if not held_visual.is_empty() and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
+		_draw_held_weapon(held_visual, jump_offset)
 	var frame := _visual_frame()
 	var cell := Vector2(
 		hero_sprite_sheet.get_width() / float(hero_sprite_columns),
@@ -934,19 +938,29 @@ func _draw() -> void:
 	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
 	draw_texture_rect_region(hero_sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	var held_visual := held_weapon_visual()
-	if not held_visual.is_empty():
-		var model_facing: float = -facing if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM else facing
-		draw_set_transform(jump_offset + Vector2(20.0 * facing, -61.0), 0.0, Vector2(model_facing, 1.0))
-		draw_texture_rect_region(held_visual.atlas, held_visual.target_rect, held_visual.source_rect)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		if equipped_weapon.chain_radius > 0.0:
-			draw_arc(jump_offset + Vector2(55.0 * facing, -80.0), 12.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
+	if not held_visual.is_empty() and equipped_weapon.kind != WeaponDefinitionScript.WeaponKind.MELEE:
+		_draw_held_weapon(held_visual, jump_offset)
 	if special_timer > 0.0:
 		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)
 	elif team_attack_charge_timer > 0.0:
 		draw_arc(jump_offset + Vector2(0, -64), 64, -PI * 0.5, PI * 1.5, 32, Color("#82e8ff"), 4)
+
+
+func _draw_held_weapon(visual: Dictionary, jump_offset: Vector2) -> void:
+	var pose := held_weapon_pose()
+	var origin: Vector2 = pose.origin
+	var model_scale := Vector2(float(facing * int(visual.asset_facing)), 1.0)
+	draw_set_transform(
+		jump_offset + Vector2(origin.x * facing, origin.y),
+		float(pose.rotation) * facing,
+		model_scale
+	)
+	draw_texture_rect_region(visual.atlas, visual.target_rect, visual.source_rect)
+	if equipped_weapon.chain_radius > 0.0:
+		var tip: Vector2 = visual.target_rect.position + visual.target_rect.size * Vector2(0.84, 0.2)
+		draw_arc(tip, 10.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func held_weapon_visual() -> Dictionary:
@@ -955,21 +969,56 @@ func held_weapon_visual() -> Dictionary:
 	var atlas_index := WeaponCatalogScript.atlas_index_for_weapon(equipped_weapon)
 	if atlas_index < 0:
 		return {}
-	var source_position := Vector2(atlas_index % WEAPON_ATLAS_COLUMNS, atlas_index / WEAPON_ATLAS_COLUMNS) * WEAPON_ATLAS_CELL_SIZE
-	var model_size := 92.0
-	var target_position := Vector2(-13.0, -68.0)
-	if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-		model_size = 84.0
-		target_position = Vector2(-36.0, -55.0)
-	elif equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.EXPLOSIVE:
-		model_size = 76.0
-		target_position = Vector2(-38.0, -49.0)
+	var cell_position := Vector2(atlas_index % WEAPON_ATLAS_COLUMNS, atlas_index / WEAPON_ATLAS_COLUMNS) * WEAPON_ATLAS_CELL_SIZE
+	var source_rect := Rect2(cell_position + equipped_weapon.held_crop.position, equipped_weapon.held_crop.size)
+	var target_size: Vector2 = equipped_weapon.held_crop.size * equipped_weapon.held_scale
+	var target_position: Vector2 = -equipped_weapon.held_grip * equipped_weapon.held_scale
 	return {
 		"atlas": WEAPON_PICKUP_ATLAS,
 		"atlas_index": atlas_index,
-		"source_rect": Rect2(source_position, WEAPON_ATLAS_CELL_SIZE),
-		"target_rect": Rect2(target_position, Vector2.ONE * model_size),
+		"source_rect": source_rect,
+		"target_rect": Rect2(target_position, target_size),
+		"asset_facing": equipped_weapon.held_asset_facing,
 	}
+
+
+func held_weapon_pose() -> Dictionary:
+	if equipped_weapon == null:
+		return {}
+	var origin := Vector2(39.0, -66.0)
+	var contact_origin := Vector2(38.0, -88.0)
+	if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+		origin = Vector2(39.0, -67.0)
+		contact_origin = Vector2(40.0, -91.0)
+	elif equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.EXPLOSIVE:
+		origin = Vector2(39.0, -67.0)
+		contact_origin = Vector2(37.0, -87.0)
+	var idle_origin := origin
+	var rotation: float = equipped_weapon.held_idle_rotation
+	if attack_timer > 0.0 and current_attack != null and current_attack.duration > 0.0:
+		var progress := clampf(1.0 - attack_timer / current_attack.duration, 0.0, 1.0)
+		var contact_progress := clampf(
+			1.0 - current_attack.hit_trigger_remaining / current_attack.duration,
+			0.08,
+			0.78
+		)
+		if progress <= contact_progress:
+			var strike_weight := smoothstep(0.0, contact_progress, progress)
+			rotation = lerpf(equipped_weapon.held_idle_rotation, equipped_weapon.held_contact_rotation, strike_weight)
+			origin = idle_origin.lerp(contact_origin, strike_weight)
+		else:
+			var recovery := (progress - contact_progress) / maxf(1.0 - contact_progress, 0.001)
+			var follow_rotation: float = equipped_weapon.held_contact_rotation + (equipped_weapon.held_contact_rotation - equipped_weapon.held_idle_rotation) * 0.14
+			if recovery < 0.42:
+				rotation = lerpf(equipped_weapon.held_contact_rotation, follow_rotation, recovery / 0.42)
+				origin = contact_origin + Vector2(3.0, 2.0) * (recovery / 0.42)
+			else:
+				var recovery_weight := smoothstep(0.42, 1.0, recovery)
+				rotation = lerpf(follow_rotation, equipped_weapon.held_idle_rotation, recovery_weight)
+				origin = (contact_origin + Vector2(3.0, 2.0)).lerp(idle_origin, recovery_weight)
+			if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
+				origin.x -= sin(clampf(recovery / 0.42, 0.0, 1.0) * PI) * 6.0
+	return {"origin": origin, "rotation": rotation}
 
 func _visual_frame() -> Vector2i:
 	if victory_pose_phase > 0:
@@ -991,11 +1040,6 @@ func _visual_frame() -> Vector2i:
 			return Vector2i(1, 2)
 		return Vector2i(0, 2)
 	if attack_timer > 0.0:
-		if weapon_ammo > 0 and equipped_weapon != null:
-			return Vector2i(
-				2 if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE else 3,
-				3
-			)
 		if current_attack != null and current_attack.attack_id == &"player_run_attack":
 			return Vector2i(4, 1)
 		if current_attack != null and current_attack.attack_id == &"player_command_attack":

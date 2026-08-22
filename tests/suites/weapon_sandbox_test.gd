@@ -42,6 +42,7 @@ func run(test) -> void:
 	test.check(PickupScript.weapon_atlas_index("unknown_weapon") == -1, "unknown pickup incorrectly borrowed a production weapon model")
 	var model_player := PlayerScript.new()
 	test.check(model_player.has_method("held_weapon_visual"), "held weapons still fall back to primitive follower lines instead of production models")
+	test.check(model_player.has_method("held_weapon_pose"), "held weapons do not expose an attack-synchronized hand pose")
 	if model_player.has_method("held_weapon_visual"):
 		for weapon: Resource in WeaponCatalogScript.ALL:
 			model_player.equipped_weapon = weapon
@@ -49,13 +50,23 @@ func run(test) -> void:
 			var visual: Dictionary = model_player.held_weapon_visual()
 			test.check(int(visual.get("atlas_index", -1)) == PickupScript.weapon_atlas_index("weapon_%s" % weapon.weapon_id), "%s held model does not match its pickup artwork" % weapon.display_name)
 			test.check(visual.get("atlas") == PickupScript.WEAPON_PICKUP_ATLAS, "%s held model does not reuse the production weapon atlas" % weapon.display_name)
+			var source_rect: Rect2 = visual.get("source_rect", Rect2())
+			var target_rect: Rect2 = visual.get("target_rect", Rect2())
+			var source_aspect := source_rect.size.x / maxf(source_rect.size.y, 1.0)
+			var target_aspect := target_rect.size.x / maxf(target_rect.size.y, 1.0)
+			test.check(absf(source_aspect - target_aspect) < 0.01, "%s held model is stretched away from its pickup proportions" % weapon.display_name)
+			test.check(source_rect.size.x < PlayerScript.WEAPON_ATLAS_CELL_SIZE.x or source_rect.size.y < PlayerScript.WEAPON_ATLAS_CELL_SIZE.y, "%s held model still renders the padded full pickup cell" % weapon.display_name)
+			test.check(visual.has("asset_facing") and absi(int(visual.asset_facing)) == 1, "%s held model has no authored source-facing direction" % weapon.display_name)
 	model_player.free()
 
 	await _verify_melee_behaviors(test)
 	await _verify_firearm_behaviors(test)
 	await _verify_explosive_behaviors(test)
 	var probe_source := FileAccess.get_file_as_string("res://scripts/performance_probe.gd")
-	test.check(probe_source.contains("weapon_sandbox_preview=1") and probe_source.contains('game.player.give_weapon("weapon_machete")'), "reproducible held/pickup weapon Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=1") and probe_source.contains('"weapon_machete"'), "reproducible machete contact-pose Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=2") and probe_source.contains('"weapon_shotgun"'), "reproducible firearm contact-pose Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=3") and probe_source.contains('"weapon_rocket"'), "reproducible heavy-weapon contact-pose Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=4") and probe_source.contains("shotgun_held_idle_preview"), "reproducible held-weapon idle Web preview is missing")
 
 
 func _verify_melee_behaviors(test) -> void:
@@ -71,6 +82,25 @@ func _verify_melee_behaviors(test) -> void:
 	game.player._start_attack()
 	var base_extent: float = game.player.current_attack.weapon_box_half_extents.x
 	test.check(is_equal_approx(game.player.attack_hitbox.half_extents.x, base_extent * WeaponCatalogScript.WHIP.melee_reach_scale), "whip did not extend the real melee hitbox")
+
+	game.player.attack_timer = 0.0
+	game.player.combo_window = 0.0
+	game.player.give_weapon("weapon_machete")
+	game.spawn_enemy(Vector2(535.0, 550.0), "grunt")
+	var armed_target: Node = test.tree.get_nodes_in_group("enemies").back()
+	armed_target.set_physics_process(false)
+	armed_target.invulnerable = 0.0
+	game.player._start_attack()
+	var pose_at_start: Dictionary = game.player.held_weapon_pose()
+	game.player.attack_timer = game.player.current_attack.hit_trigger_remaining - 0.001
+	var pose_at_contact: Dictionary = game.player.held_weapon_pose()
+	test.check(game.player._visual_frame() not in [Vector2i(2, 3), Vector2i(3, 3)], "equipped attack still draws the hero sheet's baked duplicate machete/pistol")
+	game.player._check_attack_hit()
+	test.check(game.player.grabbed_enemy == null, "an armed melee strike incorrectly entered the unarmed contact-grab state")
+	test.check(absf(float(pose_at_contact.get("rotation", 0.0)) - float(pose_at_start.get("rotation", 0.0))) > 0.35, "melee weapon did not swing into its deterministic contact pose")
+
+	armed_target.queue_free()
+	await test.tree.process_frame
 
 	game.player.attack_timer = 0.0
 	game.player.combo_window = 0.0

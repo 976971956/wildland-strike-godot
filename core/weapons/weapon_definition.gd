@@ -40,9 +40,17 @@ enum WeaponKind {
 @export var blast_sfx: StringName = &"explosion"
 @export var color := Color.WHITE
 
+@export_group("Held Visual")
+@export var held_crop := Rect2()
+@export var held_grip := Vector2.ZERO
+@export_range(0.1, 1.5, 0.01) var held_scale := 0.5
+@export_range(-1, 1, 2) var held_asset_facing := 1
+@export_range(-3.14, 3.14, 0.01) var held_idle_rotation := 0.0
+@export_range(-3.14, 3.14, 0.01) var held_contact_rotation := 0.0
+
 
 func is_valid_weapon() -> bool:
-	if weapon_id.is_empty() or display_name.is_empty() or behavior_id.is_empty() or capacity <= 0 or impact_profile == null:
+	if weapon_id.is_empty() or display_name.is_empty() or behavior_id.is_empty() or capacity <= 0 or impact_profile == null or not has_valid_held_visual():
 		return false
 	if not impact_profile.has_method("is_valid_profile") or not impact_profile.is_valid_profile():
 		return false
@@ -76,3 +84,16 @@ func is_valid_weapon() -> bool:
 			and not blast_sfx.is_empty()
 		)
 	return false
+
+
+func has_valid_held_visual() -> bool:
+	return (
+		held_crop.size.x > 0.0
+		and held_crop.size.y > 0.0
+		and held_grip.x >= 0.0
+		and held_grip.y >= 0.0
+		and held_grip.x <= held_crop.size.x
+		and held_grip.y <= held_crop.size.y
+		and held_scale > 0.0
+		and absi(held_asset_facing) == 1
+	)

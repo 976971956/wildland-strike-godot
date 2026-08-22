@@ -276,11 +276,13 @@ Exit gate: desktop, Web, and iOS behave like complete consumer builds rather tha
 
 Status: **not started**
 
-- [ ] Full solo and 2–3 player balance passes with documented difficulty curves.
-- [ ] All-stage automated smoke suite and focused combat/encounter regression suite.
+- [x] Full solo and 2–3 player balance passes with documented difficulty curves.
+- [x] All-stage automated smoke suite and focused combat/encounter regression suite.
 - [ ] Browser/device compatibility, reconnect, suspend/resume, save migration, and performance tests.
 - [ ] Asset provenance audit, license audit, release notes, clean checkout build, Pages deployment, and signed iOS run.
 - [ ] No critical/high defects; accepted medium defects documented with owner and target.
+
+Evidence (2026-08-22, release balance/smoke batch): the release gate now evaluates all 24 stage/player-count difficulty cells, all four solo hero profiles, and all fourteen unique solo/duo/trio hero rosters. Enemy health rises with each extra player while per-player encounter health falls; co-op damage pressure is capped at 1.16× over the same stage, solo hero TTK remains within 0.75–1.18× of Ranger, and co-op roster TTK remains inside the documented 0.52–0.82× teamwork band. A second release suite traverses all 24 scenes, 38 encounters, every wave, at least 120 resolved spawns, at least 20 referenced enemy roles, every final boss gate, and representative runtime instantiation/health scaling for all 8 stages at 1–3 players. The two new suites pass 487/487 assertions. Detailed curves and coverage are archived in `evidence/m9-balance-stage-smoke.md`.
 
 Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducible build evidence.
 
@@ -288,7 +290,8 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M9 — Balance and release QA:** execute the full solo/co-op balance matrix, compatibility/migration/performance gates, clean-checkout build, provenance/license audit, release notes, and `v1.0.0` publication.
+1. **M9 — Compatibility and release audit:** execute browser/device, reconnect, suspend/resume, migration, provenance/license, clean-checkout, defect, and performance gates.
+2. **M9 — v1.0.0 publication:** prepare release notes, publish the verified Web build, tag the accepted commit, and complete signed iOS installation when renewed provisioning and the paired phone are available.
 
 ## Definition of done for every task
 

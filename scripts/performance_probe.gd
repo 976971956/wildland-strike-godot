@@ -92,6 +92,12 @@ func _ready() -> void:
 		elif "baseline_benchmark=1" in query_string:
 			scenario = "four_enemy_wave"
 			call_deferred("_start_combat_benchmark")
+		elif "campaign_flow_preview=2" in query_string:
+			scenario = "campaign_complete_preview"
+			call_deferred("_start_campaign_flow_preview", true)
+		elif "campaign_flow_preview=1" in query_string:
+			scenario = "campaign_map_preview"
+			call_deferred("_start_campaign_flow_preview", false)
 		elif "victory_preview=1" in query_string:
 			scenario = "victory_preview"
 			call_deferred("_start_victory_preview")
@@ -761,6 +767,25 @@ func _start_victory_preview() -> void:
 	game.lives = 2
 	game._victory()
 	game._tick_victory(1.6)
+
+
+func _start_campaign_flow_preview(complete: bool) -> void:
+	var game := get_parent()
+	if not game.has_method("_open_campaign_map") or not game.has_method("_complete_first_half_campaign"):
+		scenario = "campaign_flow_preview_setup_failed"
+		return
+	game.score = 68420
+	game.hud.set_score(game.score)
+	game.lives = 1
+	game.campaign_stage_index = 3
+	game.active_stage_definition = game.CAMPAIGN_STAGE_DEFINITIONS[3]
+	game.completed_stage_count = 4 if complete else 3
+	if complete:
+		game._complete_first_half_campaign()
+	else:
+		game._open_campaign_map(3)
+	game.set_process(false)
+	game.player.set_physics_process(false)
 
 
 static func summarize(samples_ms: PackedFloat64Array) -> Dictionary:

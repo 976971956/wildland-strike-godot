@@ -111,7 +111,11 @@ func _verify_mobile_single_player_path(test) -> void:
 	controls._handle_touch(kestrel_card)
 	test.check(game.selected_hero_index == 2 and game.state == "select", "mobile card tap did not select the intended hero")
 	controls._handle_touch(kestrel_card)
-	test.check(game.state == "playing" and game.player.hero_id == &"kestrel", "second mobile card tap did not confirm and start Stage 1")
+	test.check(game.state == "campaign_map", "second mobile card tap did not confirm into the campaign route")
+	controls._handle_touch(_touch_event(74, Vector2(640.0, 620.0), true))
+	game._process(0.0)
+	Input.action_release("start")
+	test.check(game.state == "playing" and game.player.hero_id == &"kestrel", "mobile campaign map tap did not start Stage 1")
 	game.set_process(false)
 	game.player.set_physics_process(false)
 

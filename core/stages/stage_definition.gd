@@ -4,13 +4,23 @@ extends Resource
 @export var stage_id: StringName
 @export_range(1, 8, 1) var stage_number := 1
 @export var display_name := ""
+@export var route_subtitle := ""
+@export var clear_message := "AREA SECURED"
+@export var map_position := Vector2.ZERO
 @export_range(0.0, 3600.0, 1.0) var time_limit_seconds := 0.0
+@export_range(0.5, 3.0, 0.01) var enemy_health_scale := 1.0
+@export_range(0.5, 3.0, 0.01) var enemy_damage_scale := 1.0
+@export_range(0, 50000, 100) var clear_bonus := 5000
+@export_range(0, 100, 1) var time_bonus_per_second := 10
+@export_range(0, 10000, 100) var life_bonus_per_continue := 1000
 @export var scenes: Array[Resource] = []
 @export var vehicle_sequence: Resource
 
 
 func is_valid_stage() -> bool:
-	if stage_id.is_empty() or display_name.is_empty() or scenes.is_empty():
+	if stage_id.is_empty() or display_name.is_empty() or route_subtitle.is_empty() or clear_message.is_empty() or scenes.is_empty():
+		return false
+	if map_position == Vector2.ZERO or enemy_health_scale < 1.0 or enemy_damage_scale < 1.0 or clear_bonus <= 0 or time_bonus_per_second <= 0 or life_bonus_per_continue <= 0:
 		return false
 	var scene_ids := {}
 	var previous_end := -1.0

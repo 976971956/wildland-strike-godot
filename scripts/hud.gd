@@ -23,6 +23,16 @@ var victory_time_bonus := 0
 var victory_life_bonus := 0
 var victory_clear_bonus := 0
 var victory_final_score := 0
+var victory_stage_number := 1
+var victory_stage_name := "THE RUINED DISTRICT"
+var victory_clear_message := "AREA SECURED"
+var victory_has_next := false
+var campaign_stage_nodes: Array[Dictionary] = []
+var campaign_target_index := 0
+var campaign_completed_count := 0
+var campaign_display_score := 0
+var campaign_display_lives := 2
+var campaign_final_bonus := 0
 var stage_area := 1
 var stage_area_total := 1
 var stage_hostiles := 0
@@ -248,6 +258,41 @@ func set_victory_phase(value: StringName) -> void:
 	victory_phase = value
 	queue_redraw()
 
+
+func set_victory_context(stage_number: int, stage_name: String, clear_message: String, has_next: bool) -> void:
+	victory_stage_number = maxi(stage_number, 1)
+	victory_stage_name = stage_name
+	victory_clear_message = clear_message
+	victory_has_next = has_next
+	queue_redraw()
+
+
+func set_campaign_map(stages: Array, target_index: int, completed_count: int, current_score: int, current_lives: int) -> void:
+	campaign_stage_nodes.clear()
+	for stage in stages:
+		campaign_stage_nodes.append({
+			"number": stage.stage_number,
+			"name": stage.display_name,
+			"subtitle": stage.route_subtitle,
+			"position": stage.map_position,
+			"threat": stage.enemy_health_scale,
+			"bonus": stage.clear_bonus,
+		})
+	campaign_target_index = clampi(target_index, 0, maxi(campaign_stage_nodes.size() - 1, 0))
+	campaign_completed_count = clampi(completed_count, 0, campaign_stage_nodes.size())
+	campaign_display_score = maxi(current_score, 0)
+	campaign_display_lives = current_lives
+	mode = "campaign_map"
+	queue_redraw()
+
+
+func set_campaign_complete(final_score: int, completion_bonus: int, current_lives: int) -> void:
+	campaign_display_score = maxi(final_score, 0)
+	campaign_final_bonus = maxi(completion_bonus, 0)
+	campaign_display_lives = current_lives
+	mode = "campaign_complete"
+	queue_redraw()
+
 func _draw() -> void:
 	var ratio := clampf(float(health)/maxf(max_health,1),0.0,1.0)
 	var danger_pulse := 0.72 + sin(Time.get_ticks_msec() * 0.012) * 0.28
@@ -324,12 +369,15 @@ func _draw() -> void:
 		draw_string(font, Vector2(0, 664), select_hint, HORIZONTAL_ALIGNMENT_CENTER, size.x, 20, Color.WHITE)
 	elif mode == "hero_animation":
 		_draw_hero_animation_preview()
+	elif mode == "campaign_map":
+		_draw_campaign_map()
 	elif mode == "victory":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_rect(Rect2(318, 142, 644, 438), Color(0.025, 0.035, 0.05, 0.94))
 		draw_rect(Rect2(318, 142, 644, 6), Color("#f2c756"))
-		draw_string(font, Vector2(318, 222), "STAGE 1 CLEAR", HORIZONTAL_ALIGNMENT_CENTER, 644, 50, Color("#f2c756"))
-		draw_string(font, Vector2(318, 258), "THE PROCESSING PLANT IS SECURE", HORIZONTAL_ALIGNMENT_CENTER, 644, 18, Color("#d6dfdb"))
+		draw_string(font, Vector2(318, 207), "STAGE %d CLEAR" % victory_stage_number, HORIZONTAL_ALIGNMENT_CENTER, 644, 43, Color("#f2c756"))
+		draw_string(font, Vector2(318, 238), victory_stage_name, HORIZONTAL_ALIGNMENT_CENTER, 644, 19, Color("#f0bd5b"))
+		draw_string(font, Vector2(318, 266), victory_clear_message, HORIZONTAL_ALIGNMENT_CENTER, 644, 17, Color("#d6dfdb"))
 		if victory_phase == &"bonus" or victory_phase == &"complete":
 			draw_string(font, Vector2(390, 326), "TIME BONUS", HORIZONTAL_ALIGNMENT_LEFT, 300, 21, Color("#a7d9cc"))
 			draw_string(font, Vector2(720, 326), "%07d" % victory_time_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 170, 21, Color.WHITE)
@@ -341,12 +389,65 @@ func _draw() -> void:
 			draw_string(font, Vector2(390, 470), "FINAL SCORE", HORIZONTAL_ALIGNMENT_LEFT, 300, 24, Color("#f2c756"))
 			draw_string(font, Vector2(690, 470), "%08d" % victory_final_score, HORIZONTAL_ALIGNMENT_RIGHT, 200, 24, Color.WHITE)
 		if victory_phase == &"complete":
-			draw_string(font, Vector2(318, 538), "TAP / ENTER TO RESTART", HORIZONTAL_ALIGNMENT_CENTER, 644, 20, Color("#d6dfdb"))
+			var victory_hint := "TAP / ENTER FOR ROUTE MAP" if victory_has_next else "TAP / ENTER FOR CAMPAIGN REPORT"
+			draw_string(font, Vector2(318, 538), victory_hint, HORIZONTAL_ALIGNMENT_CENTER, 644, 20, Color("#d6dfdb"))
+	elif mode == "campaign_complete":
+		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 0.92))
+		draw_rect(Rect2(280, 112, 720, 488), Color(0.025, 0.04, 0.055, 0.98))
+		draw_rect(Rect2(280, 112, 720, 7), Color("#f2c756"))
+		draw_string(font, Vector2(280, 202), "FIRST FRONT LIBERATED", HORIZONTAL_ALIGNMENT_CENTER, 720, 44, Color("#f2c756"))
+		draw_string(font, Vector2(280, 245), "FOUR-STAGE CAMPAIGN COMPLETE", HORIZONTAL_ALIGNMENT_CENTER, 720, 21, Color("#b7e8df"))
+		draw_string(font, Vector2(355, 335), "FRONT COMPLETION BONUS", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(740, 335), "%08d" % campaign_final_bonus, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
+		draw_string(font, Vector2(355, 395), "REMAINING CONTINUES", HORIZONTAL_ALIGNMENT_LEFT, 360, 22, Color("#a7d9cc"))
+		draw_string(font, Vector2(740, 395), "%02d" % campaign_display_lives, HORIZONTAL_ALIGNMENT_RIGHT, 180, 22, Color.WHITE)
+		draw_line(Vector2(355, 430), Vector2(925, 430), Color("#f2c756"), 2.0)
+		draw_string(font, Vector2(355, 482), "FINAL SCORE", HORIZONTAL_ALIGNMENT_LEFT, 330, 27, Color("#f2c756"))
+		draw_string(font, Vector2(700, 482), "%08d" % campaign_display_score, HORIZONTAL_ALIGNMENT_RIGHT, 225, 27, Color.WHITE)
+		draw_string(font, Vector2(280, 555), "TAP / ENTER TO RETURN TO TITLE", HORIZONTAL_ALIGNMENT_CENTER, 720, 19, Color("#d6dfdb"))
 	elif mode == "gameover":
 		draw_rect(Rect2(0,0,size.x,size.y),Color(0.01,0.02,0.03,0.63))
 		draw_string(font,Vector2(0,278),"GAME OVER",HORIZONTAL_ALIGNMENT_CENTER,size.x,54,Color("#ed5a4c"))
 		draw_string(font,Vector2(0,338),"FINAL SCORE  %08d"%score,HORIZONTAL_ALIGNMENT_CENTER,size.x,25,Color.WHITE)
 		draw_string(font,Vector2(0,402),"TAP / ENTER TO RESTART",HORIZONTAL_ALIGNMENT_CENTER,size.x,20,Color("#d6dfdb"))
+
+
+func _draw_campaign_map() -> void:
+	draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.016, 0.028, 0.97))
+	for band in range(7):
+		var y := 118.0 + band * 72.0
+		draw_line(Vector2(0, y), Vector2(size.x, y - 36.0), Color(0.08, 0.16, 0.19, 0.22), 2.0)
+	draw_string(font, Vector2(0, 62), "WILDLAND CAMPAIGN ROUTE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 38, Color("#f2c756"))
+	draw_string(font, Vector2(0, 94), "FIRST FRONT // FOUR OPERATIONS", HORIZONTAL_ALIGNMENT_CENTER, size.x, 17, Color("#9fc9bd"))
+	for index in range(campaign_stage_nodes.size() - 1):
+		var from: Vector2 = campaign_stage_nodes[index].position
+		var to: Vector2 = campaign_stage_nodes[index + 1].position
+		var route_color := Color("#6fcdb1") if index < campaign_completed_count else Color("#344950")
+		draw_line(from, to, route_color, 8.0)
+		draw_line(from, to, Color(0.02, 0.04, 0.05, 0.8), 2.0)
+	for index in range(campaign_stage_nodes.size()):
+		var node: Dictionary = campaign_stage_nodes[index]
+		var point: Vector2 = node.position
+		var completed := index < campaign_completed_count
+		var selected := index == campaign_target_index
+		var locked := index > campaign_target_index
+		var node_color := Color("#59c7a6") if completed else (Color("#f2c756") if selected else Color("#42545b"))
+		if selected:
+			draw_circle(point, 42.0 + sin(Time.get_ticks_msec() * 0.006) * 4.0, Color(node_color, 0.18))
+		draw_circle(point, 31.0, Color(0.02, 0.035, 0.045, 0.96))
+		draw_arc(point, 31.0, 0, TAU, 32, node_color, 5.0)
+		draw_string(font, point + Vector2(-31, 8), "%d" % int(node.number), HORIZONTAL_ALIGNMENT_CENTER, 62, 22, node_color)
+		var label_rect := Rect2(point.x - 112.0, point.y + 43.0, 224.0, 62.0)
+		draw_rect(label_rect, Color(0.02, 0.035, 0.05, 0.92))
+		draw_string(font, label_rect.position + Vector2(8, 23), String(node.name), HORIZONTAL_ALIGNMENT_CENTER, 208, 15, Color("#dce8e3") if not locked else Color("#718087"))
+		draw_string(font, label_rect.position + Vector2(8, 47), "CLEARED" if completed else String(node.subtitle), HORIZONTAL_ALIGNMENT_CENTER, 208, 13, node_color)
+	if not campaign_stage_nodes.is_empty():
+		var target: Dictionary = campaign_stage_nodes[campaign_target_index]
+		draw_rect(Rect2(310, 570, 660, 96), Color(0.025, 0.045, 0.06, 0.96))
+		draw_rect(Rect2(310, 570, 660, 5), Color("#f2c756"))
+		draw_string(font, Vector2(332, 606), "NEXT  STAGE %d // %s" % [int(target.number), String(target.name)], HORIZONTAL_ALIGNMENT_LEFT, 460, 19, Color.WHITE)
+		draw_string(font, Vector2(332, 638), "THREAT %.2fx   CLEAR %05d   SCORE %08d   CONTINUES %d" % [float(target.threat), int(target.bonus), campaign_display_score, campaign_display_lives], HORIZONTAL_ALIGNMENT_LEFT, 610, 15, Color("#b7e8df"))
+		draw_string(font, Vector2(310, 700), "TAP / ENTER TO DEPLOY", HORIZONTAL_ALIGNMENT_CENTER, 660, 19, Color("#f2c756"))
 
 
 func _draw_local_player_panels(danger_pulse: float) -> void:

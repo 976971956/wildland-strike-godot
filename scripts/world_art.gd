@@ -14,7 +14,7 @@ func _ready() -> void:
 
 
 func configure(stage_definition: Resource) -> void:
-	scenes = stage_definition.scenes if stage_definition != null else []
+	scenes = stage_definition.scenes.duplicate() if stage_definition != null else []
 	if is_instance_valid(ambience):
 		ambience.configure(scenes)
 	queue_redraw()

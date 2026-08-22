@@ -22,8 +22,11 @@ var completed := false
 func configure(p_game: Node, p_stage_definition: Resource) -> void:
 	game = p_game
 	stage_definition = p_stage_definition
-	encounters.clear()
-	scenes.clear()
+	# Never clear arrays that may still alias a StageDefinition resource. Doing
+	# so silently erased completed stages from the cached campaign after the
+	# next transition. Fresh arrays keep authored resources immutable.
+	encounters = []
+	scenes = []
 	current_encounter_index = 0
 	current_scene_index = -1
 	current_wave_index = -1
@@ -37,8 +40,8 @@ func configure(p_game: Node, p_stage_definition: Resource) -> void:
 		and stage_definition.has_method("is_valid_stage")
 		and stage_definition.is_valid_stage()
 	):
-		encounters = stage_definition.all_encounters()
-		scenes = stage_definition.scenes
+		encounters = stage_definition.all_encounters().duplicate()
+		scenes = stage_definition.scenes.duplicate()
 	if is_instance_valid(game) and not encounters.is_empty():
 		game.stage_limit = encounters[0].arena_right
 

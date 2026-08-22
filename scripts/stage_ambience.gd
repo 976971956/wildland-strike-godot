@@ -9,7 +9,7 @@ var redraw_accumulator := 0.0
 
 
 func configure(stage_scenes: Array[Resource]) -> void:
-	scenes = stage_scenes
+	scenes = stage_scenes.duplicate()
 	queue_redraw()
 
 

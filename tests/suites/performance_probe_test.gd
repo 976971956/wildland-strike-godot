@@ -26,6 +26,7 @@ func run(test) -> void:
 	test.check(probe_source.contains("boss_preview=1") and probe_source.contains("boss_preview=2"), "reproducible boss visual previews are missing")
 	test.check(probe_source.contains("scene_preview=2") and probe_source.contains("scene_preview=3"), "reproducible scene-art previews are missing")
 	test.check(probe_source.contains("victory_preview=1"), "reproducible victory presentation preview is missing")
+	test.check(probe_source.contains("campaign_flow_preview=1") and probe_source.contains("campaign_flow_preview=2"), "reproducible campaign route/report previews are missing")
 	test.check(probe_source.contains("stage2_preview=2") and probe_source.contains("_start_stage_2_preview"), "reproducible Stage 2 visual preview is missing")
 	test.check(probe_source.contains("stage3_preview=2") and probe_source.contains("_start_stage_3_preview"), "reproducible Stage 3 vehicle preview is missing")
 	test.check(probe_source.contains("stage4_preview=2") and probe_source.contains("_start_stage_4_preview"), "reproducible Stage 4 industrial preview is missing")

@@ -79,6 +79,10 @@ var victory_time_bonus := 0
 var victory_life_bonus := 0
 var victory_clear_bonus := 0
 var victory_bonus_applied := false
+var campaign_map_target_index := 0
+var completed_stage_count := 0
+var campaign_completion_bonus := 20000
+var campaign_completion_bonus_applied := false
 var shared_camera_zoom := 1.0
 var joy_selection_axis_latch := {}
 var downed_time_remaining := {}
@@ -177,13 +181,22 @@ func _process(delta: float) -> void:
 		if Input.is_action_just_pressed("attack") or Input.is_action_just_pressed("start"):
 			confirm_hero_selection_for_slot(0)
 		return
+	if state == "campaign_map":
+		_set_local_players_physics(false)
+		if Input.is_action_just_pressed("start") or Input.is_action_just_pressed("attack"):
+			_deploy_campaign_stage()
+		return
 	if state == "victory":
 		_tick_victory(delta)
 		if victory_phase == &"complete" and Input.is_action_just_pressed("start"):
 			if campaign_stage_index + 1 < CAMPAIGN_STAGE_DEFINITIONS.size():
-				_advance_campaign_stage()
+				_open_campaign_map(campaign_stage_index + 1)
 			else:
-				get_tree().reload_current_scene()
+				_complete_first_half_campaign()
+		return
+	if state == "campaign_complete":
+		if Input.is_action_just_pressed("start"):
+			get_tree().reload_current_scene()
 		return
 	if state == "gameover":
 		if Input.is_action_just_pressed("start"):
@@ -225,6 +238,24 @@ func _start_game() -> void:
 	hud.show_banner("STAGE %d  READY" % active_stage_definition.stage_number, active_stage_definition.display_name, 2.1)
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
 	play_sfx("start")
+
+
+func _open_campaign_map(target_index: int = 0) -> void:
+	campaign_map_target_index = clampi(target_index, 0, CAMPAIGN_STAGE_DEFINITIONS.size() - 1)
+	state = "campaign_map"
+	_set_local_players_physics(false)
+	music_director.play_cue(MusicDirectorScript.Cue.SILENT)
+	hud.set_campaign_map(CAMPAIGN_STAGE_DEFINITIONS, campaign_map_target_index, completed_stage_count, score, lives)
+	play_sfx(&"ui_confirm")
+
+
+func _deploy_campaign_stage() -> void:
+	if state != "campaign_map":
+		return
+	if campaign_map_target_index > campaign_stage_index:
+		_advance_campaign_stage()
+	else:
+		_start_game()
 
 
 func selected_hero() -> Resource:
@@ -286,7 +317,7 @@ func confirm_hero_selection_for_slot(slot_index: int) -> bool:
 	_sync_selection_hud()
 	play_sfx(&"ui_confirm")
 	if local_player_registry.all_ready():
-		_start_game()
+		_open_campaign_map(0)
 	return true
 
 
@@ -421,11 +452,13 @@ func coop_player_count() -> int:
 
 
 func coop_enemy_health_scale() -> float:
-	return COOP_ENEMY_HEALTH_SCALES[coop_player_count() - 1]
+	var stage_scale: float = active_stage_definition.enemy_health_scale if active_stage_definition != null else 1.0
+	return COOP_ENEMY_HEALTH_SCALES[coop_player_count() - 1] * stage_scale
 
 
 func coop_enemy_damage_scale() -> float:
-	return COOP_ENEMY_DAMAGE_SCALES[coop_player_count() - 1]
+	var stage_scale: float = active_stage_definition.enemy_damage_scale if active_stage_definition != null else 1.0
+	return COOP_ENEMY_DAMAGE_SCALES[coop_player_count() - 1] * stage_scale
 
 
 func try_team_attack(source: Node) -> bool:
@@ -964,14 +997,16 @@ func _victory() -> void:
 	state = "victory"
 	victory_phase = &"clear"
 	victory_timer = 1.6
-	victory_time_bonus = ceili(stage_time_remaining) * 10
-	victory_life_bonus = maxi(lives, 0) * 1000
-	victory_clear_bonus = 5000
+	victory_time_bonus = ceili(stage_time_remaining) * active_stage_definition.time_bonus_per_second
+	victory_life_bonus = maxi(lives, 0) * active_stage_definition.life_bonus_per_continue
+	victory_clear_bonus = active_stage_definition.clear_bonus
 	victory_bonus_applied = false
+	completed_stage_count = maxi(completed_stage_count, campaign_stage_index + 1)
 	_set_local_players_physics(false)
 	for fighter in get_local_players():
 		fighter.set_victory_pose(1)
 	hud.set_victory_summary(victory_time_bonus, victory_life_bonus, victory_clear_bonus, score)
+	hud.set_victory_context(active_stage_definition.stage_number, active_stage_definition.display_name, active_stage_definition.clear_message, campaign_stage_index + 1 < CAMPAIGN_STAGE_DEFINITIONS.size())
 	hud.set_victory_phase(victory_phase)
 	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
 	play_sfx("victory")
@@ -1017,6 +1052,19 @@ func _advance_campaign_stage() -> void:
 	music_director.play_cue(MusicDirectorScript.Cue.STAGE)
 	play_sfx(&"start")
 	_sync_hud_stage_progress()
+
+
+func _complete_first_half_campaign() -> void:
+	if campaign_stage_index + 1 < CAMPAIGN_STAGE_DEFINITIONS.size() or completed_stage_count < CAMPAIGN_STAGE_DEFINITIONS.size():
+		return
+	if not campaign_completion_bonus_applied:
+		campaign_completion_bonus_applied = true
+		add_score(campaign_completion_bonus)
+	state = "campaign_complete"
+	_set_local_players_physics(false)
+	music_director.play_cue(MusicDirectorScript.Cue.VICTORY)
+	hud.set_campaign_complete(score, campaign_completion_bonus, lives)
+	play_sfx(&"victory")
 
 
 func _tick_victory(delta: float) -> void:

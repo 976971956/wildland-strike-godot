@@ -76,6 +76,7 @@ var finisher_armed := false
 var hurt_timer := 0.0
 var invulnerable := 0.0
 var special_timer := 0.0
+var team_attack_charge_timer := 0.0
 var special_connected := false
 var last_hit_was_counter := false
 var grabbed_enemy: Node = null
@@ -186,6 +187,7 @@ func _physics_process(delta: float) -> void:
 	hurt_timer = maxf(hurt_timer - delta, 0.0)
 	invulnerable = maxf(invulnerable - delta, 0.0)
 	special_timer = maxf(special_timer - delta, 0.0)
+	team_attack_charge_timer = maxf(team_attack_charge_timer - delta, 0.0)
 	if is_instance_valid(grabbed_enemy):
 		grab_hold_timer = maxf(grab_hold_timer - delta, 0.0)
 		if grab_hold_timer <= 0.0:
@@ -235,11 +237,11 @@ func _apply_intent(intent) -> void:
 	var defensive_chord: bool = intent.attack_pressed and intent.jump_pressed
 	if defensive_chord:
 		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
-			_start_special()
+			_request_special()
 		return
 	if intent.special_pressed:
 		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
-			_start_special()
+			_request_special()
 		return
 	if (
 		intent.attack_pressed
@@ -406,6 +408,42 @@ func _start_special() -> void:
 		health_changed.emit(health, max_health)
 		_apply_attacker_recoil(current_attack.impact_profile)
 		game._hit_stop(current_attack.impact_profile.hit_stop_duration)
+
+
+func _request_special() -> void:
+	if game.has_method("try_team_attack") and game.try_team_attack(self):
+		return
+	_start_special()
+
+
+func start_queued_special() -> void:
+	team_attack_charge_timer = 0.0
+	if is_defeated or hurt_timer > 0.0 or special_timer > 0.0 or z_height > 5.0 or health <= SPECIAL_ATTACK.self_damage:
+		return
+	_start_special()
+
+
+func begin_team_attack(attack_data: Resource) -> void:
+	run_controller.cancel()
+	command_controller.cancel()
+	_reset_combo()
+	_release_grabbed_enemy()
+	team_attack_charge_timer = 0.0
+	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
+	current_attack = attack_data
+	attack_hitbox.deactivate()
+	special_connected = true
+	special_timer = attack_data.duration
+	attack_timer = attack_data.duration
+	attack_hit_done = true
+	invulnerable = maxf(invulnerable, attack_data.invulnerable_duration)
+	queue_redraw()
+
+
+func apply_team_attack_cost(amount: int) -> void:
+	health = maxi(health - maxi(amount, 0), 1)
+	health_changed.emit(health, max_health)
+	queue_redraw()
 
 func _check_attack_hit() -> void:
 	if attack_timer <= 0.0 or attack_hit_done or special_timer > 0.0 or current_attack == null:
@@ -606,6 +644,8 @@ func take_hit(
 ) -> void:
 	if invulnerable > 0.0 or is_defeated:
 		return
+	if game != null and game.has_method("cancel_team_attack_request"):
+		game.cancel_team_attack_request(self)
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
@@ -782,7 +822,10 @@ func _draw() -> void:
 	elif weapon_hits > 0 and equipped_weapon != null:
 		draw_circle(jump_offset + Vector2(26*facing,-57), 9.0, equipped_weapon.color)
 	if special_timer > 0.0:
-		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, Color("#ffe37a"), 7)
+		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
+		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)
+	elif team_attack_charge_timer > 0.0:
+		draw_arc(jump_offset + Vector2(0, -64), 64, -PI * 0.5, PI * 1.5, 32, Color("#82e8ff"), 4)
 
 func _visual_frame() -> Vector2i:
 	if victory_pose_phase > 0:

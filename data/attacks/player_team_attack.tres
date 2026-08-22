@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/special.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"player_team_attack"
+sound_event = &"team_attack"
+duration = 0.82
+damage = 30
+knockback = Vector2(0, -72)
+launch = true
+impact_strength = 3
+impact_profile = ExtResource("2")
+priority = 4
+effect_radius = 190.0
+radial_horizontal_scale = 5.2
+self_damage = 5
+invulnerable_duration = 0.95

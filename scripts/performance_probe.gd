@@ -26,6 +26,9 @@ func _ready() -> void:
 		elif "coop_revive_preview=1" in query_string:
 			scenario = "coop_revive_preview"
 			call_deferred("_start_coop_revive_preview")
+		elif "team_attack_preview=1" in query_string:
+			scenario = "team_attack_preview"
+			call_deferred("_start_team_attack_preview")
 		elif "hero_animation_preview=" in query_string:
 			scenario = "hero_animation_preview"
 			var hero_index := 1
@@ -176,6 +179,28 @@ func _start_coop_revive_preview() -> void:
 	game.downed_time_remaining[1] = 5.6
 	game.hud.set_local_player_down_timer(1, 5.6)
 	game.hud.show_banner("PLAYER 2 DOWN", "MOVE CLOSE + ATTACK TO REVIVE", 999.0)
+	game.set_process(false)
+
+
+func _start_team_attack_preview() -> void:
+	var game := get_parent()
+	var second: Node = game.join_local_player(0, 1)
+	if second == null:
+		scenario = "team_attack_setup_failed"
+		return
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.position = Vector2(650.0, 555.0)
+	second.position = Vector2(760.0, 555.0)
+	game.player.set_physics_process(false)
+	second.set_physics_process(false)
+	for enemy_position in [Vector2(590.0, 515.0), Vector2(710.0, 585.0), Vector2(835.0, 525.0)]:
+		game.spawn_enemy(enemy_position, "grunt")
+		var enemy: Node = get_tree().get_nodes_in_group("enemies").back()
+		enemy.set_physics_process(false)
+	game.player._request_special()
+	second._request_special()
+	game.hud.show_banner("TEAM ATTACK!", "P1 + P2 LINK // 3 TARGETS", 999.0)
 	game.set_process(false)
 
 

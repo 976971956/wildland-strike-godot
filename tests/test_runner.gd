@@ -34,6 +34,7 @@ const SUITES := [
 	{"name": "local_player_architecture", "path": "res://tests/suites/local_player_architecture_test.gd"},
 	{"name": "coop_scaling", "path": "res://tests/suites/coop_scaling_test.gd"},
 	{"name": "coop_revive", "path": "res://tests/suites/coop_revive_test.gd"},
+	{"name": "team_attack", "path": "res://tests/suites/team_attack_test.gd"},
 ]
 
 

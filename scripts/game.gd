@@ -12,6 +12,7 @@ const SfxLibraryScript = preload("res://scripts/sfx_library.gd")
 const LocalPlayerRegistryScript = preload("res://core/input/local_player_registry.gd")
 const DeviceInputSourceScript = preload("res://core/input/device_input_source.gd")
 const STAGE_1_DEFINITION = preload("res://data/stages/stage_1/stage_1.tres")
+const TEAM_ATTACK = preload("res://data/attacks/player_team_attack.tres")
 const HERO_DEFINITIONS := [
 	preload("res://data/heroes/ranger.tres"),
 	preload("res://data/heroes/mara.tres"),
@@ -71,6 +72,10 @@ var shared_camera_zoom := 1.0
 var joy_selection_axis_latch := {}
 var downed_time_remaining := {}
 var continue_respawn_time := {}
+var team_attack_requests := {}
+var team_attack_count := 0
+var last_team_attack_participants: Array[int] = []
+var last_team_attack_hits := 0
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -85,6 +90,8 @@ const TEAMMATE_REVIVE_WINDOW := 8.0
 const TEAMMATE_REVIVE_DISTANCE := 96.0
 const TEAMMATE_REVIVE_HEALTH_RATIO := 0.35
 const CONTINUE_RESPAWN_DELAY := 1.1
+const TEAM_ATTACK_INPUT_WINDOW := 0.24
+const TEAM_ATTACK_LINK_DISTANCE := 190.0
 
 func _ready() -> void:
 	local_player_registry.reset_with_keyboard(selected_hero_index)
@@ -167,6 +174,7 @@ func _process(delta: float) -> void:
 			get_tree().reload_current_scene()
 		return
 	_tick_downed_players(delta)
+	_tick_team_attack_requests(delta)
 	var active_players := get_active_players()
 	if active_players.is_empty():
 		return
@@ -355,6 +363,7 @@ func leave_local_player(device_id: int) -> bool:
 	var fighter := player_for_slot(slot.slot_index)
 	downed_time_remaining.erase(slot.slot_index)
 	continue_respawn_time.erase(slot.slot_index)
+	team_attack_requests.erase(slot.slot_index)
 	local_player_registry.leave_device(device_id)
 	hud.remove_local_player_state(slot.slot_index)
 	if is_instance_valid(fighter):
@@ -398,6 +407,111 @@ func coop_enemy_health_scale() -> float:
 
 func coop_enemy_damage_scale() -> float:
 	return COOP_ENEMY_DAMAGE_SCALES[coop_player_count() - 1]
+
+
+func try_team_attack(source: Node) -> bool:
+	if get_active_players().size() < 2 or not _team_attack_eligible(source):
+		return false
+	for slot_index in team_attack_requests.keys().duplicate():
+		var partner := player_for_slot(int(slot_index))
+		if not _team_attack_eligible(partner):
+			team_attack_requests.erase(slot_index)
+			if is_instance_valid(partner):
+				partner.team_attack_charge_timer = 0.0
+			continue
+		if partner == source or partner.position.distance_to(source.position) > TEAM_ATTACK_LINK_DISTANCE:
+			continue
+		team_attack_requests.erase(slot_index)
+		partner.team_attack_charge_timer = 0.0
+		_execute_team_attack([partner, source])
+		return true
+	team_attack_requests[source.local_slot_index] = TEAM_ATTACK_INPUT_WINDOW
+	source.team_attack_charge_timer = TEAM_ATTACK_INPUT_WINDOW
+	return true
+
+
+func cancel_team_attack_request(source: Node) -> void:
+	if not is_instance_valid(source):
+		return
+	team_attack_requests.erase(source.local_slot_index)
+	source.team_attack_charge_timer = 0.0
+
+
+func _team_attack_eligible(fighter: Node) -> bool:
+	return (
+		is_instance_valid(fighter)
+		and not fighter.is_defeated
+		and fighter.hurt_timer <= 0.0
+		and fighter.special_timer <= 0.0
+		and fighter.z_height <= 5.0
+		and fighter.health > TEAM_ATTACK.self_damage
+	)
+
+
+func _tick_team_attack_requests(delta: float) -> void:
+	for slot_index in team_attack_requests.keys().duplicate():
+		var fighter := player_for_slot(int(slot_index))
+		if not _team_attack_eligible(fighter):
+			team_attack_requests.erase(slot_index)
+			if is_instance_valid(fighter):
+				fighter.team_attack_charge_timer = 0.0
+			continue
+		var remaining := maxf(0.0, float(team_attack_requests[slot_index]) - delta)
+		team_attack_requests[slot_index] = remaining
+		fighter.team_attack_charge_timer = remaining
+		if remaining <= 0.0:
+			team_attack_requests.erase(slot_index)
+			fighter.start_queued_special()
+
+
+func _execute_team_attack(participants: Array) -> void:
+	if participants.size() < 2:
+		return
+	var center := Vector2.ZERO
+	var damage_scale_total := 0.0
+	last_team_attack_participants.clear()
+	for fighter in participants:
+		center += fighter.position
+		damage_scale_total += fighter.damage_scale
+		last_team_attack_participants.append(fighter.local_slot_index)
+		fighter.begin_team_attack(TEAM_ATTACK)
+	center /= participants.size()
+	var resolved_damage := maxi(1, roundi(TEAM_ATTACK.damage * damage_scale_total / participants.size()))
+	last_team_attack_hits = 0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(enemy) or enemy.is_defeated:
+			continue
+		var in_range := false
+		for fighter in participants:
+			if fighter.position.distance_to(enemy.position) <= TEAM_ATTACK.effect_radius:
+				in_range = true
+				break
+		if not in_range:
+			continue
+		var enemy_health_before: int = enemy.health
+		var direction := 1 if enemy.position.x >= center.x else -1
+		enemy.take_hit(
+			resolved_damage,
+			Vector2(direction * maxf(absf(enemy.position.x - center.x) * TEAM_ATTACK.radial_horizontal_scale, 260.0), TEAM_ATTACK.knockback.y),
+			TEAM_ATTACK.launch,
+			false,
+			0.0,
+			true
+		)
+		if enemy.health < enemy_health_before:
+			last_team_attack_hits += 1
+			hit_confirm(enemy.position - Vector2(0.0, 50.0), TEAM_ATTACK.impact_strength, direction, false, TEAM_ATTACK.impact_profile)
+	if last_team_attack_hits > 0:
+		for fighter in participants:
+			fighter.apply_team_attack_cost(TEAM_ATTACK.self_damage)
+		hit_confirm(center - Vector2(0.0, 52.0), 3, 1, true, TEAM_ATTACK.impact_profile)
+	team_attack_count += 1
+	last_team_attack_participants.sort()
+	var participant_labels := PackedStringArray()
+	for slot_index in last_team_attack_participants:
+		participant_labels.append("P%d" % (slot_index + 1))
+	hud.show_banner("TEAM ATTACK!", "%s LINK // %d TARGETS" % [" + ".join(participant_labels), last_team_attack_hits], 1.4)
+	play_sfx(TEAM_ATTACK.sound_event)
 
 
 func _sync_local_player_hud(fighter: Node) -> void:
@@ -645,6 +759,7 @@ func _on_local_player_defeated(fighter: Node) -> void:
 func _begin_player_downed(fighter: Node) -> void:
 	if not is_instance_valid(fighter) or state != "playing":
 		return
+	cancel_team_attack_request(fighter)
 	fighter.set_physics_process(false)
 	var revive_window := TEAMMATE_REVIVE_WINDOW if coop_player_count() > 1 and not get_active_players().is_empty() else 0.0
 	downed_time_remaining[fighter.local_slot_index] = revive_window

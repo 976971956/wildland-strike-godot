@@ -12,6 +12,28 @@ const WEAPON_ATLAS_CELL_SIZE := Vector2(160.0, 160.0)
 const WEAPON_ATLAS_COLUMNS := 4
 const SPRITE_COLUMNS := 6
 const SPRITE_ROWS := 4
+const HERO_DRAW_SIZE := Vector2(154.0, 171.0)
+const HELD_GRIP_COVER_SIZE := Vector2(22.0, 20.0)
+const HELD_HAND_ANCHORS := {
+	Vector2i(0, 0): Vector2(45.0, -70.0),
+	Vector2i(1, 0): Vector2(43.0, -70.0),
+	Vector2i(2, 0): Vector2(37.0, -84.0),
+	Vector2i(3, 0): Vector2(44.0, -88.0),
+	Vector2i(4, 0): Vector2(43.0, -86.0),
+	Vector2i(5, 0): Vector2(42.0, -88.0),
+	Vector2i(0, 1): Vector2(28.0, -85.0),
+	Vector2i(1, 1): Vector2(55.0, -86.0),
+	Vector2i(2, 1): Vector2(58.0, -87.0),
+	Vector2i(3, 1): Vector2(17.0, -130.0),
+	Vector2i(4, 1): Vector2(50.0, -85.0),
+	Vector2i(5, 1): Vector2(42.0, -76.0),
+	Vector2i(0, 2): Vector2(37.0, -80.0),
+	Vector2i(1, 2): Vector2(30.0, -85.0),
+	Vector2i(2, 2): Vector2(35.0, -92.0),
+	Vector2i(3, 2): Vector2(40.0, -72.0),
+	Vector2i(4, 2): Vector2(38.0, -70.0),
+	Vector2i(5, 2): Vector2(35.0, -65.0),
+}
 const FighterStateMachineScript = preload("res://actors/fighters/fighter_state_machine.gd")
 const HurtboxScript = preload("res://core/combat/combat_hurtbox.gd")
 const HitboxScript = preload("res://core/combat/combat_hitbox.gd")
@@ -924,22 +946,20 @@ func _draw() -> void:
 	# Ground shadow remains anchored while the sprite rises during jumps.
 	_draw_oval(Vector2(0, 1), 29.0, 9.0, Color(0.02,0.03,0.04,0.42))
 	var held_visual := held_weapon_visual()
-	if not held_visual.is_empty() and equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.MELEE:
-		_draw_held_weapon(held_visual, jump_offset)
 	var frame := _visual_frame()
 	var cell := Vector2(
 		hero_sprite_sheet.get_width() / float(hero_sprite_columns),
 		hero_sprite_sheet.get_height() / float(hero_sprite_rows)
 	)
-	var target_size := Vector2(154.0, 171.0)
-	var target_rect := Rect2(-target_size.x * 0.5, -target_size.y + 16.0, target_size.x, target_size.y)
+	var target_rect := _hero_target_rect()
 	var source_rect := Rect2(frame.x * cell.x, frame.y * cell.y, cell.x, cell.y)
 	var tint_color := Color(1.0, 0.72, 0.72) if hurt_timer > 0.0 else Color.WHITE
 	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
 	draw_texture_rect_region(hero_sprite_sheet, target_rect, source_rect, tint_color)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if not held_visual.is_empty() and equipped_weapon.kind != WeaponDefinitionScript.WeaponKind.MELEE:
+	if not held_visual.is_empty():
 		_draw_held_weapon(held_visual, jump_offset)
+		_draw_held_weapon_grip_cover(jump_offset, tint_color)
 	if special_timer > 0.0:
 		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
 		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)
@@ -960,6 +980,20 @@ func _draw_held_weapon(visual: Dictionary, jump_offset: Vector2) -> void:
 	if equipped_weapon.chain_radius > 0.0:
 		var tip: Vector2 = visual.target_rect.position + visual.target_rect.size * Vector2(0.84, 0.2)
 		draw_arc(tip, 10.0, -PI * 0.8, PI * 0.35, 10, Color("#76efff"), 3.0)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_held_weapon_grip_cover(jump_offset: Vector2, tint_color: Color) -> void:
+	var grip_cover := held_weapon_grip_cover()
+	if grip_cover.is_empty():
+		return
+	draw_set_transform(jump_offset, 0.0, Vector2(facing, 1.0))
+	draw_texture_rect_region(
+		grip_cover.atlas,
+		grip_cover.target_rect,
+		grip_cover.source_rect,
+		tint_color
+	)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -985,15 +1019,7 @@ func held_weapon_visual() -> Dictionary:
 func held_weapon_pose() -> Dictionary:
 	if equipped_weapon == null:
 		return {}
-	var origin := Vector2(39.0, -66.0)
-	var contact_origin := Vector2(38.0, -88.0)
-	if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
-		origin = Vector2(39.0, -67.0)
-		contact_origin = Vector2(40.0, -91.0)
-	elif equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.EXPLOSIVE:
-		origin = Vector2(39.0, -67.0)
-		contact_origin = Vector2(37.0, -87.0)
-	var idle_origin := origin
+	var origin := _held_hand_anchor(_visual_frame())
 	var rotation: float = equipped_weapon.held_idle_rotation
 	if attack_timer > 0.0 and current_attack != null and current_attack.duration > 0.0:
 		var progress := clampf(1.0 - attack_timer / current_attack.duration, 0.0, 1.0)
@@ -1005,20 +1031,51 @@ func held_weapon_pose() -> Dictionary:
 		if progress <= contact_progress:
 			var strike_weight := smoothstep(0.0, contact_progress, progress)
 			rotation = lerpf(equipped_weapon.held_idle_rotation, equipped_weapon.held_contact_rotation, strike_weight)
-			origin = idle_origin.lerp(contact_origin, strike_weight)
 		else:
 			var recovery := (progress - contact_progress) / maxf(1.0 - contact_progress, 0.001)
 			var follow_rotation: float = equipped_weapon.held_contact_rotation + (equipped_weapon.held_contact_rotation - equipped_weapon.held_idle_rotation) * 0.14
 			if recovery < 0.42:
 				rotation = lerpf(equipped_weapon.held_contact_rotation, follow_rotation, recovery / 0.42)
-				origin = contact_origin + Vector2(3.0, 2.0) * (recovery / 0.42)
 			else:
 				var recovery_weight := smoothstep(0.42, 1.0, recovery)
 				rotation = lerpf(follow_rotation, equipped_weapon.held_idle_rotation, recovery_weight)
-				origin = (contact_origin + Vector2(3.0, 2.0)).lerp(idle_origin, recovery_weight)
 			if equipped_weapon.kind == WeaponDefinitionScript.WeaponKind.FIREARM:
 				origin.x -= sin(clampf(recovery / 0.42, 0.0, 1.0) * PI) * 6.0
 	return {"origin": origin, "rotation": rotation}
+
+
+func held_weapon_grip_cover() -> Dictionary:
+	if held_weapon_visual().is_empty():
+		return {}
+	var frame := _visual_frame()
+	var pose := held_weapon_pose()
+	var origin: Vector2 = pose.get("origin", Vector2.ZERO)
+	var target_rect := Rect2(origin - HELD_GRIP_COVER_SIZE * 0.5, HELD_GRIP_COVER_SIZE)
+	var hero_target := _hero_target_rect()
+	var cell := Vector2(
+		hero_sprite_sheet.get_width() / float(hero_sprite_columns),
+		hero_sprite_sheet.get_height() / float(hero_sprite_rows)
+	)
+	var normalized_position := (target_rect.position - hero_target.position) / hero_target.size
+	var normalized_size := target_rect.size / hero_target.size
+	var frame_origin := Vector2(frame) * cell
+	var source_rect := Rect2(
+		frame_origin + normalized_position * cell,
+		normalized_size * cell
+	)
+	return {
+		"atlas": hero_sprite_sheet,
+		"source_rect": source_rect,
+		"target_rect": target_rect,
+	}
+
+
+func _held_hand_anchor(frame: Vector2i) -> Vector2:
+	return HELD_HAND_ANCHORS.get(frame, Vector2(43.0, -70.0))
+
+
+func _hero_target_rect() -> Rect2:
+	return Rect2(-HERO_DRAW_SIZE.x * 0.5, -HERO_DRAW_SIZE.y + 16.0, HERO_DRAW_SIZE.x, HERO_DRAW_SIZE.y)
 
 func _visual_frame() -> Vector2i:
 	if victory_pose_phase > 0:

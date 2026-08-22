@@ -43,6 +43,7 @@ func run(test) -> void:
 	var model_player := PlayerScript.new()
 	test.check(model_player.has_method("held_weapon_visual"), "held weapons still fall back to primitive follower lines instead of production models")
 	test.check(model_player.has_method("held_weapon_pose"), "held weapons do not expose an attack-synchronized hand pose")
+	test.check(model_player.has_method("held_weapon_grip_cover"), "held weapons are not composited between the body and a visible gripping hand")
 	if model_player.has_method("held_weapon_visual"):
 		for weapon: Resource in WeaponCatalogScript.ALL:
 			model_player.equipped_weapon = weapon
@@ -57,6 +58,18 @@ func run(test) -> void:
 			test.check(absf(source_aspect - target_aspect) < 0.01, "%s held model is stretched away from its pickup proportions" % weapon.display_name)
 			test.check(source_rect.size.x < PlayerScript.WEAPON_ATLAS_CELL_SIZE.x or source_rect.size.y < PlayerScript.WEAPON_ATLAS_CELL_SIZE.y, "%s held model still renders the padded full pickup cell" % weapon.display_name)
 			test.check(visual.has("asset_facing") and absi(int(visual.asset_facing)) == 1, "%s held model has no authored source-facing direction" % weapon.display_name)
+	model_player.equipped_weapon = WeaponCatalogScript.MACHETE
+	model_player.weapon_ammo = 1
+	var idle_origin: Vector2 = model_player.held_weapon_pose().get("origin", Vector2.ZERO)
+	model_player.velocity = Vector2(100.0, 0.0)
+	model_player.walk_phase = 0.0
+	var moving_origin: Vector2 = model_player.held_weapon_pose().get("origin", Vector2.ZERO)
+	test.check(idle_origin.distance_to(moving_origin) > 8.0, "held weapon stays at the idle waist coordinate while the walking hand moves")
+	if model_player.has_method("held_weapon_grip_cover"):
+		var grip_cover: Dictionary = model_player.held_weapon_grip_cover()
+		var cover_target: Rect2 = grip_cover.get("target_rect", Rect2())
+		test.check(not grip_cover.is_empty() and cover_target.has_point(moving_origin), "walking hand cover does not close over the weapon grip")
+		test.check(grip_cover.get("atlas") == model_player.hero_sprite_sheet, "grip cover does not reuse the active hero's real hand artwork")
 	model_player.free()
 
 	await _verify_melee_behaviors(test)
@@ -67,6 +80,7 @@ func run(test) -> void:
 	test.check(probe_source.contains("weapon_sandbox_preview=2") and probe_source.contains('"weapon_shotgun"'), "reproducible firearm contact-pose Web preview is missing")
 	test.check(probe_source.contains("weapon_sandbox_preview=3") and probe_source.contains('"weapon_rocket"'), "reproducible heavy-weapon contact-pose Web preview is missing")
 	test.check(probe_source.contains("weapon_sandbox_preview=4") and probe_source.contains("shotgun_held_idle_preview"), "reproducible held-weapon idle Web preview is missing")
+	test.check(probe_source.contains("weapon_sandbox_preview=5") and probe_source.contains("machete_held_walk_preview"), "reproducible walking hand-grip Web preview is missing")
 
 
 func _verify_melee_behaviors(test) -> void:

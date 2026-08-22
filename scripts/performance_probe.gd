@@ -97,6 +97,9 @@ func _ready() -> void:
 		elif "prop_item_preview=1" in query_string:
 			scenario = "prop_item_preview"
 			call_deferred("_start_prop_item_preview")
+		elif "weapon_sandbox_preview=5" in query_string:
+			scenario = "machete_held_walk_preview"
+			call_deferred("_start_weapon_sandbox_preview", "weapon_machete", false, true)
 		elif "weapon_sandbox_preview=4" in query_string:
 			scenario = "shotgun_held_idle_preview"
 			call_deferred("_start_weapon_sandbox_preview", "weapon_shotgun", false)
@@ -377,7 +380,7 @@ func _start_team_attack_preview() -> void:
 	game.set_process(false)
 
 
-func _start_weapon_sandbox_preview(preview_weapon_id: String, show_contact_pose: bool) -> void:
+func _start_weapon_sandbox_preview(preview_weapon_id: String, show_contact_pose: bool, show_walk_pose := false) -> void:
 	var game := get_parent()
 	game._start_game()
 	game.encounter_director.completed = true
@@ -390,6 +393,9 @@ func _start_weapon_sandbox_preview(preview_weapon_id: String, show_contact_pose:
 	if show_contact_pose:
 		game.player._start_attack()
 		game.player.attack_timer = game.player.current_attack.hit_trigger_remaining - 0.001
+	elif show_walk_pose:
+		game.player.velocity = Vector2(100.0, 0.0)
+		game.player.walk_phase = 0.0
 	game.player.set_physics_process(false)
 	var pickup_ids := WeaponCatalogScript.explicit_pickup_ids()
 	for index in range(pickup_ids.size()):
@@ -398,7 +404,7 @@ func _start_weapon_sandbox_preview(preview_weapon_id: String, show_contact_pose:
 		game.spawn_pickup(Vector2(310.0 + column * 170.0, 500.0 + row * 132.0), pickup_ids[index])
 		var pickup: Node = get_tree().get_nodes_in_group("pickups").back()
 		pickup.set_process(false)
-	var pose_label := "CONTACT POSE" if show_contact_pose else "IDLE POSE"
+	var pose_label := "CONTACT POSE" if show_contact_pose else ("WALK GRIP" if show_walk_pose else "IDLE POSE")
 	game.hud.show_banner("12-WEAPON SANDBOX", "%s // %s" % [game.player.equipped_weapon.display_name, pose_label], 999.0)
 	game.set_process(false)
 

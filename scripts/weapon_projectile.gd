@@ -9,6 +9,9 @@ var target_actor: Node
 var target_locked := false
 var definition: Resource
 var team: StringName
+var combat_team: StringName
+var combat_owner_id := -1
+var damage_scale_snapshot := 1.0
 var direction := 1
 var velocity := Vector2.ZERO
 var lifetime := 0.0
@@ -32,6 +35,9 @@ func setup(
 	target_locked = p_target_actor != null
 	definition = p_definition
 	team = p_team
+	combat_team = source_actor.combat_team if is_instance_valid(source_actor) and "combat_team" in source_actor else p_team
+	combat_owner_id = source_actor.combat_owner_id if is_instance_valid(source_actor) and "combat_owner_id" in source_actor else -1
+	damage_scale_snapshot = source_actor.damage_scale_snapshot if is_instance_valid(source_actor) and "damage_scale_snapshot" in source_actor else 1.0
 	position = p_position
 	direction = 1 if p_direction >= 0 else -1
 	velocity = Vector2(direction * definition.projectile_speed, 0.0)
@@ -64,10 +70,12 @@ func _resolve_direct_hit() -> bool:
 		if target_locked and not is_instance_valid(target_actor):
 			return false
 		var resolved_target: Node = target_actor if target_locked else _nearest_active_player()
-		if is_instance_valid(resolved_target) and not resolved_target.is_defeated and position.distance_to(resolved_target.position) < 34.0:
+		if is_instance_valid(resolved_target) and not resolved_target.is_defeated and _can_damage_actor(resolved_target) and position.distance_to(resolved_target.position) < 34.0:
 			if resolved_target.is_in_group("player"):
+				var resolved_damage: int = definition.damage
+				resolved_damage = maxi(1, roundi(resolved_damage * damage_scale_snapshot))
 				resolved_target.take_hit(
-					definition.damage,
+					resolved_damage,
 					Vector2(direction * 250.0, 0.0),
 					false,
 					0.0,
@@ -95,7 +103,7 @@ func _resolve_direct_hit() -> bool:
 			return true
 		return false
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy == source_actor or not is_instance_valid(enemy) or enemy.is_defeated:
+		if enemy == source_actor or not is_instance_valid(enemy) or enemy.is_defeated or not _can_damage_actor(enemy):
 			continue
 		if position.distance_to(enemy.position) >= 38.0:
 			continue
@@ -127,12 +135,20 @@ func _nearest_active_player() -> Node:
 	return nearest
 
 
+func _can_damage_actor(actor: Node) -> bool:
+	if not is_instance_valid(actor) or actor == source_actor:
+		return false
+	if not "combat_team" in actor or combat_team.is_empty():
+		return true
+	return actor.combat_team != combat_team
+
+
 func _explode() -> void:
 	if exploded:
 		return
 	exploded = true
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy == source_actor or not is_instance_valid(enemy) or enemy.is_defeated:
+		if enemy == source_actor or not is_instance_valid(enemy) or enemy.is_defeated or not _can_damage_actor(enemy):
 			continue
 		if position.distance_to(enemy.position) > definition.explosion_radius:
 			continue

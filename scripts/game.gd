@@ -77,6 +77,8 @@ const PLAYER_SPAWN_OFFSETS := [
 ]
 const MIN_SAFE_SPAWN_DISTANCE := 70.0
 const MIN_SHARED_CAMERA_ZOOM := 0.72
+const COOP_ENEMY_HEALTH_SCALES := [1.0, 1.4, 1.7]
+const COOP_ENEMY_DAMAGE_SCALES := [1.0, 1.08, 1.16]
 
 func _ready() -> void:
 	local_player_registry.reset_with_keyboard(selected_hero_index)
@@ -375,6 +377,18 @@ func get_active_players() -> Array[Node]:
 		if is_instance_valid(fighter) and not fighter.is_defeated:
 			result.append(fighter)
 	return result
+
+
+func coop_player_count() -> int:
+	return clampi(local_player_registry.slots.size(), 1, LocalPlayerRegistryScript.MAX_PLAYERS)
+
+
+func coop_enemy_health_scale() -> float:
+	return COOP_ENEMY_HEALTH_SCALES[coop_player_count() - 1]
+
+
+func coop_enemy_damage_scale() -> float:
+	return COOP_ENEMY_DAMAGE_SCALES[coop_player_count() - 1]
 
 
 func _sync_local_player_hud(fighter: Node) -> void:

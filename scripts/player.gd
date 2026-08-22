@@ -59,6 +59,8 @@ var hero_sprite_columns := SPRITE_COLUMNS
 var hero_sprite_rows := SPRITE_ROWS
 var local_slot_index := 0
 var input_device_id := -1
+var combat_team: StringName = &"players"
+var combat_owner_id := 0
 var facing := 1
 var z_height := 0.0
 var z_velocity := 0.0
@@ -121,6 +123,7 @@ func setup(
 	game = p_game
 	local_slot_index = p_local_slot_index
 	input_device_id = p_input_device_id
+	combat_owner_id = p_local_slot_index
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	apply_hero_definition(p_hero_definition)
 	state_machine.force_transition(FighterStateMachineScript.State.IDLE)
@@ -410,7 +413,7 @@ func _check_attack_hit() -> void:
 			continue
 		var dx: float = (enemy.position.x - position.x) * facing
 		var dy: float = absf(enemy.position.y - position.y)
-		if attack_hitbox.overlaps(enemy.hurtbox):
+		if attack_hitbox.can_damage(enemy.hurtbox) and attack_hitbox.overlaps(enemy.hurtbox):
 			var dist: float = absf(dx) + dy
 			if dist < best_dist:
 				best = enemy

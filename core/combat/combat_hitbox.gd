@@ -7,6 +7,8 @@ enum ShapeKind {
 }
 
 var actor: Node
+var combat_team: StringName
+var combat_owner_id := -1
 var shape_kind := ShapeKind.BOX
 var center_offset := Vector2.ZERO
 var half_extents := Vector2.ZERO
@@ -18,6 +20,8 @@ var debug_visible := false
 
 func setup(p_actor: Node) -> void:
 	actor = p_actor
+	combat_team = p_actor.combat_team if "combat_team" in p_actor else &""
+	combat_owner_id = p_actor.combat_owner_id if "combat_owner_id" in p_actor else int(p_actor.get_instance_id())
 	debug_visible = bool(ProjectSettings.get_setting("debug/combat/show_hitboxes", false))
 	queue_redraw()
 
@@ -57,6 +61,14 @@ func overlaps(hurtbox) -> bool:
 		absf(distance_from_center.x) < half_extents.x + hurtbox.half_extents.x
 		and absf(distance_from_center.y) < half_extents.y + hurtbox.half_extents.y
 	)
+
+
+func can_damage(hurtbox) -> bool:
+	if hurtbox == null or hurtbox.actor == actor:
+		return false
+	if combat_team.is_empty() or hurtbox.combat_team.is_empty():
+		return true
+	return combat_team != hurtbox.combat_team
 
 
 func set_debug_visible(visible: bool) -> void:

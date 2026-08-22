@@ -34,6 +34,10 @@ enum BehaviorPhase {
 var game: Node
 var player: Node
 var combat_target: Node
+var combat_team: StringName = &"human_enemies"
+var combat_owner_id := -1
+var health_scale_snapshot := 1.0
+var damage_scale_snapshot := 1.0
 var enemy_type := "grunt"
 var definition: Resource
 var max_health := 42
@@ -91,8 +95,12 @@ func setup(p_game: Node, p_player: Node, p_type: String, p_formation_slot: int =
 	combat_target = p_player
 	definition = ENEMY_DEFINITIONS.get(p_type, ENEMY_DEFINITIONS["grunt"])
 	enemy_type = String(definition.enemy_id)
+	combat_team = &"neutral_creatures" if definition.faction == EnemyDefinitionScript.Faction.NEUTRAL_CREATURE else &"human_enemies"
+	combat_owner_id = p_formation_slot if p_formation_slot >= 0 else int(get_instance_id())
+	health_scale_snapshot = game.coop_enemy_health_scale() if game.has_method("coop_enemy_health_scale") else 1.0
+	damage_scale_snapshot = game.coop_enemy_damage_scale() if game.has_method("coop_enemy_damage_scale") else 1.0
 	current_attack = definition.attack
-	max_health = definition.max_health
+	max_health = maxi(1, roundi(definition.max_health * health_scale_snapshot))
 	health = max_health
 	speed = definition.speed
 	scale = definition.actor_scale
@@ -609,7 +617,7 @@ func _check_attack() -> void:
 		return
 	if attack_timer < current_attack.hit_trigger_remaining:
 		attack_hit_done = true
-		if attack_hitbox.overlaps(combat_target.hurtbox):
+		if attack_hitbox.can_damage(combat_target.hurtbox) and attack_hitbox.overlaps(combat_target.hurtbox):
 			var priority_outcome: int = AttackPriorityRulesScript.resolve(current_attack, combat_target)
 			if not AttackPriorityRulesScript.allows_hit(priority_outcome):
 				game.hit_confirm((position + combat_target.position) * 0.5 - Vector2(0, 45), 1, facing, false, CLASH_IMPACT)
@@ -620,6 +628,8 @@ func _check_attack() -> void:
 				and CounterHitRulesScript.is_counterable(combat_target)
 			)
 			var resolved_damage: int = CounterHitRulesScript.damage_for(current_attack, counter_hit)
+			if combat_target.is_in_group("player"):
+				resolved_damage = maxi(1, roundi(resolved_damage * damage_scale_snapshot))
 			var resolved_knockback: Vector2 = CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
 			var stun_bonus: float = CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
 			var force_interrupt: bool = AttackPriorityRulesScript.interrupts_defender(priority_outcome)

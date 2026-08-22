@@ -12,7 +12,7 @@ Date: 2026-08-22
 
 ## Versioned profile
 
-- `ArcadeProfile` owns `user://wildland_strike_profile.cfg` with schema version 1 and deterministic defaults.
+- `ArcadeProfile` introduced `user://wildland_strike_profile.cfg` with deterministic defaults; the current schema is version 2 after the subsequent mobile/rebinding migration.
 - Persisted settings cover music/effects volume, screen shake, hit flash, haptics, touch scale, UI scale, and language.
 - Values are clamped and normalized on load. Version-zero percentage/accessibility/mobile keys migrate to the version-one schema.
 - High scores are normalized, sorted by descending score with stable metadata, and capped at ten entries.

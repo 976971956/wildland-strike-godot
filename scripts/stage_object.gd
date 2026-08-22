@@ -560,6 +560,33 @@ func _draw() -> void:
 		_draw_carryable()
 	else:
 		_draw_breakable()
+	if definition.kind in [
+		EnvironmentObjectDataScript.ObjectKind.INDUSTRIAL_HAZARD,
+		EnvironmentObjectDataScript.ObjectKind.DISASTER_HAZARD,
+		EnvironmentObjectDataScript.ObjectKind.JUNGLE_HAZARD,
+		EnvironmentObjectDataScript.ObjectKind.VAULT_HAZARD,
+		EnvironmentObjectDataScript.ObjectKind.LAB_HAZARD,
+	]:
+		_draw_accessible_warning_marker()
+
+
+func _draw_accessible_warning_marker() -> void:
+	if not is_instance_valid(game) or not game.has_method("high_contrast_cues_enabled") or not game.high_contrast_cues_enabled():
+		return
+	var warning := industrial_warning_active or disaster_warning_active or jungle_warning_active or vault_warning_active or lab_warning_active
+	var active := industrial_damage_active or disaster_damage_active or jungle_damage_active or vault_damage_active or lab_damage_active
+	if not warning and not active:
+		return
+	var half: Vector2 = definition.size * 0.5
+	var alpha := 0.98 if active else 0.66 + sin(Time.get_ticks_msec() * 0.018) * 0.22
+	var marker_color := Color(1.0, 1.0, 1.0, alpha)
+	var top := Vector2(0.0, -half.y - 28.0)
+	draw_colored_polygon(PackedVector2Array([top + Vector2(0.0, -18.0), top + Vector2(-18.0, 14.0), top + Vector2(18.0, 14.0)]), Color(0.02, 0.02, 0.02, alpha * 0.76))
+	draw_polyline(PackedVector2Array([top + Vector2(0.0, -18.0), top + Vector2(-18.0, 14.0), top + Vector2(18.0, 14.0), top + Vector2(0.0, -18.0)]), marker_color, 3.0)
+	draw_line(top + Vector2(0.0, -8.0), top + Vector2(0.0, 5.0), marker_color, 4.0)
+	draw_circle(top + Vector2(0.0, 10.0), 2.5, marker_color)
+	for side in [-1.0, 1.0]:
+		draw_line(Vector2(side * half.x, -half.y), Vector2(side * half.x, half.y), marker_color, 2.0)
 
 
 func _draw_breakable() -> void:

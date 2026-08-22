@@ -19,7 +19,13 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "arcade_shell_preview=4" in query_string:
+		if "mobile_accessibility_preview=1" in query_string:
+			scenario = "mobile_safe_area_preview"
+			call_deferred("_start_mobile_accessibility_preview")
+		elif "arcade_shell_preview=5" in query_string:
+			scenario = "control_remap_preview"
+			call_deferred("_start_arcade_shell_preview", 5)
+		elif "arcade_shell_preview=4" in query_string:
 			scenario = "continue_countdown_preview"
 			call_deferred("_start_arcade_shell_preview", 4)
 		elif "arcade_shell_preview=3" in query_string:
@@ -203,10 +209,41 @@ func _start_arcade_shell_preview(preview_kind: int) -> void:
 	elif preview_kind == 3:
 		game._start_game()
 		game._open_options("playing")
-	else:
+	elif preview_kind == 4:
 		game._start_game()
 		game.player.set_physics_process(false)
 		game.hud.set_continue_offer(0, 7.4)
+	else:
+		game._open_options("title")
+		game.options_selected_index = game.OPTION_KEYS.size() - 1
+		game._open_controls()
+	game.set_process(false)
+
+
+func _start_mobile_accessibility_preview() -> void:
+	var game := get_parent()
+	game.settings.touch_scale = 1.2
+	game.settings.ui_scale = 1.15
+	game.settings.high_contrast_cues = true
+	game._apply_settings()
+	game._start_game()
+	for stage_step in range(3):
+		game._advance_campaign_stage()
+	game.player.position = Vector2(700.0, 560.0)
+	game.player.set_physics_process(false)
+	game.hud.force_touch_layout = true
+	game.hud.show_dialogue("ACCESSIBILITY", "SAFE-AREA CONTROLS // PATTERNED WARNINGS // LARGE UI", 99.0)
+	var controls = game.touch_controls
+	controls.size = Vector2(1280.0, 720.0)
+	controls.enabled_for_device = true
+	controls.visible = true
+	controls.safe_area_override = Rect2(70.0, 28.0, 1140.0, 654.0)
+	controls.queue_redraw()
+	for hazard in game.get_tree().get_nodes_in_group("industrial_hazards"):
+		hazard.industrial_warning_active = true
+		hazard.set_physics_process(false)
+		if String(hazard.definition.object_id) == "press_alpha":
+			hazard.position = Vector2(620.0, 610.0)
 	game.set_process(false)
 
 

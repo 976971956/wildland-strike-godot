@@ -12,11 +12,13 @@ func run(test) -> void:
 	test.check(profile.loaded_version == profile.CURRENT_VERSION, "fresh profile version drifted")
 	test.check(is_equal_approx(float(profile.settings.music_volume), 0.8) and is_equal_approx(float(profile.settings.sfx_volume), 0.9), "default audio settings drifted")
 	test.check(profile.settings.screen_shake and profile.settings.hit_flash and profile.settings.haptics, "default accessibility feedback settings drifted")
+	test.check(int(profile.bindings.attack) == KEY_J and int(profile.bindings.pause) == KEY_P, "default rebindable controls drifted")
 	test.check(profile.high_scores.is_empty() and profile.top_score() == 0, "fresh profile created phantom high scores")
 
 	profile.set_setting("music_volume", 2.0)
 	profile.set_setting("sfx_volume", -1.0)
 	profile.set_setting("language", "unsupported")
+	profile.set_binding("attack", KEY_F)
 	test.check(is_equal_approx(float(profile.settings.music_volume), 1.0) and is_zero_approx(float(profile.settings.sfx_volume)), "profile did not clamp audio settings")
 	test.check(profile.settings.language == "en" and not profile.set_setting("unknown", true), "profile did not normalize language/unknown keys")
 	for index in range(12):
@@ -28,7 +30,7 @@ func run(test) -> void:
 
 	var reloaded = ArcadeProfileScript.new(profile_path)
 	test.check(reloaded.load_profile() == OK and reloaded.loaded_version == reloaded.CURRENT_VERSION, "saved profile did not reload at the current version")
-	test.check(reloaded.high_scores == profile.high_scores and reloaded.settings == profile.settings, "profile round-trip changed settings or scores")
+	test.check(reloaded.high_scores == profile.high_scores and reloaded.settings == profile.settings and int(reloaded.bindings.attack) == KEY_F, "profile round-trip changed settings, scores, or bindings")
 
 	var legacy := ConfigFile.new()
 	legacy.set_value("audio", "music_percent", 55.0)
@@ -62,9 +64,18 @@ func run(test) -> void:
 	game.options_selected_index = 0
 	game._adjust_option(-1)
 	test.check(float(game.settings.music_volume) < initial_music and is_equal_approx(game.music_director.master_volume_ratio, float(game.settings.music_volume)), "music option did not apply to the director")
-	game.options_selected_index = 2
+	game.options_selected_index = 5
 	game._adjust_option(1)
 	test.check(not game.settings.screen_shake and game.hit_flash_enabled(), "screen-shake option did not toggle independently")
+	game.options_selected_index = 9
+	game._adjust_option(1)
+	test.check(game.state == "controls" and game.hud.mode == "controls", "options did not open the control-remapping screen")
+	game.control_selected_index = 4
+	game._begin_control_rebind()
+	test.check(game.pending_rebind_action == "attack" and game._commit_control_rebind(KEY_F), "attack binding did not enter and commit capture")
+	var rebound_attack := InputMap.action_get_events("attack").filter(func(event): return event is InputEventKey)
+	test.check(rebound_attack.size() == 1 and int(rebound_attack[0].physical_keycode) == KEY_F, "committed attack binding did not reach InputMap")
+	game._return_to_options()
 	game._close_options()
 	test.check(game.state == "title" and not test.tree.paused, "closing title options did not return safely")
 

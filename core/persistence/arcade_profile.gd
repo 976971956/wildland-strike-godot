@@ -1,7 +1,7 @@
 class_name ArcadeProfile
 extends RefCounted
 
-const CURRENT_VERSION := 1
+const CURRENT_VERSION := 2
 const MAX_HIGH_SCORES := 10
 const DEFAULT_PATH := "user://wildland_strike_profile.cfg"
 
@@ -11,14 +11,27 @@ const DEFAULT_SETTINGS := {
 	"screen_shake": true,
 	"hit_flash": true,
 	"haptics": true,
+	"high_contrast_cues": true,
 	"touch_scale": 1.0,
+	"touch_layout": "classic",
 	"ui_scale": 1.0,
 	"language": "en",
+}
+const DEFAULT_BINDINGS := {
+	"move_left": KEY_A,
+	"move_right": KEY_D,
+	"move_up": KEY_W,
+	"move_down": KEY_S,
+	"attack": KEY_J,
+	"jump": KEY_K,
+	"special": KEY_L,
+	"pause": KEY_P,
 }
 
 var file_path := DEFAULT_PATH
 var settings: Dictionary = DEFAULT_SETTINGS.duplicate(true)
 var high_scores: Array[Dictionary] = []
+var bindings: Dictionary = DEFAULT_BINDINGS.duplicate(true)
 var loaded_version := CURRENT_VERSION
 
 
@@ -28,6 +41,7 @@ func _init(path := DEFAULT_PATH) -> void:
 
 func load_profile() -> int:
 	settings = DEFAULT_SETTINGS.duplicate(true)
+	bindings = DEFAULT_BINDINGS.duplicate(true)
 	high_scores.clear()
 	loaded_version = CURRENT_VERSION
 	if file_path.is_empty():
@@ -44,11 +58,15 @@ func load_profile() -> int:
 	else:
 		for key in DEFAULT_SETTINGS:
 			settings[key] = config.get_value("settings", key, DEFAULT_SETTINGS[key])
+	if loaded_version >= 2:
+		for action in DEFAULT_BINDINGS:
+			bindings[action] = int(config.get_value("bindings", action, DEFAULT_BINDINGS[action]))
 	var stored_scores: Array = config.get_value("scores", "entries", [])
 	for entry in stored_scores:
 		if entry is Dictionary:
 			high_scores.append(_normalize_score(entry))
 	_normalize_settings()
+	_normalize_bindings()
 	_sort_and_trim_scores()
 	loaded_version = CURRENT_VERSION
 	return OK
@@ -63,6 +81,8 @@ func save_profile() -> int:
 	config.set_value("profile", "version", CURRENT_VERSION)
 	for key in DEFAULT_SETTINGS:
 		config.set_value("settings", key, settings[key])
+	for action in DEFAULT_BINDINGS:
+		config.set_value("bindings", action, bindings[action])
 	config.set_value("scores", "entries", high_scores)
 	return config.save(file_path)
 
@@ -72,6 +92,14 @@ func set_setting(key: String, value: Variant) -> bool:
 		return false
 	settings[key] = value
 	_normalize_settings()
+	return true
+
+
+func set_binding(action: String, physical_keycode: int) -> bool:
+	if not DEFAULT_BINDINGS.has(action) or physical_keycode <= 0:
+		return false
+	bindings[action] = physical_keycode
+	_normalize_bindings()
 	return true
 
 
@@ -113,10 +141,19 @@ func _normalize_settings() -> void:
 	settings.screen_shake = bool(settings.get("screen_shake", true))
 	settings.hit_flash = bool(settings.get("hit_flash", true))
 	settings.haptics = bool(settings.get("haptics", true))
+	settings.high_contrast_cues = bool(settings.get("high_contrast_cues", true))
 	settings.touch_scale = clampf(float(settings.get("touch_scale", 1.0)), 0.75, 1.35)
+	var touch_layout := String(settings.get("touch_layout", "classic")).to_lower()
+	settings.touch_layout = touch_layout if touch_layout in ["classic", "compact", "left_handed"] else "classic"
 	settings.ui_scale = clampf(float(settings.get("ui_scale", 1.0)), 0.85, 1.2)
 	var language := String(settings.get("language", "en")).to_lower()
 	settings.language = language if language in ["en", "zh"] else "en"
+
+
+func _normalize_bindings() -> void:
+	for action in DEFAULT_BINDINGS:
+		var keycode := int(bindings.get(action, DEFAULT_BINDINGS[action]))
+		bindings[action] = keycode if keycode > 0 else DEFAULT_BINDINGS[action]
 
 
 func _normalize_score(entry: Dictionary) -> Dictionary:

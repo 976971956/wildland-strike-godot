@@ -51,6 +51,10 @@ var option_selected_index := 0
 var option_return_to_game := false
 var continue_offer_times := {}
 var final_score_rank := -1
+var accessibility_ui_scale := 1.0
+var control_bindings := {}
+var control_selected_index := 0
+var pending_rebind_action := ""
 var font: Font
 
 func _ready() -> void:
@@ -119,14 +123,27 @@ func set_arcade_profile(scores: Array, settings: Dictionary) -> void:
 		if entry is Dictionary:
 			profile_high_scores.append(entry.duplicate(true))
 	option_values = settings.duplicate(true)
+	accessibility_ui_scale = clampf(float(settings.get("ui_scale", 1.0)), 0.85, 1.2)
 	queue_redraw()
+
+
+func _scaled_font_size(base_size: int) -> int:
+	return maxi(roundi(base_size * accessibility_ui_scale), 10)
 
 
 func set_options(settings: Dictionary, selected_index: int, returning_to_game: bool) -> void:
 	option_values = settings.duplicate(true)
-	option_selected_index = clampi(selected_index, 0, 4)
+	option_selected_index = clampi(selected_index, 0, 9)
 	option_return_to_game = returning_to_game
 	mode = "options"
+	queue_redraw()
+
+
+func set_controls(bindings: Dictionary, selected_index: int, pending_action: String) -> void:
+	control_bindings = bindings.duplicate(true)
+	control_selected_index = clampi(selected_index, 0, 7)
+	pending_rebind_action = pending_action
+	mode = "controls"
 	queue_redraw()
 
 
@@ -274,7 +291,22 @@ func set_stage_progress(area: int, total: int, hostiles: int, locked: bool) -> v
 
 
 static func dialogue_panel_rect(touch_layout: bool) -> Rect2:
-	return Rect2(260, 398, 680, 96) if touch_layout else Rect2(270, 540, 740, 92)
+	return Rect2(310, 350, 560, 116) if touch_layout else Rect2(270, 540, 740, 92)
+
+
+static func wrap_dialogue_line(line: String, max_characters: int = 42) -> PackedStringArray:
+	var lines := PackedStringArray()
+	var current := ""
+	for word in line.split(" ", false):
+		var candidate := word if current.is_empty() else current + " " + word
+		if candidate.length() > max_characters and not current.is_empty():
+			lines.append(current)
+			current = word
+		else:
+			current = candidate
+	if not current.is_empty():
+		lines.append(current)
+	return lines
 
 
 func _touch_layout_active() -> bool:
@@ -357,7 +389,7 @@ func _draw() -> void:
 		var timer_width := 108.0 if multiplayer_hud else 124.0
 		draw_rect(Rect2(timer_x, 20, timer_width, 48), Color(0.035, 0.045, 0.07, 0.88))
 		draw_rect(Rect2(timer_x, 20, timer_width, 4), timer_color)
-		draw_string(font, Vector2(timer_x, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, timer_width, 24, timer_color)
+		draw_string(font, Vector2(timer_x, 54), "%02d:%02d" % [minutes, seconds], HORIZONTAL_ALIGNMENT_CENTER, timer_width, _scaled_font_size(24), timer_color)
 		if not multiplayer_hud and not weapon_name.is_empty() and weapon_ammo > 0:
 			draw_rect(Rect2(474, 20, 92, 48), Color(0.035, 0.045, 0.07, 0.88))
 			draw_rect(Rect2(474, 20, 92, 4), Color("#74c9aa"))
@@ -369,9 +401,9 @@ func _draw() -> void:
 			var objective_width := 322.0 if multiplayer_hud else 362.0
 			draw_rect(Rect2(objective_x, 20, objective_width, 64), Color(0.035, 0.045, 0.07, 0.9))
 			draw_rect(Rect2(objective_x, 20, objective_width, 4), status_color)
-			draw_string(font, Vector2(objective_x + 18, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 125, 19, Color("#f4dc83"))
+			draw_string(font, Vector2(objective_x + 18, 48), "AREA %d/%d" % [stage_area, stage_area_total], HORIZONTAL_ALIGNMENT_LEFT, 125, _scaled_font_size(19), Color("#f4dc83"))
 			var objective := "HOSTILES  %02d" % stage_hostiles if arena_locked else "ADVANCE  →"
-			draw_string(font, Vector2(objective_x + 137, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, objective_width - 155, 19, status_color)
+			draw_string(font, Vector2(objective_x + 137, 48), objective, HORIZONTAL_ALIGNMENT_RIGHT, objective_width - 155, _scaled_font_size(19), status_color)
 			draw_string(font, Vector2(objective_x + 18, 72), "COMBAT ZONE LOCKED" if arena_locked else "ROUTE OPEN", HORIZONTAL_ALIGNMENT_LEFT, objective_width - 36, 13, Color("#b8c8c3"))
 		if ratio < 0.3:
 			draw_string(font, Vector2(350, 99), "DANGER", HORIZONTAL_ALIGNMENT_RIGHT, 48, 13, Color(1.0, 0.32, 0.24, danger_pulse))
@@ -394,12 +426,18 @@ func _draw() -> void:
 		draw_string(font,Vector2(350,344),banner_sub,HORIZONTAL_ALIGNMENT_CENTER,580,18,Color("#d5e0db"))
 
 	if dialogue_time > 0.0 and mode == "playing":
-		var dialogue_rect := dialogue_panel_rect(_touch_layout_active())
+		var touch_dialogue := _touch_layout_active()
+		var dialogue_rect := dialogue_panel_rect(touch_dialogue)
 		draw_rect(dialogue_rect, Color(0.025, 0.018, 0.025, 0.94))
 		draw_rect(Rect2(dialogue_rect.position, Vector2(7, dialogue_rect.size.y)), Color("#d84a35"))
 		var dialogue_text_width := dialogue_rect.size.x - 48.0
-		draw_string(font, dialogue_rect.position + Vector2(24, 30), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, 18, Color("#f0b65b"))
-		draw_string(font, dialogue_rect.position + Vector2(24, 67), dialogue_line, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, 24, Color.WHITE)
+		draw_string(font, dialogue_rect.position + Vector2(24, 30), dialogue_speaker, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, _scaled_font_size(18), Color("#f0b65b"))
+		if touch_dialogue:
+			var wrapped := wrap_dialogue_line(dialogue_line)
+			for line_index in range(mini(wrapped.size(), 2)):
+				draw_string(font, dialogue_rect.position + Vector2(24, 65 + line_index * 25), wrapped[line_index], HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, _scaled_font_size(18), Color.WHITE)
+		else:
+			draw_string(font, dialogue_rect.position + Vector2(24, 67), dialogue_line, HORIZONTAL_ALIGNMENT_LEFT, dialogue_text_width, _scaled_font_size(24), Color.WHITE)
 	if mode == "playing" and not continue_offer_times.is_empty():
 		_draw_continue_offer()
 
@@ -420,6 +458,8 @@ func _draw() -> void:
 		_draw_high_score_screen()
 	elif mode == "options":
 		_draw_options_screen()
+	elif mode == "controls":
+		_draw_controls_screen()
 	elif mode == "select":
 		draw_rect(Rect2(0, 0, size.x, size.y), Color(0.008, 0.014, 0.025, 1.0))
 		draw_string(font, Vector2(0, 72), "SELECT OPERATIVE", HORIZONTAL_ALIGNMENT_CENTER, size.x, 42, Color("#f2c756"))
@@ -551,24 +591,50 @@ func _draw_options_screen() -> void:
 	draw_rect(Rect2(338, 82, 604, 544), Color(0.025, 0.04, 0.055, 0.99))
 	draw_rect(Rect2(338, 82, 604, 6), Color("#f2c756"))
 	draw_string(font, Vector2(338, 145), "PAUSED // OPTIONS" if option_return_to_game else "OPTIONS", HORIZONTAL_ALIGNMENT_CENTER, 604, 36, Color("#f2c756"))
-	var labels := ["MUSIC VOLUME", "EFFECTS VOLUME", "SCREEN SHAKE", "HIT FLASH", "HAPTICS"]
-	var keys := ["music_volume", "sfx_volume", "screen_shake", "hit_flash", "haptics"]
+	var labels := ["MUSIC VOLUME", "EFFECTS VOLUME", "TOUCH SIZE", "TOUCH LAYOUT", "UI SIZE", "SCREEN SHAKE", "HIT FLASH", "HAPTICS", "HIGH-CONTRAST CUES", "REMAP CONTROLS"]
+	var keys := ["music_volume", "sfx_volume", "touch_scale", "touch_layout", "ui_scale", "screen_shake", "hit_flash", "haptics", "high_contrast_cues", "controls"]
 	for index in range(labels.size()):
-		var y := 226.0 + index * 67.0
+		var y := 174.0 + index * 44.0
 		var selected := index == option_selected_index
 		if selected:
-			draw_rect(Rect2(378, y - 34, 524, 48), Color(0.16, 0.32, 0.31, 0.58))
-			draw_rect(Rect2(378, y - 34, 5, 48), Color("#f2c756"))
-		draw_string(font, Vector2(402, y), labels[index], HORIZONTAL_ALIGNMENT_LEFT, 290, 19, Color.WHITE if selected else Color("#a7b8b3"))
-		draw_string(font, Vector2(700, y), _option_value_label(keys[index]), HORIZONTAL_ALIGNMENT_RIGHT, 170, 19, Color("#f2c756") if selected else Color("#9fc9bd"))
-	draw_string(font, Vector2(338, 580), "UP/DOWN SELECT     LEFT/RIGHT CHANGE", HORIZONTAL_ALIGNMENT_CENTER, 604, 16, Color("#9fc9bd"))
+			draw_rect(Rect2(378, y - 27, 524, 36), Color(0.16, 0.32, 0.31, 0.58))
+			draw_rect(Rect2(378, y - 27, 5, 36), Color("#f2c756"))
+		draw_string(font, Vector2(402, y), labels[index], HORIZONTAL_ALIGNMENT_LEFT, 290, _scaled_font_size(17), Color.WHITE if selected else Color("#a7b8b3"))
+		draw_string(font, Vector2(700, y), _option_value_label(keys[index]), HORIZONTAL_ALIGNMENT_RIGHT, 170, _scaled_font_size(17), Color("#f2c756") if selected else Color("#9fc9bd"))
+	draw_string(font, Vector2(338, 622), "UP/DOWN SELECT     LEFT/RIGHT CHANGE     TAP SIDES", HORIZONTAL_ALIGNMENT_CENTER, 604, 14, Color("#9fc9bd"))
 	draw_string(font, Vector2(0, 690), "ENTER / PAUSE TO %s" % ("RESUME" if option_return_to_game else "RETURN"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 19, Color("#f2c756"))
 
 
 func _option_value_label(key: String) -> String:
-	if key in ["music_volume", "sfx_volume"]:
+	if key == "controls":
+		return "OPEN  >"
+	if key == "touch_layout":
+		return String(option_values.get(key, "classic")).replace("_", " ").to_upper()
+	if key in ["music_volume", "sfx_volume", "touch_scale", "ui_scale"]:
 		return "%d%%" % roundi(float(option_values.get(key, 1.0)) * 100.0)
 	return "ON" if bool(option_values.get(key, true)) else "OFF"
+
+
+func _draw_controls_screen() -> void:
+	draw_rect(Rect2(0, 0, size.x, size.y), Color(0.006, 0.012, 0.023, 0.97))
+	draw_rect(Rect2(338, 70, 604, 570), Color(0.025, 0.04, 0.055, 0.99))
+	draw_rect(Rect2(338, 70, 604, 6), Color("#f2c756"))
+	draw_string(font, Vector2(338, 128), "REMAP CONTROLS", HORIZONTAL_ALIGNMENT_CENTER, 604, 34, Color("#f2c756"))
+	var actions := ["move_left", "move_right", "move_up", "move_down", "attack", "jump", "special", "pause"]
+	var labels := ["MOVE LEFT", "MOVE RIGHT", "MOVE UP", "MOVE DOWN", "ATTACK", "JUMP", "SPECIAL", "PAUSE"]
+	for index in range(actions.size()):
+		var y := 184.0 + index * 50.0
+		var selected := index == control_selected_index
+		if selected:
+			draw_rect(Rect2(378, y - 29, 524, 40), Color(0.16, 0.32, 0.31, 0.58))
+			draw_rect(Rect2(378, y - 29, 5, 40), Color("#f2c756"))
+		draw_string(font, Vector2(402, y), labels[index], HORIZONTAL_ALIGNMENT_LEFT, 260, _scaled_font_size(17), Color.WHITE if selected else Color("#a7b8b3"))
+		var key_label := OS.get_keycode_string(int(control_bindings.get(actions[index], 0)))
+		if pending_rebind_action == actions[index]:
+			key_label = "PRESS A KEY..."
+		draw_string(font, Vector2(670, y), key_label, HORIZONTAL_ALIGNMENT_RIGHT, 200, _scaled_font_size(17), Color("#f2c756") if selected else Color("#9fc9bd"))
+	draw_string(font, Vector2(338, 606), "ATTACK TO REBIND     ESC CANCELS CAPTURE", HORIZONTAL_ALIGNMENT_CENTER, 604, 14, Color("#9fc9bd"))
+	draw_string(font, Vector2(0, 690), "ENTER / PAUSE TO RETURN", HORIZONTAL_ALIGNMENT_CENTER, size.x, 19, Color("#f2c756"))
 
 
 func _draw_continue_offer() -> void:

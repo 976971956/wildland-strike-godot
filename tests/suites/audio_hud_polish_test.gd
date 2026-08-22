@@ -53,7 +53,9 @@ func run(test) -> void:
 	var desktop_dialogue := HudScript.dialogue_panel_rect(false)
 	var touch_dialogue := HudScript.dialogue_panel_rect(true)
 	test.check(touch_dialogue.position.y < desktop_dialogue.position.y, "touch dialogue was not lifted above controls")
-	test.check(touch_dialogue.size.x < desktop_dialogue.size.x and touch_dialogue.size.x >= 640.0, "touch dialogue does not preserve a safe readable width")
+	test.check(touch_dialogue.size.x < desktop_dialogue.size.x and touch_dialogue.size.x >= 540.0, "touch dialogue does not preserve a safe readable width")
+	var wrapped_dialogue := HudScript.wrap_dialogue_line("SAFE AREA CONTROLS KEEP EVERY IMPORTANT ACTION INSIDE THE PLAYABLE DISPLAY")
+	test.check(wrapped_dialogue.size() == 2 and wrapped_dialogue[0].length() <= 42, "touch dialogue did not wrap into two readable lines")
 
 	var game: Node = await test.instantiate_main()
 	if game == null:

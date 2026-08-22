@@ -39,6 +39,7 @@ const HERO_DEFINITIONS := [
 @onready var actors: Node2D = $Actors
 @onready var camera: Camera2D = $Camera2D
 @onready var hud: Control = $HUD/UI
+@onready var touch_controls: Control = $HUD/TouchControls
 @onready var world_art: Node2D = $WorldArt
 
 var player
@@ -108,6 +109,9 @@ var options_selected_index := 0
 var options_return_state := "title"
 var final_score_recorded := false
 var final_score_rank := -1
+var control_selected_index := 0
+var pending_rebind_action := ""
+var original_key_events := {}
 
 const PLAYER_SPAWN_OFFSETS := [
 	Vector2(0.0, 0.0),
@@ -125,6 +129,8 @@ const CONTINUE_RESPAWN_DELAY := 9.0
 const ATTRACT_DELAY := 10.0
 const TEAM_ATTACK_INPUT_WINDOW := 0.24
 const TEAM_ATTACK_LINK_DISTANCE := 190.0
+const OPTION_KEYS := ["music_volume", "sfx_volume", "touch_scale", "touch_layout", "ui_scale", "screen_shake", "hit_flash", "haptics", "high_contrast_cues", "controls"]
+const REBIND_ACTIONS := ["move_left", "move_right", "move_up", "move_down", "attack", "jump", "special", "pause"]
 
 func _ready() -> void:
 	local_player_registry.reset_with_keyboard(selected_hero_index)
@@ -141,6 +147,7 @@ func _ready() -> void:
 	arcade_profile = ArcadeProfileScript.new("" if DisplayServer.get_name() == "headless" else ArcadeProfileScript.DEFAULT_PATH)
 	arcade_profile.load_profile()
 	settings = arcade_profile.settings.duplicate(true)
+	_capture_original_key_events()
 	world_art.configure(active_stage_definition)
 	# Headless CI has no audio device; skip players there to keep tests clean.
 	if DisplayServer.get_name() != "headless":
@@ -225,6 +232,18 @@ func _process(delta: float) -> void:
 			_adjust_option(1)
 		if Input.is_action_just_pressed("start") or Input.is_action_just_pressed("pause"):
 			_close_options()
+		return
+	if state == "controls":
+		if not pending_rebind_action.is_empty():
+			return
+		if Input.is_action_just_pressed("move_up"):
+			_shift_control_selection(-1)
+		elif Input.is_action_just_pressed("move_down"):
+			_shift_control_selection(1)
+		elif Input.is_action_just_pressed("attack"):
+			_begin_control_rebind()
+		elif Input.is_action_just_pressed("start") or Input.is_action_just_pressed("pause"):
+			_return_to_options()
 		return
 	if state == "select":
 		_set_local_players_physics(false)
@@ -368,16 +387,25 @@ func _close_options() -> void:
 
 
 func _shift_option_selection(direction: int) -> void:
-	options_selected_index = posmod(options_selected_index + direction, 5)
+	options_selected_index = posmod(options_selected_index + direction, OPTION_KEYS.size())
 	hud.set_options(settings, options_selected_index, options_return_state == "playing")
 	play_sfx(&"ui_confirm")
 
 
 func _adjust_option(direction: int) -> void:
-	var keys := ["music_volume", "sfx_volume", "screen_shake", "hit_flash", "haptics"]
-	var key: String = keys[options_selected_index]
+	var key: String = OPTION_KEYS[options_selected_index]
+	if key == "controls":
+		_open_controls()
+		return
 	if key in ["music_volume", "sfx_volume"]:
 		settings[key] = clampf(snappedf(float(settings[key]) + direction * 0.1, 0.1), 0.0, 1.0)
+	elif key == "touch_scale":
+		settings[key] = clampf(snappedf(float(settings[key]) + direction * 0.1, 0.1), 0.75, 1.35)
+	elif key == "touch_layout":
+		var layouts := ["classic", "compact", "left_handed"]
+		settings[key] = layouts[posmod(layouts.find(String(settings[key])) + direction, layouts.size())]
+	elif key == "ui_scale":
+		settings[key] = clampf(snappedf(float(settings[key]) + direction * 0.05, 0.05), 0.85, 1.2)
 	else:
 		settings[key] = not bool(settings[key])
 	arcade_profile.set_setting(key, settings[key])
@@ -395,6 +423,9 @@ func _apply_settings() -> void:
 		camera.offset = Vector2.ZERO
 	if is_instance_valid(hud) and arcade_profile != null:
 		hud.set_arcade_profile(arcade_profile.high_scores, settings)
+	if is_instance_valid(touch_controls):
+		touch_controls.queue_redraw()
+	_apply_control_bindings()
 
 
 func _save_profile() -> void:
@@ -407,6 +438,84 @@ func _save_profile() -> void:
 
 func hit_flash_enabled() -> bool:
 	return bool(settings.get("hit_flash", true))
+
+
+func high_contrast_cues_enabled() -> bool:
+	return bool(settings.get("high_contrast_cues", true))
+
+
+func handle_application_focus_lost() -> void:
+	if state == "playing":
+		_open_options("playing")
+
+
+func _open_controls() -> void:
+	state = "controls"
+	pending_rebind_action = ""
+	hud.set_controls(arcade_profile.bindings, control_selected_index, pending_rebind_action)
+	play_sfx(&"ui_confirm")
+
+
+func _return_to_options() -> void:
+	pending_rebind_action = ""
+	state = "options"
+	hud.set_options(settings, options_selected_index, options_return_state == "playing")
+	play_sfx(&"ui_confirm")
+
+
+func _shift_control_selection(direction: int) -> void:
+	control_selected_index = posmod(control_selected_index + direction, REBIND_ACTIONS.size())
+	hud.set_controls(arcade_profile.bindings, control_selected_index, pending_rebind_action)
+
+
+func _begin_control_rebind() -> void:
+	pending_rebind_action = REBIND_ACTIONS[control_selected_index]
+	hud.set_controls(arcade_profile.bindings, control_selected_index, pending_rebind_action)
+
+
+func _commit_control_rebind(keycode: int) -> bool:
+	if pending_rebind_action.is_empty() or keycode <= 0:
+		return false
+	var action := pending_rebind_action
+	var previous_key := int(arcade_profile.bindings[action])
+	for other_action in REBIND_ACTIONS:
+		if other_action != action and int(arcade_profile.bindings[other_action]) == keycode:
+			arcade_profile.set_binding(other_action, previous_key)
+	arcade_profile.set_binding(action, keycode)
+	pending_rebind_action = ""
+	_apply_control_bindings()
+	_save_profile()
+	hud.set_controls(arcade_profile.bindings, control_selected_index, pending_rebind_action)
+	return true
+
+
+func _capture_original_key_events() -> void:
+	for action in REBIND_ACTIONS:
+		original_key_events[action] = []
+		for event in InputMap.action_get_events(action):
+			if event is InputEventKey:
+				original_key_events[action].append(event.duplicate())
+
+
+func _apply_control_bindings() -> void:
+	if arcade_profile == null:
+		return
+	for action in REBIND_ACTIONS:
+		for event in InputMap.action_get_events(action):
+			if event is InputEventKey:
+				InputMap.action_erase_event(action, event)
+		var key_event := InputEventKey.new()
+		key_event.physical_keycode = int(arcade_profile.bindings.get(action, ArcadeProfileScript.DEFAULT_BINDINGS[action]))
+		InputMap.action_add_event(action, key_event)
+
+
+func _restore_original_key_events() -> void:
+	for action in original_key_events:
+		for event in InputMap.action_get_events(action):
+			if event is InputEventKey:
+				InputMap.action_erase_event(action, event)
+		for event in original_key_events[action]:
+			InputMap.action_add_event(action, event)
 
 
 func _deploy_campaign_stage() -> void:
@@ -509,6 +618,15 @@ func _sync_selection_hud() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if state == "controls" and not pending_rebind_action.is_empty() and event is InputEventKey and event.pressed and not event.echo:
+		var keycode := int(event.physical_keycode if event.physical_keycode > 0 else event.keycode)
+		if keycode == KEY_ESCAPE:
+			pending_rebind_action = ""
+			hud.set_controls(arcade_profile.bindings, control_selected_index, pending_rebind_action)
+		else:
+			_commit_control_rebind(keycode)
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_LEFT_X:
 		var direction := 0
 		if event.axis_value <= -0.65:
@@ -1480,6 +1598,7 @@ func _hit_stop(duration: float) -> void:
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 	get_tree().paused = false
+	_restore_original_key_events()
 
 func play_sfx(kind: StringName) -> void:
 	sfx_event_history.append(kind)

@@ -2,6 +2,7 @@ class_name RuntimePerformanceProbe
 extends Node
 
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
+const PickupCatalogScript = preload("res://core/items/pickup_catalog.gd")
 const WARMUP_FRAMES := 60
 const SAMPLE_FRAMES := 300
 const LOG_PREFIX := "WEB_PERFORMANCE_BASELINE "
@@ -18,7 +19,10 @@ func _ready() -> void:
 	set_process(is_web)
 	if is_web:
 		var query_string := String(JavaScriptBridge.eval("window.location.search"))
-		if "weapon_sandbox_preview=1" in query_string:
+		if "prop_item_preview=1" in query_string:
+			scenario = "prop_item_preview"
+			call_deferred("_start_prop_item_preview")
+		elif "weapon_sandbox_preview=1" in query_string:
 			scenario = "weapon_sandbox_preview"
 			call_deferred("_start_weapon_sandbox_preview")
 		elif "local_coop_preview=3" in query_string:
@@ -226,6 +230,37 @@ func _start_weapon_sandbox_preview() -> void:
 		var pickup: Node = get_tree().get_nodes_in_group("pickups").back()
 		pickup.set_process(false)
 	game.hud.show_banner("12-WEAPON SANDBOX", "MELEE // FIREARMS // EXPLOSIVES", 999.0)
+	game.set_process(false)
+
+
+func _start_prop_item_preview() -> void:
+	var game := get_parent()
+	game._start_game()
+	game.encounter_director.completed = true
+	game.player.position = Vector2(155.0, 555.0)
+	game.player.set_physics_process(false)
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_process(false)
+		stage_object.set_physics_process(false)
+	var carryables := get_tree().get_nodes_in_group("carryables")
+	for index in range(carryables.size()):
+		var stage_object: Node = carryables[index]
+		stage_object.visible = true
+		stage_object.position = Vector2(285.0 if index == 1 else 1160.0, 570.0 + index * 18.0)
+	if not carryables.is_empty():
+		carryables[0].pick_up_by(game.player)
+		game.player.carried_prop = carryables[0]
+		carryables[0]._physics_process(0.0)
+		carryables[0].set_physics_process(false)
+	var item_ids := PickupCatalogScript.explicit_pickup_ids()
+	for index in range(item_ids.size()):
+		var column := index % 4
+		var row := index / 4
+		game.spawn_pickup(Vector2(430.0 + column * 190.0, 500.0 + row * 135.0), item_ids[index])
+		var pickup: Node = get_tree().get_nodes_in_group("pickups").back()
+		pickup.set_process(false)
+	game.hud.show_banner("PROPS + PICKUP TIERS", "CARRY // THROW // HEAL // SCORE", 999.0)
 	game.set_process(false)
 
 

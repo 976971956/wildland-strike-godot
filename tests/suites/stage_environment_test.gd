@@ -13,27 +13,33 @@ func run(test) -> void:
 		if scene.background_texture != null:
 			background_paths[scene.background_texture.resource_path] = true
 	test.check(background_paths.size() == 3, "Stage 1 scenes do not use three independent background assets")
-	test.check(all_objects.size() == 4, "Stage 1 environment object count drifted")
+	test.check(all_objects.size() == 7, "Stage 1 environment object count drifted")
 	var object_ids := {}
 	var breakable_count := 0
 	var hazard_count := 0
+	var carryable_count := 0
 	for object_definition in all_objects:
 		test.check(object_definition.is_valid_object(), "%s environment object is invalid" % object_definition.object_id)
 		test.check(not object_ids.has(object_definition.object_id), "%s environment object id is duplicated" % object_definition.object_id)
 		object_ids[object_definition.object_id] = true
-		if object_definition.kind == EnvironmentObjectDataScript.ObjectKind.BREAKABLE:
-			breakable_count += 1
-			test.check(not object_definition.drop_id.is_empty(), "%s breakable has no deterministic drop" % object_definition.object_id)
-		else:
-			hazard_count += 1
-			test.check(object_definition.move_max_x > object_definition.move_min_x, "rolling hazard travel bounds are invalid")
-	test.check(breakable_count == 3 and hazard_count == 1, "Stage 1 breakable/hazard mix drifted")
+		match object_definition.kind:
+			EnvironmentObjectDataScript.ObjectKind.BREAKABLE:
+				breakable_count += 1
+				test.check(not object_definition.drop_id.is_empty(), "%s breakable has no deterministic drop" % object_definition.object_id)
+			EnvironmentObjectDataScript.ObjectKind.ROLLING_HAZARD:
+				hazard_count += 1
+				test.check(object_definition.move_max_x > object_definition.move_min_x, "rolling hazard travel bounds are invalid")
+			EnvironmentObjectDataScript.ObjectKind.CARRYABLE:
+				carryable_count += 1
+				test.check(object_definition.throw_damage > 0 and object_definition.throw_speed > 0.0, "%s carryable throw data is invalid" % object_definition.object_id)
+	test.check(breakable_count == 3 and hazard_count == 1 and carryable_count == 3, "Stage 1 breakable/hazard/carryable mix drifted")
 	test.check(not EnvironmentObjectDataScript.new().is_valid_object(), "empty environment object should be invalid")
 
 	var game: Node = await test.instantiate_main()
 	if game == null:
 		return
-	test.check(test.tree.get_nodes_in_group("breakables").size() == 3, "game did not instantiate all breakables")
+	test.check(test.tree.get_nodes_in_group("breakables").size() == 6, "game did not instantiate all breakables and carryable props")
+	test.check(test.tree.get_nodes_in_group("carryables").size() == 3, "game did not instantiate all carryable props")
 	test.check(test.tree.get_nodes_in_group("stage_hazards").size() == 1, "game did not instantiate the rolling hazard")
 	test.check(game.stage_time_remaining == 240.0, "stage timer did not initialize from StageDefinition")
 	test.check(game.hud.stage_time_remaining == 240.0, "HUD timer did not initialize")
@@ -69,7 +75,7 @@ func run(test) -> void:
 	await test.tree.process_frame
 	test.check(game.score > score_before_break, "destroying a breakable did not award configured score")
 	test.check(test.tree.get_nodes_in_group("pickups").size() == 1, "breakable did not create its deterministic drop")
-	test.check(test.tree.get_nodes_in_group("breakables").size() == 2, "destroyed breakable remained registered")
+	test.check(test.tree.get_nodes_in_group("breakables").size() == 5, "destroyed breakable remained registered")
 
 	var hazard: Node = test.tree.get_nodes_in_group("stage_hazards")[0]
 	hazard.set_physics_process(false)

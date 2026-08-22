@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"avenue_tire"
+kind = 2
+position = Vector2(660, 555)
+size = Vector2(42, 42)
+health = 24
+drop_id = &"score_badge"
+defeat_score = 150
+throw_damage = 18
+throw_speed = 690.0
+throw_lifetime = 1.05
+break_on_throw_hit = true
+color = Color(0.35, 0.4, 0.45, 1)

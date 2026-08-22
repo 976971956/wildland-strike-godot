@@ -8,5 +8,5 @@ object_id = &"avenue_crate"
 position = Vector2(850, 610)
 size = Vector2(58, 64)
 health = 28
-drop_id = &"food"
+drop_id = &"food_ration"
 defeat_score = 150

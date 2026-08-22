@@ -37,6 +37,7 @@ const SUITES := [
 	{"name": "team_attack", "path": "res://tests/suites/team_attack_test.gd"},
 	{"name": "m4_roster_acceptance", "path": "res://tests/suites/m4_roster_acceptance_test.gd"},
 	{"name": "weapon_sandbox", "path": "res://tests/suites/weapon_sandbox_test.gd"},
+	{"name": "prop_item_system", "path": "res://tests/suites/prop_item_system_test.gd"},
 ]
 
 

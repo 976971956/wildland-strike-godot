@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PickupDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/items/pickup_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+pickup_id = &"food_feast"
+display_name = "FEAST"
+kind = 0
+heal_amount = 999
+score_value = 1500
+icon_size = 21.0
+color = Color(0.84, 0.12, 0.18, 1)

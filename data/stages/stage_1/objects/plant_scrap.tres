@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"plant_scrap"
+kind = 2
+position = Vector2(3370, 585)
+size = Vector2(52, 46)
+health = 42
+drop_id = &"score_relic"
+defeat_score = 350
+throw_damage = 30
+throw_speed = 510.0
+throw_lifetime = 1.35
+break_on_throw_hit = true
+color = Color(0.56, 0.34, 0.24, 1)

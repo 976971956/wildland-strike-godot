@@ -4,6 +4,7 @@ extends Resource
 enum ObjectKind {
 	BREAKABLE,
 	ROLLING_HAZARD,
+	CARRYABLE,
 }
 
 @export var object_id: StringName
@@ -18,6 +19,11 @@ enum ObjectKind {
 @export var move_max_x := 0.0
 @export_range(-1, 1, 2) var initial_direction := 1
 @export_range(0, 5000, 10) var defeat_score := 0
+@export_range(0, 100, 1) var throw_damage := 0
+@export_range(0.0, 1200.0, 10.0) var throw_speed := 0.0
+@export_range(0.0, 5.0, 0.05) var throw_lifetime := 0.0
+@export var break_on_throw_hit := true
+@export var color := Color("#8a5735")
 
 
 func is_valid_object() -> bool:
@@ -27,4 +33,6 @@ func is_valid_object() -> bool:
 		return health > 0 and contact_damage == 0
 	if kind == ObjectKind.ROLLING_HAZARD:
 		return contact_damage > 0 and move_speed > 0.0 and move_max_x > move_min_x
+	if kind == ObjectKind.CARRYABLE:
+		return health > 0 and contact_damage == 0 and throw_damage > 0 and throw_speed > 0.0 and throw_lifetime > 0.0
 	return false

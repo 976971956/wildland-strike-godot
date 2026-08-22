@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/encounters/plant_boss.tres" id="2"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/objects/plant_crate.tres" id="3"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/processing_plant.png" id="4"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/objects/plant_scrap.tres" id="5"]
 
 [resource]
 script = ExtResource("1")
@@ -16,4 +17,4 @@ environment_id = &"red_alert_plant"
 visual_theme = 2
 background_texture = ExtResource("4")
 encounters = Array[Resource]([ExtResource("2")])
-environment_objects = Array[Resource]([ExtResource("3")])
+environment_objects = Array[Resource]([ExtResource("3"), ExtResource("5")])

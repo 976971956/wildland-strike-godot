@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="StageSceneDefinition" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://core/stages/stage_scene_definition.gd" id="1"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/encounters/courtyard_reinforcement.tres" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://data/stages/stage_1/objects/courtyard_drum.tres" id="4"]
 [ext_resource type="Resource" path="res://data/stages/stage_1/objects/courtyard_crate.tres" id="5"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/flooded_courtyard.png" id="6"]
+[ext_resource type="Resource" path="res://data/stages/stage_1/objects/courtyard_canister.tres" id="7"]
 
 [resource]
 script = ExtResource("1")
@@ -18,4 +19,4 @@ environment_id = &"flooded_industrial_yard"
 visual_theme = 1
 background_texture = ExtResource("6")
 encounters = Array[Resource]([ExtResource("2"), ExtResource("3")])
-environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5")])
+environment_objects = Array[Resource]([ExtResource("4"), ExtResource("5"), ExtResource("7")])

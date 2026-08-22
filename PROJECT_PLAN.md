@@ -203,13 +203,15 @@ Exit evidence (2026-08-22): the deterministic M4 matrix completes Stage 1 with a
 Status: **in progress**
 
 - [x] At least twelve distinct weapon behaviors plus ammo/durability/drop rules.
-- [ ] Breakables, carry/throw props, rolling hazards, food tiers, and score tiers.
+- [x] Breakables, carry/throw props, rolling hazards, food tiers, and score tiers.
 - [ ] Four dinosaur archetypes with neutral, sleeping, enraged, and cross-faction targeting states.
 - [ ] Full enemy standard/elite roster and reusable encounter recipes.
 
 Exit gate: weapons and dinosaurs create systemic interactions rather than scripted visual cameos.
 
 Evidence (2026-08-22, weapon-sandbox batch): a typed catalog now owns twelve unique weapon resources and explicit pickup/drop IDs, split evenly across melee, firearms, and explosives. Machete is the durable baseline; steel pipe trades durability for heavy forced launch; field whip scales the real hitbox for reach; shock baton adds stun and one-target chaining. Pistol remains the direct sidearm; shotgun fans five projectiles across depth lanes; burst SMG emits three rounds per ammo unit; rifle penetrates three unique actors or breakables. Grenade retains its timed blast; Molotov creates a later ticking fire field; rocket detonates on contact; proximity mine remains stationary, arms after a delay, and scans an opposing-faction trigger radius. Ammo/durability is capacity- and hero-efficiency-driven, decrements once per use, and safely preserves the final-use resource through hit resolution. Projectiles, explosions, lingering fields, and mines all reuse explicit combat ownership so co-op friendly fire remains impossible while human-versus-neutral ecology stays valid. Each behavior has a distinct held/drop silhouette and mixed use cue. Thirty-five suites pass 1867/1867 assertions. The exported twelve-item Web fixture was visually accepted at 120.00 FPS over 300 frames with no frame above 20 ms or 33 ms and zero browser warnings/errors. Web export, iOS project export, and unsigned Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m5-weapon-sandbox.md`.
+
+Evidence (2026-08-22, prop/item batch): Stage 1 now authors a tire, fuel canister, and industrial scrap bundle as independent carryable resources alongside its three breakable crates and bounded rolling drum. A nearby neutral attack lifts a prop out of the targetable world, keeps it visually attached above its carrier, and the next attack throws it along the gameplay floor plane. Each prop owns damage, travel speed/lifetime, break-on-contact behavior, durability, score, color, and a typed drop; thrown hits launch enemies and damage other breakables while explicit co-op ownership keeps teammates safe. Hurt, special, linked attack, revive, and player departure all drop a held object safely. A typed pickup catalog replaces the generic food path with four rising healing/score tiers and adds four pure-score treasure tiers; healing retains per-hero item efficiency and the health cap. Thirty-six suites pass 1946/1946 assertions. The exported Web fixture was visually accepted at 119.99 FPS over 300 frames with no frame above 20 ms or 33 ms. Web export, iOS project export, and unsigned Mach-O arm64 build pass. Detailed evidence is archived in `evidence/m5-prop-item-system.md`.
 
 ### M6 — Stages 2–4 and vehicle set piece
 
@@ -260,7 +262,7 @@ Exit gate: tag `v1.0.0`, publish the verified Web build, and archive reproducibl
 
 Tasks are ordered. Take the first unblocked item unless the user explicitly prioritizes another milestone-compatible task.
 
-1. **M5 — Props, pickups, and scoring:** add carry/throw props, extend breakables and rolling hazards, and implement typed food/score tiers that interact with the twelve-weapon sandbox.
+1. **M5 — Dinosaur ecosystem:** implement four dinosaur archetypes with neutral, sleeping, enraged, and cross-faction targeting states, then prove their systemic interactions in a reproducible Web fixture.
 
 ## Definition of done for every task
 
@@ -287,5 +289,5 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - Ranger has 24 state/weapon frames; every Stage 1 enemy archetype has eight state-driven frames, while full multi-frame attack chains, extra locomotion in-betweens, and authored directional variants remain campaign-polish work.
 - The enemy roster still lacks explosive specialists, knife specialists, elites, additional dinosaur archetypes, and the remaining seven unique campaign boss state machines.
 - Stage 1 is the completed release-quality reference slice for later campaign production; subsequent milestones must preserve its combat, presentation, Web performance, and acceptance standards while expanding heroes, systems, and stages.
-- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog is complete, while Stage 1 still authors only the original three generic family drops until the remaining M5 prop/item placement pass.
+- Character selection, typed role tuning, complete original 24-state sheets, three-slot local device routing, independent ready states, safe spawning, shared-camera framing, faction-safe combat, spawn-time co-op scaling, teammate rescue, per-player continues, linked team attacks, and the complete fourteen-run M4 acceptance matrix exist for all four heroes. Their timing contract remains shared until later role-balance passes. Vehicle and high-score persistence do not exist yet. The twelve-behavior weapon catalog and Stage 1 carryable/breakable/hazard plus typed pickup distribution are complete; additional dinosaur archetypes and the standard/elite enemy roster remain the open M5 content work.
 - The current development provisioning profile is invalid; a fresh signed iOS install requires renewed signing access and an available paired device.

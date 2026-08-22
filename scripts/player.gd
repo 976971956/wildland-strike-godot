@@ -76,6 +76,7 @@ var team_attack_charge_timer := 0.0
 var special_connected := false
 var last_hit_was_counter := false
 var grabbed_enemy: Node = null
+var carried_prop: Node = null
 var grab_strike_count := 0
 var grab_hold_timer := 0.0
 var equipped_weapon: Resource = null
@@ -276,6 +277,7 @@ func prepare_local_leave() -> void:
 	velocity = Vector2.ZERO
 	if is_instance_valid(grabbed_enemy):
 		_release_grabbed_enemy()
+	_drop_carried_prop()
 	remove_from_group("player")
 
 
@@ -295,6 +297,11 @@ func _handle_attack_intent() -> void:
 
 func _start_attack() -> void:
 	if attack_timer > 0.11:
+		return
+	if is_instance_valid(carried_prop):
+		_throw_carried_prop()
+		return
+	if z_height <= 0.0 and _try_pick_up_carryable():
 		return
 	var was_running := is_running
 	run_controller.cancel()
@@ -346,6 +353,9 @@ func _aerial_attack_for_velocity():
 func _start_command_attack() -> void:
 	if attack_timer > 0.105 or z_height > 0.0:
 		return
+	if is_instance_valid(carried_prop):
+		_throw_carried_prop()
+		return
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
@@ -359,6 +369,7 @@ func _start_command_attack() -> void:
 	game.play_sfx(current_attack.sound_event)
 
 func _start_special() -> void:
+	_drop_carried_prop()
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
@@ -420,6 +431,7 @@ func start_queued_special() -> void:
 
 
 func begin_team_attack(attack_data: Resource) -> void:
+	_drop_carried_prop()
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
@@ -629,6 +641,57 @@ func _release_grabbed_enemy() -> void:
 	grab_hold_timer = 0.0
 
 
+func _try_pick_up_carryable() -> bool:
+	if is_instance_valid(carried_prop):
+		return false
+	var nearest_prop: Node = null
+	var nearest_distance := 65.0
+	for stage_object in get_tree().get_nodes_in_group("carryables"):
+		if not is_instance_valid(stage_object) or stage_object.is_defeated:
+			continue
+		var distance: float = position.distance_to(stage_object.position)
+		if distance < nearest_distance:
+			nearest_prop = stage_object
+			nearest_distance = distance
+	if nearest_prop == null or not nearest_prop.pick_up_by(self):
+		return false
+	carried_prop = nearest_prop
+	run_controller.cancel()
+	command_controller.cancel()
+	_reset_combo()
+	velocity = Vector2.ZERO
+	queue_redraw()
+	return true
+
+
+func _throw_carried_prop() -> bool:
+	if not is_instance_valid(carried_prop):
+		carried_prop = null
+		return false
+	var prop := carried_prop
+	carried_prop = null
+	if not prop.throw_from(self, facing):
+		carried_prop = prop
+		return false
+	run_controller.cancel()
+	command_controller.cancel()
+	_reset_combo()
+	_release_grabbed_enemy()
+	state_machine.transition(FighterStateMachineScript.State.ATTACK)
+	current_attack = FORWARD_THROW_ATTACK
+	attack_timer = 0.32
+	attack_hit_done = true
+	attack_hitbox.deactivate()
+	queue_redraw()
+	return true
+
+
+func _drop_carried_prop() -> void:
+	if is_instance_valid(carried_prop):
+		carried_prop.drop_from_carrier()
+	carried_prop = null
+
+
 func _configure_attack_hitbox() -> void:
 	if current_attack == null:
 		attack_hitbox.deactivate()
@@ -656,6 +719,7 @@ func take_hit(
 		return
 	if game != null and game.has_method("cancel_team_attack_request"):
 		game.cancel_team_attack_request(self)
+	_drop_carried_prop()
 	run_controller.cancel()
 	command_controller.cancel()
 	_reset_combo()
@@ -699,6 +763,7 @@ func revive(respawn_position: Vector2, health_ratio := 1.0) -> void:
 	run_controller.cancel()
 	command_controller.cancel()
 	_release_grabbed_enemy()
+	_drop_carried_prop()
 	_reset_combo()
 	health = clampi(roundi(max_health * health_ratio), 1, max_health)
 	is_defeated = false

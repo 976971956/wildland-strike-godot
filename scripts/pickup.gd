@@ -3,17 +3,21 @@ extends Node2D
 
 const WeaponDefinitionScript = preload("res://core/weapons/weapon_definition.gd")
 const WeaponCatalogScript = preload("res://core/weapons/weapon_catalog.gd")
+const PickupDefinitionScript = preload("res://core/items/pickup_definition.gd")
+const PickupCatalogScript = preload("res://core/items/pickup_catalog.gd")
 
 var kind := "food"
 var game
 var life := 18.0
 var phase := 0.0
 var weapon_definition: Resource
+var item_definition: Resource
 
 func setup(p_game, p_kind: String) -> void:
 	game = p_game
 	kind = p_kind
-	weapon_definition = null if kind == "food" else WeaponCatalogScript.from_pickup_id(kind)
+	item_definition = PickupCatalogScript.from_pickup_id(kind)
+	weapon_definition = null if item_definition != null else WeaponCatalogScript.from_pickup_id(kind)
 	add_to_group("pickups")
 	z_index = int(position.y) + 1
 
@@ -31,25 +35,31 @@ func _process(delta: float) -> void:
 			collector = fighter
 			collector_distance = distance
 	if collector != null:
-		if kind == "food":
-			collector.heal(28)
-		else:
-			collector.give_weapon(kind)
-		game.add_score(400)
-		queue_free()
+		collect(collector)
 		return
 	if life <= 0.0:
 		queue_free()
 	queue_redraw()
 
+
+func collect(collector: Node) -> bool:
+	if not is_instance_valid(collector) or collector.is_defeated:
+		return false
+	if item_definition != null:
+		if item_definition.kind == PickupDefinitionScript.PickupKind.FOOD:
+			collector.heal(item_definition.heal_amount)
+		game.add_score(item_definition.score_value)
+	else:
+		collector.give_weapon(kind)
+		game.add_score(400)
+	queue_free()
+	return true
+
 func _draw() -> void:
 	var bob := sin(phase) * 3.0
 	_draw_oval(Vector2(0,4), 20, 6, Color(0.02,0.03,0.04,0.35))
-	if kind == "food":
-		draw_circle(Vector2(0,-14+bob), 13, Color("#d8463f"))
-		draw_circle(Vector2(-4,-18+bob), 6, Color("#f27a51"))
-		draw_line(Vector2(2,-27+bob),Vector2(8,-34+bob),Color("#45291f"),4)
-		draw_colored_polygon(PackedVector2Array([Vector2(7,-33+bob),Vector2(17,-35+bob),Vector2(10,-27+bob)]),Color("#55a34d"))
+	if item_definition != null:
+		_draw_item_pickup(bob)
 	elif weapon_definition != null:
 		_draw_weapon_pickup(bob)
 
@@ -87,3 +97,23 @@ func _draw_weapon_pickup(bob: float) -> void:
 			draw_rect(Rect2(-4.0, -34.0 + bob, 8.0, 8.0), Color("#d5b96d"))
 	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
 	draw_string(ThemeDB.fallback_font, label_rect.position, weapon_definition.display_name, HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))
+
+
+func _draw_item_pickup(bob: float) -> void:
+	var icon_position := Vector2(0.0, -16.0 + bob)
+	var icon_size: float = item_definition.icon_size
+	if item_definition.kind == PickupDefinitionScript.PickupKind.FOOD:
+		draw_circle(icon_position, icon_size, item_definition.color)
+		draw_circle(icon_position + Vector2(-icon_size * 0.28, -icon_size * 0.24), icon_size * 0.44, item_definition.color.lightened(0.25))
+		draw_line(icon_position + Vector2(2.0, -icon_size), icon_position + Vector2(8.0, -icon_size - 8.0), Color("#45291f"), 4.0)
+		draw_colored_polygon(PackedVector2Array([icon_position + Vector2(7.0, -icon_size - 7.0), icon_position + Vector2(17.0, -icon_size - 9.0), icon_position + Vector2(10.0, -icon_size + 1.0)]), Color("#55a34d"))
+	else:
+		var points := PackedVector2Array()
+		for index in range(8):
+			var radius := icon_size if index % 2 == 0 else icon_size * 0.52
+			var angle := -PI * 0.5 + TAU * index / 8.0
+			points.append(icon_position + Vector2(cos(angle), sin(angle)) * radius)
+		draw_colored_polygon(points, item_definition.color)
+		draw_circle(icon_position, icon_size * 0.3, item_definition.color.lightened(0.35))
+	var label_rect := Rect2(-62.0, 5.0 + bob, 124.0, 20.0)
+	draw_string(ThemeDB.fallback_font, label_rect.position, item_definition.display_name, HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, 12, Color("#fff0bd"))

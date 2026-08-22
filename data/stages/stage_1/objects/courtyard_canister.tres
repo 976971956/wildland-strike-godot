@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnvironmentObjectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/stages/environment_object_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+object_id = &"courtyard_canister"
+kind = 2
+position = Vector2(2140, 560)
+size = Vector2(44, 58)
+health = 34
+drop_id = &"food_meal"
+defeat_score = 250
+throw_damage = 24
+throw_speed = 560.0
+throw_lifetime = 1.2
+break_on_throw_hit = true
+color = Color(0.16, 0.5, 0.52, 1)

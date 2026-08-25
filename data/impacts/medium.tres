@@ -13,3 +13,6 @@ primary_sfx = &"heavy"
 layer_sfx = &"impact_snap"
 haptic_duration_ms = 28
 haptic_strength = 0.58
+burst_color = Color(1, 0.839216, 0.360784, 1)
+core_color = Color(1, 0.968627, 0.819608, 1)
+ray_count_bonus = 1

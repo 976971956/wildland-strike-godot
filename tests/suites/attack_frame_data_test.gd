@@ -20,6 +20,12 @@ const ATTACKS := [
 	preload("res://data/attacks/player_grab_strike.tres"),
 	preload("res://data/attacks/player_back_throw.tres"),
 	preload("res://data/attacks/player_combo_throw.tres"),
+	preload("res://data/attacks/mara_command.tres"),
+	preload("res://data/attacks/mara_special.tres"),
+	preload("res://data/attacks/kestrel_command.tres"),
+	preload("res://data/attacks/kestrel_special.tres"),
+	preload("res://data/attacks/atlas_command.tres"),
+	preload("res://data/attacks/atlas_special.tres"),
 ]
 
 

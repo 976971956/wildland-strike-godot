@@ -10,10 +10,14 @@ const CLASH = preload("res://data/impacts/clash.tres")
 
 func run(test) -> void:
 	var profile_ids := {}
+	var silhouettes := {}
 	for profile in [LIGHT, MEDIUM, HEAVY, THROW, SPECIAL, CLASH]:
 		test.check(profile != null and profile.is_valid_profile(), "impact profile failed validation")
 		test.check(not profile_ids.has(profile.profile_id), "impact profile id is duplicated")
+		test.check("burst_color" in profile and "core_color" in profile and "impact_scale" in profile, "%s lacks an authored impact silhouette" % profile.profile_id)
 		profile_ids[profile.profile_id] = true
+		silhouettes[[profile.burst_color, profile.core_color, profile.impact_scale]] = true
+	test.check(silhouettes.size() == 6, "core light/medium/heavy/throw/special/clash impacts share one visual silhouette")
 	test.check(LIGHT.hit_stop_duration == 0.034 and LIGHT.attacker_recoil_speed == 42.0, "light impact timing drifted")
 	test.check(HEAVY.camera_shake_strength == 12.5 and HEAVY.layer_sfx == &"impact_crack", "heavy impact response drifted")
 	test.check(THROW.haptic_duration_ms == 56 and THROW.haptic_strength == 0.95, "throw haptic response drifted")

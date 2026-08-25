@@ -1635,7 +1635,7 @@ func hit_confirm(
 	var fx := ImpactScript.new()
 	actors.add_child(fx)
 	fx.position = pos
-	fx.setup(strength, direction)
+	fx.setup(strength, direction, impact_profile)
 	var shake_duration: float = [0.055, 0.095, 0.15][strength - 1]
 	var resolved_shake_strength: float = [4.5, 8.0, 13.0][strength - 1]
 	var hit_stop_duration: float = [0.035, 0.055, 0.085][strength - 1]

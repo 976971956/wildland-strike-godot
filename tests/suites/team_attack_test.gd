@@ -58,7 +58,7 @@ func run(test) -> void:
 	game.player._request_special()
 	test.check(game.team_attack_requests.has(0), "unmatched special did not wait for a teammate")
 	game._tick_team_attack_requests(game.TEAM_ATTACK_INPUT_WINDOW)
-	test.check(not game.team_attack_requests.has(0) and game.player.current_attack.attack_id == &"player_special", "expired team-link input did not fall back to the normal special")
+	test.check(not game.team_attack_requests.has(0) and game.player.current_attack == game.player.special_attack_definition, "expired team-link input did not fall back to the hero's normal special")
 	test.check(game.team_attack_count == 1, "unmatched fallback incorrectly counted as a team attack")
 
 	game.player.special_timer = 0.0
@@ -71,7 +71,7 @@ func run(test) -> void:
 	second._request_special()
 	test.check(game.team_attack_requests.size() == 2, "distant teammates incorrectly linked their special inputs")
 	game._tick_team_attack_requests(game.TEAM_ATTACK_INPUT_WINDOW)
-	test.check(game.player.current_attack.attack_id == &"player_special" and second.current_attack.attack_id == &"player_special", "distant link requests did not independently fall back")
+	test.check(game.player.current_attack == game.player.special_attack_definition and second.current_attack == second.special_attack_definition, "distant link requests did not independently fall back to each hero's special")
 	test.check(game.team_attack_count == 1, "distant teammates incorrectly triggered a team attack")
 
 	game.player.special_timer = 0.0

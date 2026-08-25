@@ -12,3 +12,6 @@ attacker_recoil_speed = 65.0
 primary_sfx = &"impact_clash"
 haptic_duration_ms = 12
 haptic_strength = 0.26
+burst_color = Color(0.603922, 0.843137, 1, 1)
+core_color = Color(0.921569, 0.980392, 1, 1)
+impact_scale = 0.72

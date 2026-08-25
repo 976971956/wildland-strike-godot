@@ -45,7 +45,7 @@ func run(test) -> void:
 		if not file_name.ends_with(".tres"):
 			continue
 		var hero: Resource = load("res://data/heroes".path_join(file_name))
-		for value in [hero.display_name, hero.role_title]:
+		for value in [hero.display_name, hero.role_title, hero.command_skill_name, hero.defensive_skill_name]:
 			test.check(Localization.has_content_translation(value), "%s content lacks Chinese translation: %s" % [file_name, value])
 			authored_content_count += 1
 	for directory in ["res://data/weapons", "res://data/items"]:

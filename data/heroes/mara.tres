@@ -1,7 +1,9 @@
-[gd_resource type="Resource" script_class="HeroDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mara_sheet_v2.png" id="2"]
+[ext_resource type="Resource" path="res://data/attacks/mara_command.tres" id="3"]
+[ext_resource type="Resource" path="res://data/attacks/mara_special.tres" id="4"]
 
 [resource]
 script = ExtResource("1")
@@ -12,6 +14,12 @@ role_summary = "Extends weapon and healing value, trading raw damage and durabil
 primary_color = Color(0.27451, 0.466667, 0.713726, 1)
 accent_color = Color(0.396078, 0.858824, 0.768627, 1)
 sprite_sheet = ExtResource("2")
+command_skill_name = "ARC SNARE"
+command_skill_summary = "Three precise shock pulses pin a target before the final launch."
+command_attack = ExtResource("3")
+defensive_skill_name = "OVERLOAD FIELD"
+defensive_skill_summary = "The widest control burst, trading raw damage for extra stun."
+defensive_special = ExtResource("4")
 max_health = 100
 move_speed = 245.0
 run_multiplier = 1.55

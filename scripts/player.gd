@@ -73,6 +73,8 @@ var damage_scale := 1.0
 var item_efficiency := 1.0
 var aerial_control := 1.0
 var grapple_power := 1.0
+var command_attack_definition: Resource = COMMAND_ATTACK
+var special_attack_definition: Resource = SPECIAL_ATTACK
 var hero_definition: Resource
 var hero_id: StringName = &"ranger"
 var hero_display_name := "RANGER"
@@ -190,6 +192,8 @@ func apply_hero_definition(value: Resource) -> void:
 	item_efficiency = value.item_efficiency
 	aerial_control = value.aerial_control
 	grapple_power = value.grapple_power
+	command_attack_definition = value.command_attack
+	special_attack_definition = value.defensive_special
 	health = max_health
 	if game != null:
 		health_changed.emit(health, max_health)
@@ -259,11 +263,11 @@ func _apply_intent(intent) -> void:
 		facing = 1 if input_vec.x > 0.0 else -1
 	var defensive_chord: bool = intent.attack_pressed and intent.jump_pressed
 	if defensive_chord:
-		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
+		if z_height <= 5.0 and health > special_attack_definition.self_damage and special_timer <= 0.0:
 			_request_special()
 		return
 	if intent.special_pressed:
-		if z_height <= 5.0 and health > SPECIAL_ATTACK.self_damage and special_timer <= 0.0:
+		if z_height <= 5.0 and health > special_attack_definition.self_damage and special_timer <= 0.0:
 			_request_special()
 		return
 	if (
@@ -386,7 +390,7 @@ func _start_command_attack() -> void:
 	command_controller.cancel()
 	_reset_combo()
 	state_machine.transition(FighterStateMachineScript.State.ATTACK)
-	current_attack = COMMAND_ATTACK
+	current_attack = command_attack_definition
 	attack_hit_done = false
 	attack_timer = current_attack.duration
 	_reset_attack_resolution()
@@ -401,7 +405,7 @@ func _start_special() -> void:
 	_reset_combo()
 	_release_grabbed_enemy()
 	state_machine.transition(FighterStateMachineScript.State.SPECIAL)
-	current_attack = SPECIAL_ATTACK
+	current_attack = special_attack_definition
 	attack_hitbox.deactivate()
 	special_connected = false
 	special_timer = current_attack.duration
@@ -424,7 +428,7 @@ func _start_special() -> void:
 				),
 				current_attack.launch,
 				false,
-				0.0,
+				current_attack.hit_stun_bonus,
 				AttackPriorityRulesScript.interrupts_defender(priority_outcome)
 			)
 			if enemy.health < enemy_health_before:
@@ -452,7 +456,7 @@ func _request_special() -> void:
 
 func start_queued_special() -> void:
 	team_attack_charge_timer = 0.0
-	if is_defeated or hurt_timer > 0.0 or special_timer > 0.0 or z_height > 5.0 or health <= SPECIAL_ATTACK.self_damage:
+	if is_defeated or hurt_timer > 0.0 or special_timer > 0.0 or z_height > 5.0 or health <= special_attack_definition.self_damage:
 		return
 	_start_special()
 
@@ -559,7 +563,7 @@ func _check_attack_hit() -> void:
 		damage = _scaled_damage(damage)
 		var launch: bool = CounterHitRulesScript.launch_for(current_attack, counter_hit)
 		var resolved_knockback := CounterHitRulesScript.knockback_for(current_attack, facing, counter_hit)
-		var resolved_stun_bonus: float = CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
+		var resolved_stun_bonus: float = current_attack.hit_stun_bonus + CounterHitRulesScript.stun_bonus_for(current_attack, counter_hit)
 		if used_weapon:
 			resolved_knockback *= used_weapon_definition.melee_knockback_scale
 			launch = launch or used_weapon_definition.melee_force_launch
@@ -968,8 +972,17 @@ func _draw() -> void:
 		_draw_held_weapon(held_visual, jump_offset)
 		_draw_held_weapon_grip_cover(jump_offset, tint_color)
 	if special_timer > 0.0:
-		var special_color := Color("#82e8ff") if current_attack != null and current_attack.attack_id == &"player_team_attack" else Color("#ffe37a")
-		draw_arc(jump_offset + Vector2(0,-64), 76, 0, TAU, 32, special_color, 7)
+		var team_special: bool = current_attack != null and current_attack.attack_id == &"player_team_attack"
+		var special_color := Color("#82e8ff")
+		var special_scale: float = 1.0
+		if not team_special and current_attack != null and current_attack.impact_profile != null:
+			special_color = current_attack.impact_profile.burst_color
+			special_scale = current_attack.impact_profile.impact_scale
+		var special_progress: float = 1.0 - special_timer / maxf(current_attack.duration, 0.001)
+		var pulse: float = sin(clampf(special_progress * 1.8, 0.0, 1.0) * PI)
+		var center: Vector2 = jump_offset + Vector2(0, -64)
+		draw_arc(center, 66.0 + pulse * 16.0 * special_scale, 0, TAU, 40, Color(special_color, 0.88), 5.0 + special_scale * 2.0)
+		draw_arc(center, 42.0 + pulse * 28.0 * special_scale, -PI * 0.25, PI * 1.75, 32, Color(special_color.lightened(0.35), 0.62), 3.0)
 	elif team_attack_charge_timer > 0.0:
 		draw_arc(jump_offset + Vector2(0, -64), 64, -PI * 0.5, PI * 1.5, 32, Color("#82e8ff"), 4)
 
@@ -1201,7 +1214,7 @@ func _visual_frame() -> Vector2i:
 				return Vector2i(1, 1)
 		if current_attack != null and current_attack.attack_id == &"player_run_attack":
 			return Vector2i(4, 1)
-		if current_attack != null and current_attack.attack_id == &"player_command_attack":
+		if current_attack != null and current_attack == command_attack_definition:
 			return Vector2i(4, 1)
 		if combo_step == 1:
 			return Vector2i(1 if attack_timer < 0.18 else 0, 1)

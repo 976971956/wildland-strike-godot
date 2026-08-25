@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
-[ext_resource type="Resource" path="res://data/impacts/special.tres" id="2"]
+[ext_resource type="Resource" path="res://data/impacts/ranger_special.tres" id="2"]
 
 [resource]
 script = ExtResource("1")

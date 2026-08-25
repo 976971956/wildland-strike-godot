@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ImpactProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/impact_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"atlas_command"
+hit_stop_duration = 0.116
+camera_shake_duration = 0.205
+camera_shake_strength = 18.0
+attacker_recoil_speed = 148.0
+primary_sfx = &"heavy"
+layer_sfx = &"body_slam"
+haptic_duration_ms = 74
+haptic_strength = 1.0
+burst_color = Color(1, 0.33, 0.12, 1)
+core_color = Color(1, 0.88, 0.52, 1)
+impact_scale = 1.42
+ray_count_bonus = 1

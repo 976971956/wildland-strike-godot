@@ -8,6 +8,14 @@ extends Resource
 @export var primary_color := Color.WHITE
 @export var accent_color := Color.WHITE
 @export var sprite_sheet: Texture2D
+@export_group("Skills")
+@export var command_skill_name := ""
+@export_multiline var command_skill_summary := ""
+@export var command_attack: Resource
+@export var defensive_skill_name := ""
+@export_multiline var defensive_skill_summary := ""
+@export var defensive_special: Resource
+@export_group("Stats")
 @export_range(1, 12, 1) var sprite_columns := 6
 @export_range(1, 12, 1) var sprite_rows := 4
 @export_range(60, 240, 1) var max_health := 120
@@ -26,6 +34,16 @@ func is_valid_hero() -> bool:
 		and not role_title.is_empty()
 		and not role_summary.is_empty()
 		and sprite_sheet != null
+		and not command_skill_name.is_empty()
+		and not command_skill_summary.is_empty()
+		and command_attack != null
+		and command_attack.has_method("is_valid_frame_data")
+		and command_attack.is_valid_frame_data()
+		and not defensive_skill_name.is_empty()
+		and not defensive_skill_summary.is_empty()
+		and defensive_special != null
+		and defensive_special.has_method("is_valid_frame_data")
+		and defensive_special.is_valid_frame_data()
 		and sprite_sheet.get_width() % sprite_columns == 0
 		and sprite_sheet.get_height() % sprite_rows == 0
 		and max_health >= 60

@@ -780,7 +780,7 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 	var gap := 24.0
 	var total_width := card_width * 4.0 + gap * 3.0
 	var card_x := (size.x - total_width) * 0.5 + index * (card_width + gap)
-	var card_rect := Rect2(card_x, 138, card_width, 470)
+	var card_rect := Rect2(card_x, 138, card_width, 510)
 	var edge_color: Color = hero.accent_color if selected else Color(0.24, 0.31, 0.34, 0.82)
 	draw_rect(card_rect, Color(0.035, 0.055, 0.075, 0.98))
 	draw_rect(Rect2(card_rect.position, Vector2(card_width, 7 if selected else 3)), edge_color)
@@ -802,6 +802,8 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 	_draw_hero_stat(card_x + 32, 482, "SPD", hero.move_speed / 290.0, hero.primary_color)
 	_draw_hero_stat(card_x + 32, 512, "PWR", hero.damage_scale / 1.3, hero.primary_color)
 	_draw_hero_stat(card_x + 32, 542, "TECH", hero.item_efficiency / 1.5, hero.primary_color)
+	draw_string(font, Vector2(card_x + 12, 570), "%s  %s" % [_content("CMD"), _content(hero.command_skill_name)], HORIZONTAL_ALIGNMENT_CENTER, card_width - 24, 12, hero.accent_color.lightened(0.32))
+	draw_string(font, Vector2(card_x + 12, 592), "A+B  %s" % _content(hero.defensive_skill_name), HORIZONTAL_ALIGNMENT_CENTER, card_width - 24, 12, Color("#d7e9e5"))
 	if selected:
 		var badges: Array[String] = []
 		for selection in local_player_selections:
@@ -809,7 +811,7 @@ func _draw_hero_card(hero: Resource, index: int, selected: bool) -> void:
 				badges.append("P%d %s" % [int(selection.slot_index) + 1, _content("READY" if bool(selection.ready) else "SELECTING")])
 		if badges.is_empty():
 			badges.append("P1 %s" % _content("SELECTING"))
-		draw_string(font, Vector2(card_x + 8, 590), "  •  ".join(PackedStringArray(badges)), HORIZONTAL_ALIGNMENT_CENTER, card_width - 16, 15, hero.accent_color.lightened(0.25))
+		draw_string(font, Vector2(card_x + 8, 632), "  •  ".join(PackedStringArray(badges)), HORIZONTAL_ALIGNMENT_CENTER, card_width - 16, 15, hero.accent_color.lightened(0.25))
 
 
 func _draw_hero_stat(x: float, y: float, label: String, value: float, color: Color) -> void:

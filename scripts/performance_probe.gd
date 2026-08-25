@@ -136,6 +136,14 @@ func _ready() -> void:
 		elif "team_attack_preview=1" in query_string:
 			scenario = "team_attack_preview"
 			call_deferred("_start_team_attack_preview")
+		elif "hero_special_preview=" in query_string:
+			var hero_index := _hero_preview_index(query_string, "hero_special_preview=")
+			scenario = "hero_special_%d" % hero_index
+			call_deferred("_start_hero_skill_preview", hero_index, true)
+		elif "hero_command_preview=" in query_string:
+			var hero_index := _hero_preview_index(query_string, "hero_command_preview=")
+			scenario = "hero_command_%d" % hero_index
+			call_deferred("_start_hero_skill_preview", hero_index, false)
 		elif "hero_animation_preview=" in query_string:
 			scenario = "hero_animation_preview"
 			var hero_index := 1
@@ -373,6 +381,59 @@ func _start_hero_animation_preview(hero_index: int) -> void:
 	game.select_hero(hero_index)
 	game.hud.set_hero_animation_preview(game.selected_hero())
 	game.hud.set_mode("hero_animation")
+	game.set_process(false)
+
+
+func _hero_preview_index(query_string: String, prefix: String) -> int:
+	if "%smara" % prefix in query_string:
+		return 1
+	if "%skestrel" % prefix in query_string:
+		return 2
+	if "%satlas" % prefix in query_string:
+		return 3
+	return 0
+
+
+func _start_hero_skill_preview(hero_index: int, show_special: bool) -> void:
+	var game := get_parent()
+	if hero_index < 0 or hero_index >= game.HERO_DEFINITIONS.size():
+		scenario = "hero_skill_setup_failed"
+		return
+	game.select_hero(hero_index)
+	game._start_game()
+	game.encounter_director.completed = true
+	for stage_object in get_tree().get_nodes_in_group("breakables") + get_tree().get_nodes_in_group("stage_hazards"):
+		stage_object.visible = false
+		stage_object.set_process(false)
+		stage_object.set_physics_process(false)
+	game.player.position = Vector2(520.0, 555.0)
+	game.player.facing = 1
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		enemy.set_physics_process(false)
+		enemy.visible = false
+		enemy.position = Vector2(1400.0, 650.0)
+	game.spawn_enemy(Vector2(598.0, 555.0), "grunt")
+	var target: Node = get_tree().get_nodes_in_group("enemies").back()
+	target.set_physics_process(false)
+	target.invulnerable = 0.0
+	target.hurt_timer = 0.0
+	if show_special:
+		game.player._start_special()
+		game.player.special_timer = game.player.current_attack.duration * 0.52
+		game.player.attack_timer = game.player.special_timer
+	else:
+		game.player._start_command_attack()
+		game.player.attack_timer = game.player.current_attack.hit_trigger_remaining - 0.001
+		game.player._check_attack_hit()
+	game.player.set_physics_process(false)
+	for actor in game.actors.get_children():
+		if "profile_id" in actor:
+			actor._process(actor.max_life * 0.08)
+			actor.set_process(false)
+	var hero: Resource = game.HERO_DEFINITIONS[hero_index]
+	var skill_name: String = hero.defensive_skill_name if show_special else hero.command_skill_name
+	var skill_kind := "A+B DEFENSIVE SPECIAL" if show_special else "DOWN > FORWARD + ATTACK"
+	game.hud.show_banner("%s // %s" % [hero.display_name, skill_name], skill_kind, 999.0)
 	game.set_process(false)
 
 

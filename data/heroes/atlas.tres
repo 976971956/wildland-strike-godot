@@ -1,7 +1,9 @@
-[gd_resource type="Resource" script_class="HeroDefinition" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="HeroDefinition" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://core/fighters/hero_definition.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/atlas_sheet_v2.png" id="2"]
+[ext_resource type="Resource" path="res://data/attacks/atlas_command.tres" id="3"]
+[ext_resource type="Resource" path="res://data/attacks/atlas_special.tres" id="4"]
 
 [resource]
 script = ExtResource("1")
@@ -12,6 +14,12 @@ role_summary = "Highest health, damage and throw force at the cost of speed and 
 primary_color = Color(0.603922, 0.266667, 0.184314, 1)
 accent_color = Color(0.941176, 0.705882, 0.254902, 1)
 sprite_sheet = ExtResource("2")
+command_skill_name = "FAULTLINE DRIVE"
+command_skill_summary = "A slow body blow with the strongest single-hit launch and recoil."
+command_attack = ExtResource("3")
+defensive_skill_name = "GROUNDBREAKER"
+defensive_skill_summary = "A costly seismic burst with maximum damage, radius and hit stop."
+defensive_special = ExtResource("4")
 max_health = 150
 move_speed = 210.0
 run_multiplier = 1.45

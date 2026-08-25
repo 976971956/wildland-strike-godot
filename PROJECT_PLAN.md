@@ -1,6 +1,6 @@
 # Wildland Strike 1.0 — final-version plan
 
-Last updated: 2026-08-22
+Last updated: 2026-08-26
 
 Plan version: 1.0
 
@@ -288,6 +288,8 @@ Post-release evidence (2026-08-23, campaign-stage actor visibility maintenance):
 
 Post-release evidence (2026-08-23, weapon-action silhouette maintenance): the reported weak weapon poses were reproduced as one generic idle-to-contact rotation and a fixed 48-pixel projectile draw height. Melee weapons now raise the real grip above the shoulder, chop downward through the authoritative contact frame, continue through a short follow-through, and recover. Firearms switch to the real extended-arm body frame, raise and extend the grip into aim, recoil after contact, and emit tracers at the firing pose's visual muzzle height. Grip compositing samples the real hand independently from the posed target, so the hand remains visible without baked duplicate weapon frames. The focused weapon suite passes 201/201 assertions and the full release matrix passes 53 suites/4,083 assertions. Exported windup, contact, and aimed-fire Web fixtures were visually accepted at approximately 120 FPS over 300 frames with zero frames above 20/33 ms and no browser warnings/errors. Web and iOS exports plus the signed arm64 build pass; the paired iPhone 14 Pro remained unavailable, so install/launch is deferred until it is reconnected and unlocked.
 
+Post-release evidence (2026-08-26, hero-skill identity and impact-feedback maintenance): the reported weak skill impact and character-skill overlap were reproduced as all four heroes sharing the same command and defensive-special resources while only passive stat multipliers changed. Every hero now owns two authored skills exposed on the selection card in English and Simplified Chinese: Ranger retains a balanced two-hit launcher and close sweep; Mara gains a three-pulse stun command and the widest control field; Kestrel gains the fastest traversal command and a low-cost fast escape burst; Atlas gains the strongest single-hit launcher and a costly maximum-damage seismic burst. Eight independent impact profiles author per-skill hit stop, camera response, attacker recoil, layered audio, haptics, burst/core colors, scale, and ray density. General attack data now supports explicit non-counter hit-stun bonus, and the runtime resolves each selected hero's skill resources without changing shared input grammar or team-link fallback. The selection screen visibly names both skills for all four heroes. Seven focused suites pass 772/772 assertions and the full release matrix passes 53 suites/4,188 assertions. Exported selection, command-hit, and defensive-special fixtures were visually accepted with zero browser warnings/errors; the Atlas maximum-effect sample sustains 120.01 FPS over 300 frames with zero frames above 20/33 ms. Web export, iOS export, and signed arm64 build pass. The exact final build installed on the paired iPhone 14 Pro; automated launch was correctly denied because the phone was locked and remains to be confirmed after unlock.
+
 Exit gate: desktop, Web, and iOS behave like complete consumer builds rather than development demos.
 
 ### M9 — Balance, QA, and 1.0 release
@@ -342,6 +344,7 @@ Tasks are ordered. Take the first unblocked item unless the user explicitly prio
 - **2026-08-23 — Shared held-item secondary motion:** player weapons, enemy ranged weapons, and carried props share deterministic locomotion/breathing curves while attack hit timing and damage remain authoritative gameplay state.
 - **2026-08-23 — Campaign deployment visibility invariant:** every stage deployment must restore the shared actor container before enabling fighter simulation, because route-map presentation deliberately hides that parent node between operations.
 - **2026-08-23 — Weapon-kind action silhouettes:** melee and firearm presentation use distinct, contact-synchronized trajectories; projectile simulation keeps lane-space collision while tracers inherit the raised firing pose's visual muzzle height.
+- **2026-08-26 — Per-hero skill identity:** character choice owns command and defensive-special resources, names, tactical tradeoffs, and impact silhouettes; common directional/chord inputs remain stable so differentiation comes from timing, control, reach, cost, and force rather than control complexity.
 
 ## Known baseline limitations
 

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ImpactProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/combat/impact_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"mara_command"
+hit_stop_duration = 0.043
+camera_shake_duration = 0.065
+camera_shake_strength = 5.8
+attacker_recoil_speed = 48.0
+primary_sfx = &"hit"
+layer_sfx = &"shock"
+haptic_duration_ms = 21
+haptic_strength = 0.44
+burst_color = Color(0.24, 0.95, 1, 1)
+core_color = Color(0.86, 1, 1, 1)
+impact_scale = 0.88
+ray_count_bonus = 5

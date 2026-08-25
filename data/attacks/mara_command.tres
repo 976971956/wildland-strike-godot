@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="AttackFrameData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/combat/attack_frame_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/impacts/mara_command.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+attack_id = &"mara_arc_snare"
+sound_event = &"shock"
+duration = 0.54
+hit_trigger_remaining = 0.36
+lunge_speed = 270.0
+hitbox_shape = 1
+box_center = Vector2(43, 0)
+box_half_extents = Vector2(40, 32)
+weapon_box_center = Vector2(52, 0)
+weapon_box_half_extents = Vector2(48, 32)
+damage = 7
+weapon_bonus_damage = 5
+knockback = Vector2(330, -35)
+launch = true
+impact_strength = 2
+weapon_impact_strength = 2
+impact_profile = ExtResource("2")
+priority = 4
+max_hits = 3
+repeat_hit_interval = 0.1
+hit_stun_bonus = 0.18
+counter_hit_damage_bonus = 3
+counter_hit_knockback_scale = 1.1
+counter_hit_launch = true
+counter_hit_stun_bonus = 0.08

@@ -42,6 +42,7 @@ enum HitboxShape {
 @export var can_grab := false
 @export var grab_range := 0.0
 @export var throw_collision_damage := 0
+@export_range(0.0, 1.0, 0.001) var hit_stun_bonus := 0.0
 
 @export_group("Counter Hit")
 @export var counter_hit_damage_bonus := 0
@@ -67,7 +68,7 @@ func is_valid_frame_data() -> bool:
 		return false
 	if max_hits > 1 and (repeat_hit_interval <= 0.0 or repeat_hit_interval >= duration):
 		return false
-	if throw_collision_damage < 0:
+	if throw_collision_damage < 0 or hit_stun_bonus < 0.0:
 		return false
 	if impact_profile == null or not impact_profile.is_valid_profile():
 		return false
